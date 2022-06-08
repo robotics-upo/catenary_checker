@@ -11,6 +11,14 @@ class PlaneParams {
         inline float getSignedDistance(const pcl::PointXYZ &p) {
             return a*p.x + b*p.y + c*p.z + d;
         }
+
+        inline std::string toString() const {
+            std::ostringstream os;
+
+            os << "Plane: " << a << "·x + " << b << "·y + " << c << "·z + " << d << "= 0";
+
+            return os.str();
+        }
 };
 
 pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cloud_in, pcl::PointXYZ &p1, pcl::PointXYZ &p2, const float max_dist);

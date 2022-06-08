@@ -1,18 +1,25 @@
 #include "catenary_checker/catenary_checker.hpp"
+#include <chrono>
 
 pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cloud_in, pcl::PointXYZ &p1, 
                                         pcl::PointXYZ &p2, const float max_dist) {
     PlaneParams plane = getVerticalPlane(p1, p2);
     pcl::PointCloud<pcl::PointXY> ret;
 
+    std::chrono::steady_clock::time_point start;
+
     for (int i = cloud_in.size() - 1; i >= 0; i--) {
         const pcl::PointXYZ &p = cloud_in[i];
         float dist = plane.getSignedDistance(p);
+        
         if (fabsf(dist) < max_dist) {
+            
             // Get the point of the plane
             pcl::PointXYZ p_plane(p.x - plane.a * dist, 
                                   p.y - plane.b * dist, 
                                   p.z);
+
+            // std::cout << "Adding Point. (" << p.x << ", " << p.y << ", " << p.z << ")\t Abs Dist: " << fabsf(dist) << "\n";
 
             // Translate to 2D --> x coord is:  - p.x * plane.b + p.y * plane.a
             pcl::PointXY projected_point;
@@ -22,6 +29,11 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
             ret.push_back(projected_point);
         }
     }
+    std::chrono::steady_clock::time_point end;
+
+    std::cout << "Project2d. Cloud in size: " << cloud_in.size() << std::endl;
+    std::cout << "Got plane: " << plane.toString() << std::endl;
+    std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count() << "ms" << std::endl;
 
     return ret;
 }
@@ -32,7 +44,7 @@ pcl::PointCloud<pcl::PointXYZ> reproject_3D(const pcl::PointCloud<pcl::PointXY> 
     delta.x -= p1.x;
     delta.y -= p1.y;
     delta.z = 0;
-    float dist = delta.x * delta.x + delta.y * delta.y; // Normalize
+    float dist = sqrtf(delta.x * delta.x + delta.y * delta.y); // Normalize
     delta.x /= dist;
     delta.y /= dist;
     for (int i = cloud_2d_in.size() - 1; i >= 0; i--) {
@@ -59,7 +71,7 @@ PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2) {
     plane.c = 0;
 
     // Normalize:
-    float dist = plane.a*plane.a + plane.b*plane.b;
+    float dist = sqrtf(plane.a*plane.a + plane.b*plane.b);
     plane.a /= dist;
     plane.b /= dist;
     
