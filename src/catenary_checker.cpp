@@ -6,7 +6,7 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
     PlaneParams plane = getVerticalPlane(p1, p2);
     pcl::PointCloud<pcl::PointXY> ret;
 
-    std::chrono::steady_clock::time_point start;
+    const std::chrono::steady_clock::time_point start(std::chrono::steady_clock::now());
 
     for (int i = cloud_in.size() - 1; i >= 0; i--) {
         const pcl::PointXYZ &p = cloud_in[i];
@@ -29,11 +29,12 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
             ret.push_back(projected_point);
         }
     }
-    std::chrono::steady_clock::time_point end;
+    const std::chrono::steady_clock::time_point end(std::chrono::steady_clock::now());
 
     std::cout << "Project2d. Cloud in size: " << cloud_in.size() << std::endl;
     std::cout << "Got plane: " << plane.toString() << std::endl;
-    std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count() << "ms" << std::endl;
+    const auto duration_us = std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count();
+    std::cout << "Elapsed time: " << duration_us << " us\n";
 
     return ret;
 }
@@ -64,18 +65,18 @@ pcl::PointCloud<pcl::PointXYZ> reproject_3D(const pcl::PointCloud<pcl::PointXY> 
 PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2) {
     PlaneParams plane;
 
-    // The normal vector will be (v2 - v1).crossproduct(0,0,1) --> (x2-x1, y2 - y1, z2-z1) x (0, 0, 1)
-    // n = (y2-y1, x1-x2, 0) --> a = y2-y1 ; b = x1-x2, c = 0
+    // The normal vector will be (v2 - v1).crossproduct(0,0,1) --> (x2 - x1, y2 - y1, z2-z1) x (0, 0, 1)
+    // n = (y2 - y1, x1 - x2, 0) 
     plane.a = p2.y - p1.y;
     plane.b = p1.x - p2.x;
     plane.c = 0;
 
     // Normalize:
-    float dist = sqrtf(plane.a*plane.a + plane.b*plane.b);
+    float dist = sqrtf(plane.a * plane.a + plane.b * plane.b);
     plane.a /= dist;
     plane.b /= dist;
     
-    // Get the d by substituting another point ( v * p1 + d = 0 ) --> d = - v*p1
+    // Get d by substituting another point ( n * p1 + d = 0 ) --> d = - n * p1
     plane.d = - plane.a * p1.x - plane.b * p1.y;
 
     return plane;
