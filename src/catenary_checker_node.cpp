@@ -44,7 +44,6 @@ void checkCatenary(const geometry_msgs::PoseStamped &target_pose) {
          auto points_2d = project2D(pcl_pc, robot, target, plane_dist);
 
          if (publish_pc) {
-
             auto points_3d = reproject_3D(points_2d, robot, target);
 
             pcl::toPCLPointCloud2(pcl_pc, pcl_pc2);
