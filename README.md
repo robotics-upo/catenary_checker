@@ -30,5 +30,5 @@ Please follow the instructions there to install it into your system
 To run a simple test, make sure that the ROS environment variables are loaded (source the setup.bash file of your catkin workspace) and then simply execute:
 
 ```
-rosrun catenary_checker test_catenary
+rosrun catenary_checker test_catenary_checker
 ```
