@@ -4,6 +4,8 @@ project(catenary_checker)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++14)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -11,12 +13,23 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
   sensor_msgs
-)
+  )
+
+find_package(Qt5 REQUIRED COMPONENTS
+  Charts
+  Widgets
+  )
+
+find_package(Qt5Charts REQUIRED)
+
+
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  ${Qt5Widgets_INCLUDE_DIRS}
+  ${Qt5Charts_INCLUDE_DIRS}
 )
 
 link_directories(${PCL_LIBRARY_DIRS})
@@ -36,7 +49,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES catenary_checker
   CATKIN_DEPENDS pcl_conversions pcl_ros sensor_msgs
-#  DEPENDS system_lib
+  DEPENDS dbscan_line_cluster
 )
 
 ###########
@@ -48,11 +61,13 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${Qt5_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
-   src/catenary_checker.cpp
+   src/catenary_checker.cpp src/obstacle_2d.cpp src/convex_hull.cpp
+   src/parable.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -64,6 +79,7 @@ add_library(${PROJECT_NAME}
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp)
+add_executable(test_catenary_checker src/test_catenary_checker.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -79,7 +95,16 @@ add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node
    ${catkin_LIBRARIES}
    ${PROJECT_NAME}
-)
+   Qt5::Charts
+   Qt5::Widgets
+   dbscan_line_cluster
+   )
+target_link_libraries(test_catenary_checker
+   ${PROJECT_NAME}
+   dbscan_line_cluster
+   Qt5::Charts
+   Qt5::Widgets
+   )
 
 #############
 ## Install ##

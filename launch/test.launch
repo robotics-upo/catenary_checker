@@ -1,15 +1,15 @@
 <!--
 -->
 <launch>
-  <arg name="robot_x" default="0.0"/>
-  <arg name="robot_y" default="0.0"/>
-  <arg name="robot_z" default="0.0"/>
+  <arg name="robot_x" default="1.5"/>
+  <arg name="robot_y" default="2.0"/>
+  <arg name="robot_z" default="0.5"/>
   # Robot position. You better use a good odometry estrimator as LOAM
   <node pkg="tf" type="static_transform_publisher" name="odom_tf" args="$(arg robot_x) $(arg robot_y) $(arg robot_z) 0 0 0 map base_link 10" />
 
-  <arg name="target_x" default="1.0"/>
-  <arg name="target_y" default="0.0"/>
-  <arg name="target_z" default="4.0"/>
+  <arg name="target_x" default="1.25"/>
+  <arg name="target_y" default="7.2"/>
+  <arg name="target_z" default="3.0"/>
 
   # Flight 1 map conf
   <arg name="map" default="nix_ramp.bt" />
@@ -23,8 +23,19 @@
   </node>
 
   <arg name="plane_dist" default="0.5"/>
-  <node name="catenary_checker" pkg="catenary_checker" type="catenary_checker_node" output="screen">
+  <arg name="dbscan_epsilon" default="0.1"/>
+  <arg name="dbscan_gamma" default="0.1"/>
+  <arg name="dbscan_theta" default="0.1"/>
+  <arg name="use_dbscan_lines" default="true"/>
+  <arg name="dbscan_min_points" default="5"/>
+  
+  <node name="catenary_checker" pkg="catenary_checker" type="catenary_checker_node" output="screen"  launch-prefix="xterm -e gdb -ex run --args">
     <param name="plane_dist" value="$(arg plane_dist)"/>
+    <param name="dbscan_min_points" value="$(arg dbscan_min_points)"/>
+    <param name="dbscan_epsilon" value="$(arg dbscan_epsilon)"/>
+    <param name="dbscan_gamma" value="$(arg dbscan_gamma)"/>
+    <param name="dbscan_theta" value="$(arg dbscan_theta)"/>
+    <param name="use_dbscan_lines" value="$(arg use_dbscan_lines)"/>
     <remap from="points2" to="/octomap_point_cloud_centers"/>
   </node>
 
@@ -32,3 +43,4 @@
 
   <node pkg="catenary_checker" type="publish_pose.sh" name="pose_pub" args="$(arg target_x) $(arg target_y) $(arg target_z) map 5"/>
 </launch>	
+

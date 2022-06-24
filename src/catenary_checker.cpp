@@ -39,7 +39,7 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
     return ret;
 }
 
-pcl::PointCloud<pcl::PointXYZ> reproject_3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, pcl::PointXYZ &p1, pcl::PointXYZ &p2) {
+pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, pcl::PointXYZ &p1, pcl::PointXYZ &p2) {
     pcl::PointCloud<pcl::PointXYZ> ret;
     pcl::PointXYZ delta(p2);
     delta.x -= p1.x;
@@ -48,12 +48,15 @@ pcl::PointCloud<pcl::PointXYZ> reproject_3D(const pcl::PointCloud<pcl::PointXY> 
     float dist = sqrtf(delta.x * delta.x + delta.y * delta.y); // Normalize
     delta.x /= dist;
     delta.y /= dist;
+
+    auto plane = getVerticalPlane(p1, p2);
+    
     for (int i = cloud_2d_in.size() - 1; i >= 0; i--) {
         const pcl::PointXY &p_2d = cloud_2d_in[i];
         
         // Get the point of the plane and translate back to 3D
-        pcl::PointXYZ p_3d(p_2d.x * delta.x, 
-                           p_2d.x * delta.y, 
+        pcl::PointXYZ p_3d(p_2d.x * delta.x - plane.a * plane.d, 
+                           p_2d.x * delta.y - plane.b * plane.d, 
                            p_2d.y);
 
         ret.push_back(p_3d);
@@ -80,4 +83,45 @@ PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2) {
     plane.d = - plane.a * p1.x - plane.b * p1.y;
 
     return plane;
+}
+
+
+DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts, float epsilon) {
+    // Convert pointcloud to DBSCan format
+    std::vector<Point> points;
+    points.reserve(cloud_2d_in.size());
+
+    Point db_p;
+    for (auto &p:cloud_2d_in) {
+        db_p.x = p.x;
+        db_p.y = p.y;
+        db_p.z = 0.0;
+
+        points.push_back(db_p);
+    }
+    DBSCAN *dbscan = new DBSCAN(minPts, epsilon, points);
+
+    dbscan->run();
+
+    return dbscan;
+}
+
+DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts, float epsilon, float gamma, float theta) {
+    // Convert pointcloud to DBSCan format
+    std::vector<Point> points;
+    points.reserve(cloud_2d_in.size());
+
+    Point db_p;
+    for (auto &p:cloud_2d_in) {
+        db_p.x = p.x;
+        db_p.y = p.y;
+        db_p.z = 0.0;
+
+        points.push_back(db_p);
+    }
+    DBSCAN *dbscan = new DBSCANLines(minPts, epsilon, points, gamma, theta);
+
+    dbscan->run();
+
+    return dbscan;
 }

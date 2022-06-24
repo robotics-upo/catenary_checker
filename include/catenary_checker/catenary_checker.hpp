@@ -1,5 +1,6 @@
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
+#include <dbscan_line_cluster/dbscan_lines.h>
 
 #ifndef __CATENARY_CHECKER_LIB__
 #define __CATENARY_CHECKER_LIB__
@@ -25,6 +26,9 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
 
 PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
 
-pcl::PointCloud<pcl::PointXYZ> reproject_3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, pcl::PointXYZ &p1, pcl::PointXYZ &p2);
+pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, pcl::PointXYZ &p1, pcl::PointXYZ &p2);
+
+DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &pc_2d, int minPts, float epsilon);
+DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts, float epsilon, float gamma, float theta);
 
 #endif
