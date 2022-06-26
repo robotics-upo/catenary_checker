@@ -1,6 +1,6 @@
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
-#include <dbscan_line_cluster/dbscan_lines.h>
+#include <dbscan_line/dbscan_lines.h>
 
 #ifndef __CATENARY_CHECKER_LIB__
 #define __CATENARY_CHECKER_LIB__
