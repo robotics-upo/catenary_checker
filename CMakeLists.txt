@@ -49,7 +49,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES catenary_checker
   CATKIN_DEPENDS pcl_conversions pcl_ros sensor_msgs
-  DEPENDS dbscan_line_cluster
+  DEPENDS dbscan_line
 )
 
 ###########
@@ -97,11 +97,11 @@ target_link_libraries(${PROJECT_NAME}_node
    ${PROJECT_NAME}
    Qt5::Charts
    Qt5::Widgets
-   dbscan_line_cluster
+   dbscan_line
    )
 target_link_libraries(test_catenary_checker
    ${PROJECT_NAME}
-   dbscan_line_cluster
+   dbscan_line
    Qt5::Charts
    Qt5::Widgets
    )

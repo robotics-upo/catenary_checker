@@ -75,9 +75,10 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
 
     for (auto &x:artificial_obs.convex_hull) {
         if (x.y < A.y || x.x < min_x || x.x > max_x) {
-            std::cout << "Convex Hull failure: not restricted to the limits" << std::endl;
-	    std::cout << "Conflicting point: " << x.toString() << std::endl;
-            return false;
+	  std::cout << "Parable::approximateParable ";  
+	  std::cout << "Convex Hull failure: not restricted to the limits" << std::endl;
+	  std::cout << "Conflicting point: " << x.toString() << std::endl;
+	  return false;
         }
     }
 
@@ -104,13 +105,13 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
     float lx = - _b/(2*_a);
     float ly = apply(lx);
     if (ly < min_y) {
-        std::cout << "Parabola va por debajo de " << min_y << std::endl;
+        std::cout << "Error: Parable::approximateParable the parable passes below: " << min_y << std::endl;
         return false;
     }
 
     std::cout << "Parable::approximateParable. New params: " << toString() << std::endl;
     if (back == *this) {
-      std::cout << "Detected same parable --> fail";
+      std::cout << "Error: Parable::approximateParable: Detected same parable --> fail";
       return false;
     }
 

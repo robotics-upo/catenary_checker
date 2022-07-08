@@ -19,7 +19,8 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
                                   p.y - plane.b * dist, 
                                   p.z);
 
-            // std::cout << "Adding Point. (" << p.x << ", " << p.y << ", " << p.z << ")\t Abs Dist: " << fabsf(dist) << "\n";
+            // std::cout << "Adding Point. (" << p.x << ", " << p.y << ", "
+	    // << p.z << ")\t Abs Dist: " << fabsf(dist) << "\n";
 
             // Translate to 2D --> x coord is:  - p.x * plane.b + p.y * plane.a
             pcl::PointXY projected_point;
@@ -68,8 +69,8 @@ pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &
 PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2) {
     PlaneParams plane;
 
-    // The normal vector will be (v2 - v1).crossproduct(0,0,1) --> (x2 - x1, y2 - y1, z2-z1) x (0, 0, 1)
-    // n = (y2 - y1, x1 - x2, 0) 
+    // The normal vector will be (v2 - v1).crossproduct(0,0,1) -->
+    // (x2 - x1, y2 - y1, z2 - z1) x (0, 0, 1) -->  n = (y2 - y1, x1 - x2, 0) 
     plane.a = p2.y - p1.y;
     plane.b = p1.x - p2.x;
     plane.c = 0;
