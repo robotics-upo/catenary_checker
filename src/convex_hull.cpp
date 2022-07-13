@@ -55,7 +55,6 @@ using namespace std;
 
 
 ////////////
-
 std::vector<Point2D> findConvexHull(std::vector<Point2D> inputPoints)
 {
   if(inputPoints.size() < 3) {
@@ -83,11 +82,11 @@ std::vector<Point2D> findConvexHull(std::vector<Point2D> inputPoints)
 
    unsigned arrSize = 1;    //used to locate items in modified array
    for(unsigned i = 1; i<numPoints; ++i) {
-      //when the angle of ith and (i+1)th elements are same, remove points
-      while(i < numPoints-1 && direction(p0, inputPoints[i], inputPoints[i+1]) == 0)
-         ++i;
-         inputPoints[arrSize] = inputPoints[i];
-         ++arrSize;
+     //when the angle of ith and (i+1)th elements are same, remove points
+     while(i < numPoints-1 && direction(p0, inputPoints[i], inputPoints[i+1]) == 0)
+       ++i;
+     inputPoints[arrSize] = inputPoints[i];
+     ++arrSize;
    }
    if(arrSize < 3)
       return convexHullPoints;    //there must be at least 3 points, return empty list.

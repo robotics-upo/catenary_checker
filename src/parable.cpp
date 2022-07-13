@@ -39,83 +39,86 @@ bool Parable::getParable(const Point2D &p1, const Point2D &p2, const Point2D &p3
     return true;
 }
 
-bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D &A, Point2D &B, float min_y) 
+bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D &A,
+				 Point2D &B, float min_y) 
 {
-    Obstacle2D artificial_obs;
-    artificial_obs.push_back(A);
-    artificial_obs.push_back(B);
+  Obstacle2D artificial_obs;
+  artificial_obs.push_back(A);
+  artificial_obs.push_back(B);
 
-    Parable back(*this);
+  Parable back(*this);
 
-    if (_a == 0.0 && _b == 0.0 && _c == 0.0) {
-        _b = (A.y - B.y)/(A.x - B.x);
-        _c = A.y - _b * A.x;
-	std::cout << "Primera parabola. Parametros: " << toString() << "\n";
+  if (_a == 0.0 && _b == 0.0 && _c == 0.0) {
+    _b = (A.y - B.y)/(A.x - B.x);
+    _c = A.y - _b * A.x;
+    std::cout << "Primera parabola. Parametros: " << toString() << "\n";
+  }
+
+  std::function<float(float)> f = std::bind(&Parable::apply, this, std::placeholders::_1);
+  for (auto &x:objects) {
+    if (x.intersects(f)) {
+      std::cout << "Adding obstacle: " << x.toString() << std::endl;
+      artificial_obs.add(x);
     }
+  }
 
-    std::function<float(float)> f = std::bind(&Parable::apply, this, std::placeholders::_1);
-    for (auto &x:objects) {
-        if (x.intersects(f)) {
-	    std::cout << "Adding obstacle: " << x.toString() << std::endl;
-            artificial_obs.add(x);
-        }
-    }
+  std::cout << "Parable::approximateParable -->  adding intersecting obstacles: number: "
+	    << artificial_obs.size() << std::endl;
 
-    std::cout << "Parable::approximateParable -->  adding intersecting obstacles: number: " << artificial_obs.size() << std::endl;
+  if (artificial_obs.size() < 3 ) {
+    std::cout << "Parabola aproximada." << std::endl;
+    return true;
+  }
 
-    if (artificial_obs.size() < 3 ) {
-        std::cout << "Parabola aproximada." << std::endl;
-        return true;
-    }
+  artificial_obs.calculateConvexHull();
 
-    artificial_obs.calculateConvexHull();
+  float min_x = std::min(A.x, B.x);
+  float max_x = std::max(A.x, B.x);
 
-    float min_x = std::min(A.x, B.x);
-    float max_x = std::max(A.x, B.x);
-
-    for (auto &x:artificial_obs.convex_hull) {
-        if (x.y < A.y || x.x < min_x || x.x > max_x) {
-	  std::cout << "Parable::approximateParable ";  
-	  std::cout << "Convex Hull failure: not restricted to the limits" << std::endl;
-	  std::cout << "Conflicting point: " << x.toString() << std::endl;
-	  return false;
-        }
-    }
-
-    float max_a = -std::numeric_limits<float>::infinity();
-    float best_b = 0.0;
-    float best_c = 0.0;
-
-    for (auto &x:artificial_obs.convex_hull) {
-        if (!getParable(A, x, B)) {
-            max_a = _a;
-            best_b = _b;
-            best_c = _c;
-        }
-    }
-    
-    _a = max_a;
-    _b = best_b;
-    _c = best_c;
-
-    if (_a < 0.0) {
-        return false;
-    }
-
-    float lx = - _b/(2*_a);
-    float ly = apply(lx);
-    if (ly < min_y) {
-        std::cout << "Error: Parable::approximateParable the parable passes below: " << min_y << std::endl;
-        return false;
-    }
-
-    std::cout << "Parable::approximateParable. New params: " << toString() << std::endl;
-    if (back == *this) {
-      std::cout << "Error: Parable::approximateParable: Detected same parable --> fail";
+  for (auto &x:artificial_obs.convex_hull) {
+    if (x.y < A.y || x.x < min_x || x.x > max_x) {
+      std::cout << "Parable::approximateParable ";  
+      std::cout << "Convex Hull failure: not restricted to the limits" << std::endl;
+      std::cout << "Conflicting point: " << x.toString() << std::endl;
       return false;
     }
+  }
 
-    return approximateParable(objects, A, B, min_y);
+  float max_a = -std::numeric_limits<float>::infinity();
+  float best_b = 0.0;
+  float best_c = 0.0;
+
+  for (auto &x:artificial_obs.convex_hull) {
+    if (!getParable(A, x, B)) {
+      max_a = _a;
+      best_b = _b;
+      best_c = _c;
+    }
+  }
+    
+  _a = max_a;
+  _b = best_b;
+  _c = best_c;
+
+  if (_a < 0.0) {
+    return false;
+  }
+
+  float lx = - _b/(2*_a);
+  float ly = apply(lx);
+  if (ly < min_y) {
+    std::cout << "Error: Parable::approximateParable the parable passes below: "
+	      << min_y << std::endl;
+    return false;
+  }
+
+  std::cout << "Parable::approximateParable. New params: " << toString() << std::endl;
+  if (back == *this) {
+    std::cout << "Error: Parable::approximateParable: Detected same parable --> fail";
+    return false;
+  }
+
+  return approximateParable(objects, A, B, min_y);
 }
 
 std::string Parable::toString() const {

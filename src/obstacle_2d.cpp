@@ -9,31 +9,30 @@ Obstacle2D::Obstacle2D():std::vector<Point2D>() {}
 Obstacle2D::Obstacle2D(const Obstacle2D &points):std::vector<Point2D>(points) {}
 
 void Obstacle2D::calculateConvexHull() {
-    convex_hull = findConvexHull(*this);
+  convex_hull = findConvexHull(*this);
 }
 
 bool Obstacle2D::intersects(std::function<float (float) > &func) const {
-    bool exist_lower =false;
-    bool exist_up = false;
-    for (size_t p = 0; p < size();p++) {
-        float fy = func(at(p).x);
-        exist_up |= fy < at(p).y;
-        exist_lower |= fy > at(p).y;
-        if (exist_lower && exist_up)
-            return true;
-    }
-    return false;
- }
+  bool exist_lower =false;
+  bool exist_up = false;
+  for (size_t p = 0; p < size();p++) {
+    float fy = func(at(p).x);
+    exist_up |= fy < at(p).y;
+    exist_lower |= fy > at(p).y;
+    if (exist_lower && exist_up)
+      return true;
+  }
+  return false;
+}
 
- void Obstacle2D::add(const Obstacle2D &obstacle) {
-    for (auto &x:obstacle) {
-        push_back(x);
-    }
- }
+void Obstacle2D::add(const Obstacle2D &obstacle) {
+  for (auto &x:obstacle) {
+    push_back(x);
+  }
+}
 
 Obstacle2D Obstacle2D::rectangle(const Point2D &v1, const Point2D &v2, float spacing)
 {
-  
   Obstacle2D ret;
 
   spacing = fabsf(spacing);
