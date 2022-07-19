@@ -10,6 +10,15 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
 
   const std::chrono::steady_clock::time_point start(std::chrono::steady_clock::now());
 
+  // Get the x' coordinate of p1 and p2
+
+  float x_1_prima = -p1.x * plane.b + p1.y * plane.a;
+  float x_2_prima = -p2.x * plane.b + p2.y * plane.a;
+
+  float min_x = std::min(x_1_prima, x_2_prima);
+  float max_x = std::max(x_1_prima, x_2_prima);
+  float max_y = std::max(p1.z, p2.z);
+
   for (int i = cloud_in.size() - 1; i >= 0; i--) {
     const pcl::PointXYZ &p = cloud_in[i];
     float dist = plane.getSignedDistance(p);
@@ -29,7 +38,13 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
       projected_point.x = p_plane.y * plane.a - p_plane.x * plane.b;
       projected_point.y = p_plane.z;
 
-      ret.push_back(projected_point);
+      // Before adding the points, check if they pass these
+
+      if (projected_point.x > min_x && projected_point.x < max_x &&
+	  projected_point.y < max_y) {
+
+	ret.push_back(projected_point);
+      }
     }
   }
   const std::chrono::steady_clock::time_point end(std::chrono::steady_clock::now());
