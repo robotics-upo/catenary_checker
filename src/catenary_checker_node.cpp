@@ -32,8 +32,6 @@ void pointCloudCb(const sensor_msgs::PointCloud2ConstPtr &pc_msg)
   pc = *pc_msg;
 }
 
-Obstacle2D toObstacle(const std::vector<Point> &obs);
-
 //! Gets a point and checks if there exists
 void checkCatenary(const geometry_msgs::PoseStampedConstPtr &target_pose)
 {
@@ -96,16 +94,9 @@ void checkCatenary(const geometry_msgs::PoseStampedConstPtr &target_pose)
     ROS_INFO("Marker published");
 
     //Tranlate to Obstacles 2D
-    std::vector<Obstacle2D> scenario;
-    for (int i = 1; i < dbscan->getNClusters(); i++) {
-      auto cluster = dbscan->getCluster(i);
-      ROS_INFO("Cluster %d. Size: %lu", i, cluster.size());
-      if (cluster.size() > dbscan_min_points) {
-	auto curr_obstacle = toObstacle(cluster);
-	scenario.push_back(curr_obstacle);
-      }
-    }
+    std::vector<Obstacle2D> scenario = getObstacles(dbscan); 
     ROS_INFO("Got the scenario");
+    
     // Get the initial parable (line between A and B)
     auto plane = getVerticalPlane(robot,target);
     Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
@@ -302,18 +293,3 @@ visualization_msgs::Marker pointsToMarker(const std::vector<Point> &points,
 }
 
 
-Obstacle2D toObstacle(const std::vector<Point> &obs) {
-  Obstacle2D ret;
-
-  Point2D p;
-  for (auto &x:obs) {
-    p.x = x.x;
-    p.y = x.y;
-    ret.push_back(p);
-  }
-
-  if (ret.size() > 1)
-    ret.calculateConvexHull();
-
-  return ret;
-}

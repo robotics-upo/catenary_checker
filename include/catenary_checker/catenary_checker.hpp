@@ -1,9 +1,19 @@
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
 #include <dbscan_line/dbscan_lines.h>
+#include "catenary_checker/obstacle_2d.hpp"
 
 #ifndef __CATENARY_CHECKER_LIB__
 #define __CATENARY_CHECKER_LIB__
+
+//! @brief Checks for the existence of a Catenary between two 3D points
+//! @param A First point
+//! @param B Second point
+//! @param dist Maximum distance from an obstacle to the plane to be included
+//! @param obstacles Obstacles in the environment
+//! @return The length of the catenary, or -1 if not found
+float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,
+		    const pcl::PointCloud<pcl::PointXYZ> &pc, float dist);
 
 class PlaneParams {
 public:
@@ -23,7 +33,7 @@ public:
 };
 
 pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cloud_in,
-					pcl::PointXYZ &p1, pcl::PointXYZ &p2,
+					const pcl::PointXYZ &p1, const pcl::PointXYZ &p2,
 					const float max_dist);
 
 PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
@@ -31,8 +41,14 @@ PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
 pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
 					   pcl::PointXYZ &p1, pcl::PointXYZ &p2);
 
+
+
 DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &pc_2d, int minPts, float epsilon);
 DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts,
 			 float epsilon, float gamma, float theta);
+
+std::vector<Obstacle2D> getObstacles(DBSCAN *dbscan);
+
+Obstacle2D toObstacle(const std::vector<Point> &obs);
 
 #endif

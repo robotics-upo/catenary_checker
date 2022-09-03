@@ -26,6 +26,8 @@ public:
   bool approximateParable(const std::vector<Obstacle2D> &objects, Point2D &A,
 			  Point2D &B, float min_y = 0.0);
 
+  float getLength(float &x1, float &x2, float delta_t = 0.01) const;
+
   float _a, _b, _c;
 
   inline friend bool operator==(const Parable &a, const Parable &b)

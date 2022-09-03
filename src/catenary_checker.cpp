@@ -1,9 +1,37 @@
 #include "catenary_checker/catenary_checker.hpp"
+#include "catenary_checker/parable.hpp"
 #include <chrono>
 
+float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,
+		    const pcl::PointCloud<pcl::PointXYZ> &pc, double plane_dist,
+		    float dbscan_min_points, float dbscan_epsilon) {
+
+  double ret_val;
+
+  // Project the points to 2D
+  auto points_2d = project2D(pc, A, B, plane_dist);
+
+  // Get the obstacles 2D clustered
+  auto dbscan = clusterize(points_2d, dbscan_min_points, dbscan_epsilon);
+  auto scenario = getObstacles(dbscan);
+
+  // Project to 2D the init and goal points
+  auto plane = getVerticalPlane(A, B);
+  Point2D A_(A.y * plane.a - A.x * plane.b, A.z);
+  Point2D B_(B.y * plane.a - B.x * plane.b, B.z);
+
+  // Get the parable
+  Parable parable;
+  parable.approximateParable(scenario, A_, B_);
+
+  // Return the longitude of the parable
+
+  return ret_val;
+}
+
 pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cloud_in,
-					pcl::PointXYZ &p1,
-					pcl::PointXYZ &p2, const float max_dist)
+					const pcl::PointXYZ &p1,
+					const pcl::PointXYZ &p2, const float max_dist)
 {
   PlaneParams plane = getVerticalPlane(p1, p2);
   pcl::PointCloud<pcl::PointXY> ret;
@@ -19,7 +47,7 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
   float max_x = std::max(x_1_prima, x_2_prima);
   float max_y = std::max(p1.z, p2.z);
 
-  for (int i = cloud_in.size() - 1; i >= 0; i--) {
+  for (int i = cloud_in.size() - 1; i >= 0 ; i--) {
     const pcl::PointXYZ &p = cloud_in[i];
     float dist = plane.getSignedDistance(p);
         
@@ -147,4 +175,36 @@ DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
   dbscan->run();
 
   return dbscan;
+}
+
+
+std::vector<Obstacle2D> getObstacles(DBSCAN *dbscan) {
+  std::vector<Obstacle2D> ret;
+  int dbscan_min_points = dbscan->getMinimumClusterSize();
+  for (int i = 1; i < dbscan->getNClusters(); i++) {
+    auto cluster = dbscan->getCluster(i);
+    printf("Cluster %d. Size: %lu", i, cluster.size());
+    if (cluster.size() > dbscan_min_points) {
+      auto curr_obstacle = toObstacle(cluster);
+      ret.push_back(curr_obstacle);
+    }
+  }
+
+  return ret;
+}
+
+Obstacle2D toObstacle(const std::vector<Point> &obs) {
+  Obstacle2D ret;
+
+  Point2D p;
+  for (auto &x:obs) {
+    p.x = x.x;
+    p.y = x.y;
+    ret.push_back(p);
+  }
+
+  if (ret.size() > 1)
+    ret.calculateConvexHull();
+
+  return ret;
 }

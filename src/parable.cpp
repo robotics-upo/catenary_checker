@@ -2,6 +2,7 @@
 #include <limits>
 #include <iostream>
 #include <sstream>
+#include <cmath>
 
 Parable::Parable() { _a = _b = _c = 0.0f; }
 
@@ -131,6 +132,27 @@ std::string Parable::toString() const {
     return oss.str();
 }
 
+
+float Parable::getLength(float &x1, float &x2, float delta_t) const {
+  // We have to integrate: integral(x1,x2) of: sqrt(1+df/dx^2)dx
+  // sqrt(1+(2ax+b)^2) = sqrt(1+4a²x²+b²+4abx)dx
+  // This integral has no primitive --> should be approximated
+  float ret_val=0.0f;
+
+  float a_2 = _a * _a * 4.0f;
+  float b_2 = _b * _b;
+  float a_b_4 = _a * _b * 4.0f;
+
+  for (float x = x1; x <= x2; x += delta_t) {
+    ret_val += std::sqrt(1 + b_2 + a_2 * x * x + a_b_4 * x);
+  }
+  ret_val *= delta_t;
+
+  return ret_val;
+
+}
+
+/// Using Qt Charts for representation
 using namespace QtCharts;
 
 QSplineSeries *Parable::toSeries(const std::string &name,
@@ -148,3 +170,5 @@ QSplineSeries *Parable::toSeries(const std::string &name,
 
 
 }
+
+
