@@ -68,6 +68,8 @@ include_directories(
 add_library(${PROJECT_NAME}
    src/catenary_checker.cpp src/obstacle_2d.cpp src/convex_hull.cpp
    src/parable.cpp
+   src/catenary_checker_manager.cpp
+   src/bisection_catenary_3D.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -80,6 +82,10 @@ add_library(${PROJECT_NAME}
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp)
 add_executable(test_catenary_checker src/test_catenary_checker.cpp)
+add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
+
+add_executable(create_grid3d_node src/create_grid3d_node.cpp) 
+target_link_libraries(create_grid3d_node ${PROJECT_NAME})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -105,6 +111,14 @@ target_link_libraries(test_catenary_checker
    Qt5::Charts
    Qt5::Widgets
    )
+target_link_libraries(catenary_checker_manager_node
+   ${catkin_LIBRARIES}
+   ${PROJECT_NAME}
+   Qt5::Charts
+   Qt5::Widgets
+   dbscan_line
+   )
+
 
 #############
 ## Install ##

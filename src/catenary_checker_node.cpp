@@ -20,6 +20,8 @@ int dbscan_min_points;
 float dbscan_epsilon, dbscan_gamma, dbscan_theta;
 bool use_dbscan_lines;
 
+bool get_catenary;
+
 ros::Publisher pc_publisher, marker_publisher;
 bool publish_pc = true;
 bool publish_marker = true;
@@ -33,23 +35,25 @@ void pointCloudCb(const sensor_msgs::PointCloud2ConstPtr &pc_msg)
 }
 
 //! Gets a point and checks if there exists
-void checkCatenary(const geometry_msgs::PoseStampedConstPtr &target_pose)
+// void checkCatenary(const geometry_msgs::PoseStampedConstPtr &target_pose) //Commented by SMR to integrate in RRT
+bool analyticalCheckCatenary(const geometry_msgs::PointConstPtr &pi_, const geometry_msgs::PointConstPtr &pf_)
 {
   static int seq = 0;
   // Get the pose of the robot or die
-  geometry_msgs::TransformStamped transformStamped;
+  // geometry_msgs::TransformStamped transformStamped;    //Commented by SMR to integrate in RRT
   DBSCAN *dbscan = NULL;
   try{
     // get the location of the robot
-    transformStamped = tf_buffer.lookupTransform(global_frame, base_frame,
-						 ros::Time(0));
-    pcl::PointXYZ robot(static_cast<float>(transformStamped.transform.translation.x), 
-			static_cast<float>(transformStamped.transform.translation.y),
-			static_cast<float>(transformStamped.transform.translation.z));
-         
-    pcl::PointXYZ target(static_cast<float>(target_pose->pose.position.x),
-			 static_cast<float>(target_pose->pose.position.y),
-			 static_cast<float>(target_pose->pose.position.z));
+    // transformStamped = tf_buffer.lookupTransform(global_frame, base_frame, ros::Time(0)); //Commented by SMR to integrate in RRT
+    // pcl::PointXYZ robot(static_cast<float>(transformStamped.transform.translation.x), //Commented by SMR to integrate in RRT
+		// 	static_cast<float>(transformStamped.transform.translation.y),
+		// 	static_cast<float>(transformStamped.transform.translation.z));
+    pcl::PointXYZ robot(static_cast<float>(pi_->x), static_cast<float>(pi_->y),	static_cast<float>(pi_->z));
+    // pcl::PointXYZ target(static_cast<float>(target_pose->pose.position.x),           //Commented by SMR to integrate in RRT
+		// 	 static_cast<float>(target_pose->pose.position.y),
+		// 	 static_cast<float>(target_pose->pose.position.z));
+    pcl::PointXYZ target(static_cast<float>(pf_->x), static_cast<float>(pf_->y), static_cast<float>(pf_->z));
+
     pcl::PointCloud<pcl::PointXYZ> pcl_pc;
     pcl::PCLPointCloud2 pcl_pc2;
     pcl_conversions::moveToPCL(pc, pcl_pc2);
@@ -102,7 +106,8 @@ void checkCatenary(const geometry_msgs::PoseStampedConstPtr &target_pose)
     Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
     Point2D B(target.y * plane.a - target.x * plane.b, target.z);
     Parable parable;
-    parable.approximateParable(scenario, A, B);
+    get_catenary = parable.approximateParable(scenario, A, B);
+
 
     ROS_INFO("Got parable: %s", parable.toString().c_str()); 
   }
@@ -111,6 +116,8 @@ void checkCatenary(const geometry_msgs::PoseStampedConstPtr &target_pose)
     ros::Duration(1.0).sleep();
   }
   delete dbscan;
+
+  return get_catenary;
 }
 
 int main (int argc, char **argv)
@@ -126,7 +133,7 @@ int main (int argc, char **argv)
   // Subscribe the node to the point cloud from the ROS bag file.
   // The topic has to be remapped to points2
   ros::Subscriber pc_sub = nh.subscribe<sensor_msgs::PointCloud2>("points2", 1, pointCloudCb);
-  ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("pose", 1, checkCatenary);
+  // ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("pose", 1, checkCatenary);
 
   base_frame = lnh.param<std::string>("base_frame_id", std::string("base_link"));
   global_frame = lnh.param<std::string>("global_frame_id", std::string("map"));
