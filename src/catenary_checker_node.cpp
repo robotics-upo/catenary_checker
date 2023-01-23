@@ -13,7 +13,7 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   // Subscribe the node to the point cloud from the ROS bag file.
   // The topic has to be remapped to points2
   // ros::Subscriber pc_sub = nh->subscribe<sensor_msgs::PointCloud2>("points2", 1, pointCloudCb);
-  ros::Subscriber pc_sub = nh->subscribe("points2", 1, &catenaryChecker::pointCloudCb, this);
+  ros::Subscriber pc_sub = nh->subscribe("/octomap_point_cloud_centers", 1, &catenaryChecker::pointCloudCb, this);
 
   // ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("pose", 1, checkCatenary);
 

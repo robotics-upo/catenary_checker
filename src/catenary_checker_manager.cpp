@@ -8,15 +8,7 @@ CatenaryCheckerManager::CatenaryCheckerManager(std::string node_name_)
 	grid_3D = new Grid3d(node_name_);
 	cc = new catenaryChecker(nh);
     
-    // nh->param<bool>("use_analytical_method",use_analytical_method, false);
-    use_analytical_method = false;
-
     point_cloud_sub_ = nh->subscribe<sensor_msgs::PointCloud2>("/octomap_point_cloud_centers", 1, &CatenaryCheckerManager::PointCloudCallback, this);
-
-    if (use_analytical_method)
-        ROS_INFO(PRINTF_GREEN "Catenary Checker Manager: Using ANALYTICAL METHOD");
-    else
-        ROS_INFO(PRINTF_GREEN "Catenary Checker Manager: Using NUMERICAL METHOD from Ceres Solver");
 
 }
 
@@ -26,7 +18,7 @@ void CatenaryCheckerManager::PointCloudCallback(const sensor_msgs::PointCloud2::
     ROS_INFO(PRINTF_GREEN "Catenary Checker node Received Point Cloud");
 }
 
-void CatenaryCheckerManager::Init(double dist_cat_, double l_cat_max_, double ws_z_min_, double step_)
+void CatenaryCheckerManager::Init(double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_analytical_method_)
 {
     distance_catenary_obstacle = dist_cat_;
     length_tether_max = l_cat_max_;
@@ -34,6 +26,13 @@ void CatenaryCheckerManager::Init(double dist_cat_, double l_cat_max_, double ws
     step = step_; 
     use_distance_function = false;
     catenary_state = false;
+    use_analytical_method = use_analytical_method_;
+
+	if (use_analytical_method)
+        ROS_INFO(PRINTF_GREEN "Catenary Checker Manager: Using ANALYTICAL METHOD");
+    else
+        ROS_INFO(PRINTF_GREEN "Catenary Checker Manager: Using NUMERICAL METHOD from Ceres Solver");
+
 }
 void CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
 {
