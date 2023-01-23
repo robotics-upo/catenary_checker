@@ -122,7 +122,7 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     ROS_INFO("Got the scenario");
     
     // Get the initial parable (line between A and B)
-    auto plane = getVerticalPlane(robot,target);
+    auto plane = getVerticalPlane(robot,target); 
     Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
     Point2D B(target.y * plane.a - target.x * plane.b, target.z);
     Parable parable;

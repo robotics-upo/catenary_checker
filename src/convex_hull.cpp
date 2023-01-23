@@ -23,7 +23,7 @@ using namespace std;
     stk.push(tempPoint);      //push previous top again
     
     return res;
-  }
+  } 
 
   double squaredDist(const Point2D& p1, const Point2D& p2)
   {

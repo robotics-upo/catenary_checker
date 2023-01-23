@@ -2,6 +2,7 @@
 #include <pcl/point_types.h>
 #include <dbscan_line/dbscan_lines.h>
 #include "catenary_checker/obstacle_2d.hpp"
+#include "parable.hpp"
 
 #ifndef __CATENARY_CHECKER_LIB__
 #define __CATENARY_CHECKER_LIB__
@@ -39,9 +40,9 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
 PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
 
 pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
-					   pcl::PointXYZ &p1, pcl::PointXYZ &p2);
+					  const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
 
-
+pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B);
 
 DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &pc_2d, int minPts, float epsilon);
 DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts,

@@ -2,11 +2,33 @@
 #include "catenary_checker/parable.hpp"
 #include <chrono>
 
+pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
+					   const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
+
+pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B) {
+  // Project to 2D the init and goal points
+  auto plane = getVerticalPlane(A, B);
+  Point2D A_(A.y * plane.a - A.x * plane.b, A.z);
+  Point2D B_(B.y * plane.a - B.x * plane.b, B.z);
+
+  auto parable2d_points = parable.getPoints(A_.x, B_.x);
+  pcl::PointCloud<pcl::PointXY> parable2d;
+  pcl::PointXY pcl_point;
+  for (auto &p:parable2d_points) {
+    pcl_point.x = p.x;
+    pcl_point.y = p.y;
+    parable2d.push_back(pcl_point);
+  }
+
+  // Simon: This is an example to get the 3D parable:
+  return reproject3D(parable2d, A, B);
+}
+
 float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,
 		    const pcl::PointCloud<pcl::PointXYZ> &pc, double plane_dist,
 		    float dbscan_min_points, float dbscan_epsilon) {
 
-  double ret_val;
+  double ret_val = -1.0;
 
   // Project the points to 2D
   auto points_2d = project2D(pc, A, B, plane_dist);
@@ -22,10 +44,15 @@ float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,
 
   // Get the parable
   Parable parable;
-  parable.approximateParable(scenario, A_, B_);
+  if (parable.approximateParable(scenario, A_, B_)) {
+    ret_val = parable.getLength(A_.x, B_.x);
+    
+    // Simon if you want the 3D points you can use:
+    auto x = getParablePoints(parable, A, B);
+    
+  }
 
   // Return the longitude of the parable
-
   return ret_val;
 }
 
@@ -86,7 +113,7 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
 }
 
 pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
-					   pcl::PointXYZ &p1, pcl::PointXYZ &p2)
+					   const pcl::PointXYZ &p1, const pcl::PointXYZ &p2)
 {
   pcl::PointCloud<pcl::PointXYZ> ret;
   pcl::PointXYZ delta(p2);

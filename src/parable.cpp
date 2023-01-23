@@ -132,7 +132,16 @@ std::string Parable::toString() const {
     return oss.str();
 }
 
+std::vector<Point2D> Parable::getPoints(float &x1, float &x2, float delta_t) const {
+  std::vector<Point2D> ret_val;
+  for (float x = x1; x <= x2; x+=delta_t) {
+    Point2D p(x, apply(x));
+    ret_val.push_back(p);
+  }
 
+  return ret_val;
+}
+ 
 float Parable::getLength(float &x1, float &x2, float delta_t) const {
   // We have to integrate: integral(x1,x2) of: sqrt(1+df/dx^2)dx
   // sqrt(1+(2ax+b)^2) = sqrt(1+4a²x²+b²+4abx)dx
@@ -151,6 +160,8 @@ float Parable::getLength(float &x1, float &x2, float delta_t) const {
   return ret_val;
 
 }
+
+
 
 /// Using Qt Charts for representation
 using namespace QtCharts;

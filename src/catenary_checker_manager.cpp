@@ -17,7 +17,7 @@ void CatenaryCheckerManager::PointCloudCallback(const sensor_msgs::PointCloud2::
     nn_obs.setInput(*msg);
     ROS_INFO(PRINTF_GREEN "Catenary Checker node Received Point Cloud");
 }
-
+ 
 void CatenaryCheckerManager::Init(double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_analytical_method_)
 {
     distance_catenary_obstacle = dist_cat_;

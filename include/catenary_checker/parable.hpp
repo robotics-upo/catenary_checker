@@ -28,6 +28,8 @@ public:
 
   float getLength(float &x1, float &x2, float delta_t = 0.01) const;
 
+  std::vector<Point2D> getPoints(float &x1, float &x2, float delta_t = 0.01) const;
+
   float _a, _b, _c;
 
   inline friend bool operator==(const Parable &a, const Parable &b)
