@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include "misc/grid3d.hpp"
+#include "catenary_checker/grid3d.hpp"
 #include <string>
 
 

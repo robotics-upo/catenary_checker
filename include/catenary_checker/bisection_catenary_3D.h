@@ -19,7 +19,6 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/Point.h>
 
-
 #include <octomap_msgs/Octomap.h> 
 #include <octomap/OcTree.h>
 

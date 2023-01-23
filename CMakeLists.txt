@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
   sensor_msgs
+  octomap_msgs
+  octomap_ros
   )
 
 find_package(Qt5 REQUIRED COMPONENTS
@@ -22,18 +24,21 @@ find_package(Qt5 REQUIRED COMPONENTS
 
 find_package(Qt5Charts REQUIRED)
 
+find_package(PCL 1.8 REQUIRED)
+find_package(PCL REQUIRED)
 
-
-include_directories(
+include_directories( include/
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
   ${Qt5Widgets_INCLUDE_DIRS}
   ${Qt5Charts_INCLUDE_DIRS}
 )
-
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+
+set(EXTERNAL_INCLUDE_DIRS ${PCL_INCLUDE_DIRS} )
+set(EXTERNAL_LIBS ${PCL_LIBRARIES} )
 
 
 ###################################
@@ -46,9 +51,9 @@ add_definitions(${PCL_DEFINITIONS})
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES catenary_checker
-  CATKIN_DEPENDS pcl_conversions pcl_ros sensor_msgs
+  CATKIN_DEPENDS pcl_conversions pcl_ros sensor_msgs octomap_msgs octomap_ros
   DEPENDS dbscan_line
 )
 
@@ -59,6 +64,20 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
+  ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+  ${Qt5Widgets_INCLUDE_DIRS}
+  ${Qt5Charts_INCLUDE_DIRS}
+)
+
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
+set(EXTERNAL_INCLUDE_DIRS ${Eigen_INCLUDE_DIRS}${PCL_INCLUDE_DIRS} )
+set(EXTERNAL_LIBS ${PCL_LIBRARIES} )
+
+include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${Qt5_INCLUDE_DIRS}
@@ -66,10 +85,18 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
-   src/catenary_checker.cpp src/obstacle_2d.cpp src/convex_hull.cpp
+   src/catenary_checker.cpp 
+   src/obstacle_2d.cpp 
+   src/convex_hull.cpp
    src/parable.cpp
    src/catenary_checker_manager.cpp
    src/bisection_catenary_3D.cpp
+   src/catenary_checker_node.cpp 
+   src/catenary_checker_manager_node.cpp
+)
+target_link_libraries(${PROJECT_NAME}
+   ${EXTERNAL_LIBS}
+   ${catkin_LIBRARIES}
 )
 
 ## Add cmake target dependencies of the library
@@ -80,12 +107,10 @@ add_library(${PROJECT_NAME}
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp)
-add_executable(test_catenary_checker src/test_catenary_checker.cpp)
-add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
 
-add_executable(create_grid3d_node src/create_grid3d_node.cpp) 
-target_link_libraries(create_grid3d_node ${PROJECT_NAME})
+# add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp )
+add_executable(test_catenary_checker src/test_catenary_checker.cpp)
+# add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -95,30 +120,35 @@ target_link_libraries(create_grid3d_node ${PROJECT_NAME})
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(${PROJECT_NAME}_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(test_catenary_checker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(${PROJECT_NAME}_manager_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node
-   ${catkin_LIBRARIES}
-   ${PROJECT_NAME}
-   Qt5::Charts
-   Qt5::Widgets
-   dbscan_line
-   )
+# target_link_libraries(${PROJECT_NAME}_node
+#    ${catkin_LIBRARIES}
+#    ${PROJECT_NAME}
+#    Qt5::Charts
+#    Qt5::Widgets
+#    dbscan_line
+#    )
 target_link_libraries(test_catenary_checker
    ${PROJECT_NAME}
-   dbscan_line
-   Qt5::Charts
-   Qt5::Widgets
-   )
-target_link_libraries(catenary_checker_manager_node
    ${catkin_LIBRARIES}
-   ${PROJECT_NAME}
+   dbscan_line
    Qt5::Charts
    Qt5::Widgets
-   dbscan_line
    )
+# target_link_libraries(catenary_checker_manager_node
+#    ${catkin_LIBRARIES}
+#    ${PROJECT_NAME}
+#    Qt5::Charts
+#    Qt5::Widgets
+#    dbscan_line
+#    )
 
+# add_executable(create_grid3d_node src/create_grid3d_node.cpp) 
+# target_link_libraries(create_grid3d_node ${PROJECT_NAME})
 
 #############
 ## Install ##
@@ -151,7 +181,7 @@ target_link_libraries(catenary_checker_manager_node
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
 #   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
+#   FILES_MATCHING PATTERN "*.h*"
 #   PATTERN ".svn" EXCLUDE
 # )
 

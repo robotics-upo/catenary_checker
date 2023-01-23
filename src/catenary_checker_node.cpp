@@ -1,42 +1,62 @@
-#include <vector>
+#include <catenary_checker/catenary_checker_node.h>
 
-#include <pcl_ros/transforms.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <catenary_checker/catenary_checker.hpp>
-#include <sensor_msgs/PointCloud2.h>
-#include <ros/ros.h>
-#include <tf2_ros/transform_listener.h>
-#include <visualization_msgs/Marker.h>
-#include <catenary_checker/obstacle_2d.hpp>
-#include <catenary_checker/parable.hpp>
 
-//! Global data
-sensor_msgs::PointCloud2 pc;
-tf2_ros::Buffer tf_buffer;
-std::string base_frame, global_frame;
-float plane_dist = 0.5;
-// DBScan related
-int dbscan_min_points;
-float dbscan_epsilon, dbscan_gamma, dbscan_theta;
-bool use_dbscan_lines;
+catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
+{
+  // --- Inicializacion de ROS. No hace falta tocar
+  std::string node_name = "catenary_checker";
 
-bool get_catenary;
+  // ros::NodeHandle nh, lnh("~");
 
-ros::Publisher pc_publisher, marker_publisher;
-bool publish_pc = true;
-bool publish_marker = true;
+  tf2_ros::TransformListener tfl(tf_buffer);
 
-visualization_msgs::Marker pointsToMarker(const std::vector<Point> &points,
-					  const std::string frame_id, int n_lines = -1);
+  // Subscribe the node to the point cloud from the ROS bag file.
+  // The topic has to be remapped to points2
+  // ros::Subscriber pc_sub = nh->subscribe<sensor_msgs::PointCloud2>("points2", 1, pointCloudCb);
+  ros::Subscriber pc_sub = nh->subscribe("points2", 1, &catenaryChecker::pointCloudCb, this);
 
-void pointCloudCb(const sensor_msgs::PointCloud2ConstPtr &pc_msg)
+  // ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("pose", 1, checkCatenary);
+
+  base_frame = nh->param<std::string>("base_frame_id", std::string("base_link"));
+  global_frame = nh->param<std::string>("global_frame_id", std::string("map"));
+  plane_dist = nh->param<float>("plane_dist", 0.5f);
+  publish_pc = nh->param<bool>("publish_pc", true);
+  publish_marker = nh->param<bool>("publish_marker", true);
+     
+  // DBScan params
+  dbscan_min_points = nh->param<int>("dbscan_min_points", 10);
+  dbscan_epsilon = nh->param<float>("dbscan_epsilon", 0.1);
+  dbscan_gamma = nh->param<float>("dbscan_gamma", 0.1);
+  dbscan_theta = nh->param<float>("dbscan_theta", 0.1);
+  use_dbscan_lines = nh->param<bool>("use_dbscan_lines", true);
+
+  ROS_INFO("Catenary checker node. Global frame: %s. Base frame: %s",
+	   base_frame.c_str(), global_frame.c_str());
+  ROS_INFO("Plane dist: %f. Publish pc, marker: %d, %d ", plane_dist, publish_pc, publish_marker);
+  ROS_INFO("DBscan epsilon: %f. DBScan min points: %d ", dbscan_epsilon, dbscan_min_points);
+  if (use_dbscan_lines) {
+    ROS_INFO("Using DBScan Lines. Gamma: %f. Theta: %f", dbscan_gamma, dbscan_theta);
+  }
+
+  if (publish_pc) {
+    pc_publisher = nh->advertise<sensor_msgs::PointCloud2>("plane_pc", 2, true);
+  }
+
+  if (publish_marker) {
+    marker_publisher = nh->advertise<visualization_msgs::Marker>("segmented_pc", 2, true);
+  }
+
+}
+
+
+void catenaryChecker::pointCloudCb(const sensor_msgs::PointCloud2ConstPtr &pc_msg)
 {
   pc = *pc_msg;
 }
 
 //! Gets a point and checks if there exists
 // void checkCatenary(const geometry_msgs::PoseStampedConstPtr &target_pose) //Commented by SMR to integrate in RRT
-bool analyticalCheckCatenary(const geometry_msgs::PointConstPtr &pi_, const geometry_msgs::PointConstPtr &pf_)
+bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_)
 {
   static int seq = 0;
   // Get the pose of the robot or die
@@ -48,11 +68,11 @@ bool analyticalCheckCatenary(const geometry_msgs::PointConstPtr &pi_, const geom
     // pcl::PointXYZ robot(static_cast<float>(transformStamped.transform.translation.x), //Commented by SMR to integrate in RRT
 		// 	static_cast<float>(transformStamped.transform.translation.y),
 		// 	static_cast<float>(transformStamped.transform.translation.z));
-    pcl::PointXYZ robot(static_cast<float>(pi_->x), static_cast<float>(pi_->y),	static_cast<float>(pi_->z));
+    pcl::PointXYZ robot(static_cast<float>(pi_.x), static_cast<float>(pi_.y),	static_cast<float>(pi_.z));
     // pcl::PointXYZ target(static_cast<float>(target_pose->pose.position.x),           //Commented by SMR to integrate in RRT
 		// 	 static_cast<float>(target_pose->pose.position.y),
 		// 	 static_cast<float>(target_pose->pose.position.z));
-    pcl::PointXYZ target(static_cast<float>(pf_->x), static_cast<float>(pf_->y), static_cast<float>(pf_->z));
+    pcl::PointXYZ target(static_cast<float>(pf_.x), static_cast<float>(pf_.y), static_cast<float>(pf_.z));
 
     pcl::PointCloud<pcl::PointXYZ> pcl_pc;
     pcl::PCLPointCloud2 pcl_pc2;
@@ -120,57 +140,7 @@ bool analyticalCheckCatenary(const geometry_msgs::PointConstPtr &pi_, const geom
   return get_catenary;
 }
 
-int main (int argc, char **argv)
-{
-  // --- Inicializacion de ROS. No hace falta tocar
-  std::string node_name = "catenary_checker";
-  ros::init(argc, argv, node_name);
-
-  ros::NodeHandle nh, lnh("~");
-
-  tf2_ros::TransformListener tfl(tf_buffer);
-
-  // Subscribe the node to the point cloud from the ROS bag file.
-  // The topic has to be remapped to points2
-  ros::Subscriber pc_sub = nh.subscribe<sensor_msgs::PointCloud2>("points2", 1, pointCloudCb);
-  // ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("pose", 1, checkCatenary);
-
-  base_frame = lnh.param<std::string>("base_frame_id", std::string("base_link"));
-  global_frame = lnh.param<std::string>("global_frame_id", std::string("map"));
-  plane_dist = lnh.param<float>("plane_dist", 0.5f);
-  publish_pc = lnh.param<bool>("publish_pc", true);
-  publish_marker = lnh.param<bool>("publish_marker", true);
-     
-  // DBScan params
-  dbscan_min_points = lnh.param<int>("dbscan_min_points", 10);
-  dbscan_epsilon = lnh.param<float>("dbscan_epsilon", 0.1);
-  dbscan_gamma = lnh.param<float>("dbscan_gamma", 0.1);
-  dbscan_theta = lnh.param<float>("dbscan_theta", 0.1);
-  use_dbscan_lines = lnh.param<bool>("use_dbscan_lines", true);
-
-  ROS_INFO("Catenary checker node. Global frame: %s. Base frame: %s",
-	   base_frame.c_str(), global_frame.c_str());
-  ROS_INFO("Plane dist: %f. Publish pc, marker: %d, %d ", plane_dist, publish_pc, publish_marker);
-  ROS_INFO("DBscan epsilon: %f. DBScan min points: %d ", dbscan_epsilon, dbscan_min_points);
-  if (use_dbscan_lines) {
-    ROS_INFO("Using DBScan Lines. Gamma: %f. Theta: %f", dbscan_gamma, dbscan_theta);
-  }
-
-  if (publish_pc) {
-    pc_publisher = nh.advertise<sensor_msgs::PointCloud2>("plane_pc", 2, true);
-  }
-
-  if (publish_marker) {
-    marker_publisher = nh.advertise<visualization_msgs::Marker>("segmented_pc", 2, true);
-  }
-
-  ros::spin();
-
-  return 0;
-}
-
-
-std_msgs::ColorRGBA getColor(int num) {
+std_msgs::ColorRGBA catenaryChecker::getColor(int num) {
   
   // Different colors for planes
   const int n_colors = 10;
@@ -243,7 +213,7 @@ std_msgs::ColorRGBA getColor(int num) {
   return color;
 }
 
-std_msgs::ColorRGBA getGray(int num) {
+std_msgs::ColorRGBA catenaryChecker::getGray(int num) {
   int i = num % 5;
   std_msgs::ColorRGBA color;
   color.a = 1.0;
@@ -256,7 +226,7 @@ std_msgs::ColorRGBA getGray(int num) {
 }
 
 
-visualization_msgs::Marker pointsToMarker(const std::vector<Point> &points,
+visualization_msgs::Marker catenaryChecker::pointsToMarker(const std::vector<Point> &points,
 					  const std::string frame_id, int n_lines){
   visualization_msgs::Marker _marker;
   _marker.header.frame_id = frame_id;
@@ -299,4 +269,20 @@ visualization_msgs::Marker pointsToMarker(const std::vector<Point> &points,
   return _marker;
 }
 
+// int main (int argc, char **argv)
+// {
+//   std::string node_name = "catenary_checker_node";
 
+//   ros::init(argc, argv, node_name);
+
+//   ros::NodeHandlePtr nh;
+
+//   catenaryChecker cc(nh);
+
+//   while (ros::ok()) {
+//     ros::spinOnce();
+//         // r.sleep();
+//   }	
+
+//   return 0;
+// }

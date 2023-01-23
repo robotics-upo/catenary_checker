@@ -6,10 +6,12 @@ CatenaryCheckerManager::CatenaryCheckerManager(std::string node_name_)
     nh.reset(new ros::NodeHandle("~"));
 
 	grid_3D = new Grid3d(node_name_);
+	cc = new catenaryChecker(nh);
     
-    nh->param<bool>("use_analytical_method",use_analytical_method, false);
+    // nh->param<bool>("use_analytical_method",use_analytical_method, false);
+    use_analytical_method = false;
 
-    point_cloud_sub_ = nh->subscribe( "/octomap_point_cloud_centers", 1, &CatenaryCheckerManager::PointCloudCallback, this);
+    point_cloud_sub_ = nh->subscribe<sensor_msgs::PointCloud2>("/octomap_point_cloud_centers", 1, &CatenaryCheckerManager::PointCloudCallback, this);
 
     if (use_analytical_method)
         ROS_INFO(PRINTF_GREEN "Catenary Checker Manager: Using ANALYTICAL METHOD");
@@ -33,17 +35,17 @@ void CatenaryCheckerManager::Init(double dist_cat_, double l_cat_max_, double ws
     use_distance_function = false;
     catenary_state = false;
 }
-void CatenaryCheckerManager::SearchCatenary(const geometry_msgs::PointConstPtr &pi_, const geometry_msgs::PointConstPtr &pf_, std::vector<geometry_msgs::Point> &pts_c_)
+void CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
 {
     if (use_analytical_method)
-        analyticalCheckCatenary(pi_, pf_);
+        cc->analyticalCheckCatenary(pi_, pf_);
     else
         NumericalSolutionCatenary(pi_, pf_ ,pts_c_);
 }
 
-bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::PointConstPtr &p_reel_, const geometry_msgs::PointConstPtr &p_final_, std::vector<geometry_msgs::Point> &points_catenary_)
+bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_)
 {
-	double dist_init_final_ = sqrt(pow(p_reel_->x - p_final_->x,2) + pow(p_reel_->y - p_final_->y,2) + pow(p_reel_->z - p_final_->z,2));
+	double dist_init_final_ = sqrt(pow(p_reel_.x - p_final_.x,2) + pow(p_reel_.y - p_final_.y,2) + pow(p_reel_.z - p_final_.z,2));
 	double delta_ = 0.0;	//Initial Value
 	bool check_catenary = true;
 	bool founded_catenary = false;
@@ -66,7 +68,7 @@ bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Poin
 			check_catenary = false;
 			break;
 		}
-		bool just_one_axe = bc.configBisection(length_catenary_, p_reel_->x, p_reel_->y, p_reel_->z, p_final_->x, p_final_->y, p_final_->z, false);
+		bool just_one_axe = bc.configBisection(length_catenary_, p_reel_.x, p_reel_.y, p_reel_.z, p_final_.x, p_final_.y, p_final_.z, false);
 		bc.getPointCatenary3D(points_catenary_);
 
 		double d_min_point_cat = 100000;
@@ -105,7 +107,7 @@ bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Poin
 			if (check_catenary && !increase_catenary){
 				founded_catenary = true;
 				check_catenary = false;
-				length_catenary_ = length_catenary_;
+				length_cat_final = length_catenary_;
 			}
 		}
 		else{
