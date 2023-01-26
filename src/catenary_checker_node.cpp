@@ -13,7 +13,7 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   // Subscribe the node to the point cloud from the ROS bag file.
   // The topic has to be remapped to points2
   // ros::Subscriber pc_sub = nh->subscribe<sensor_msgs::PointCloud2>("points2", 1, pointCloudCb);
-  ros::Subscriber pc_sub = nh->subscribe("/octomap_point_cloud_centers", 1, &catenaryChecker::pointCloudCb, this);
+  // ros::Subscriber pc_sub = nh->subscribe("/octomap_point_cloud_centers", 1, &catenaryChecker::pointCloudCb, this);
 
   // ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>("pose", 1, checkCatenary);
 
@@ -45,20 +45,22 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   if (publish_marker) {
     marker_publisher = nh->advertise<visualization_msgs::Marker>("segmented_pc", 2, true);
   }
-
 }
 
 
-void catenaryChecker::pointCloudCb(const sensor_msgs::PointCloud2ConstPtr &pc_msg)
+void catenaryChecker::getPointCloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
 {
-  pc = *pc_msg;
+  pc = pc_msg;
+  ROS_INFO(PRINTF_YELLOW "catenaryChecker::getPointCloud: Received Point Cloud heigth=%i width=%i",pc->height, pc->width);
 }
 
 //! Gets a point and checks if there exists
 // void checkCatenary(const geometry_msgs::PoseStampedConstPtr &target_pose) //Commented by SMR to integrate in RRT
-bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_)
+bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
 {
   static int seq = 0;
+  pts_c_.clear();
+  geometry_msgs::Point pts_; // To save Catenary point
   // Get the pose of the robot or die
   // geometry_msgs::TransformStamped transformStamped;    //Commented by SMR to integrate in RRT
   DBSCAN *dbscan = NULL;
@@ -75,22 +77,28 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     pcl::PointXYZ target(static_cast<float>(pf_.x), static_cast<float>(pf_.y), static_cast<float>(pf_.z));
 
     pcl::PointCloud<pcl::PointXYZ> pcl_pc;
+    pcl_pc.clear();
     pcl::PCLPointCloud2 pcl_pc2;
-    pcl_conversions::moveToPCL(pc, pcl_pc2);
-    pcl::fromPCLPointCloud2(pcl_pc2, pcl_pc); // TODO: Avoid conversions!!
 
-    ROS_INFO("Robot: %f %f %f \t Target: %f %f %f", robot.x, robot.y, robot.z,
-	     target.x, target.y, target.z);
-    ROS_INFO("Got PC. Sizes: original:%lu \t pcl_2:%lu \t pcl_pc:%lu",
-	     pc.data.size(), pcl_pc2.data.size(), pcl_pc.size());
+    // pcl_conversions::moveToPCL(*pc, pcl_pc2);
+     pcl_conversions::toPCL(*pc,pcl_pc2);
+
+    pcl::fromPCLPointCloud2(pcl_pc2, pcl_pc); // TODO: Avoid conversions!!
+    
+    // auto check_cat = checkCatenary(robot, target, pcl_pc, plane_dist, dbscan_min_points, dbscan_epsilon);
+
+    // ROS_INFO("Robot: %f %f %f \t Target: %f %f %f", robot.x, robot.y, robot.z,
+	  //    target.x, target.y, target.z);
+    // ROS_INFO("Got PC. Sizes: original:%lu \t pcl_2:%lu \t pcl_pc:%lu",
+	  //    pc->data.size(), pcl_pc2.data.size(), pcl_pc.size());
 
     auto points_2d = project2D(pcl_pc, robot, target, plane_dist);
-    ROS_INFO("Obtained 2D cloud projection. Number of points: %lu", points_2d.size());
+    // ROS_INFO("Obtained 2D cloud projection. Number of points: %lu", points_2d.size());
     if (publish_pc) {
       auto points_3d = reproject3D(points_2d, robot, target);
 
-      ROS_INFO("Publishing 2D cloud reconverted to 3D . Number of points: %lu",
-	       points_3d.size());
+      // ROS_INFO("Publishing 2D cloud reconverted to 3D . Number of points: %lu",
+	    //    points_3d.size());
 
       pcl::toPCLPointCloud2(points_3d, pcl_pc2);
          
@@ -109,17 +117,17 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     } else {
       dbscan = clusterize(points_2d, dbscan_min_points, dbscan_epsilon);
     }
-    ROS_INFO("Clusterized with DBSCAN. N_clusters: %d. \tN_points: %lu",
-	     dbscan->getNClusters(), dbscan->getPoints().size());
+    // ROS_INFO("Clusterized with DBSCAN. N_clusters: %d. \tN_points: %lu",
+	  //    dbscan->getNClusters(), dbscan->getPoints().size());
     if (publish_marker) {
-      ROS_INFO("Trying to publish marker");
+      // ROS_INFO("Trying to publish marker");
       marker_publisher.publish(pointsToMarker(dbscan->getPoints(), global_frame, 1000));
     }
-    ROS_INFO("Marker published");
+    // ROS_INFO("Marker published");
 
     //Tranlate to Obstacles 2D
     std::vector<Obstacle2D> scenario = getObstacles(dbscan); 
-    ROS_INFO("Got the scenario");
+    // ROS_INFO("Got the scenario");
     
     // Get the initial parable (line between A and B)
     auto plane = getVerticalPlane(robot,target); 
@@ -128,8 +136,45 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     Parable parable;
     get_catenary = parable.approximateParable(scenario, A, B);
 
+    // ROS_INFO("Got parable: %s", parable.toString().c_str()); 
 
-    ROS_INFO("Got parable: %s", parable.toString().c_str()); 
+    pcl::PointCloud<pcl::PointXYZ> pc_catenary = getParablePoints(parable,robot,target);
+    double d_ = sqrt(pow(robot.x - target.x,2)+pow(robot.y - target.y,2)+pow(robot.z - target.z,2));
+    length_cat = parable.getLength(robot.x, target.x);
+    if (length_cat < d_)
+      length_cat = d_ * 1.001;
+    // std::cout << "length_cat= " << length_cat << std::endl;
+		double d_min_point_cat = 100000.0;
+    int num_pts_per_unit_length = 10;
+    int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
+    if (pc_catenary.size() < num_pts_cat_)
+      num_pts_cat_ = pc_catenary.size();
+    int quot = round((int)pc_catenary.size() / num_pts_cat_);
+    // std::cout << "length_cat= " << length_cat << std::endl;
+
+    // if (pc_catenary.size() < 1){
+    //    /********************* To obligate pause method and check Planning result *********************/
+		//     std::string y_ ;
+		//     std::cout << " ***(pc_catenary.size() < 1 Press key to continue: " << std::endl;
+		//     std::cin >> y_ ;
+    //     int flag_ = 1/pc_catenary.size();
+		//     /*************************************************************************************************/
+    // }
+
+    for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
+      // std::cout << "i=[" << i << "] , pc_catenary.size()/quot=[" << i%quot << "]" << std::endl;
+      if (i%quot == 0){
+        pts_.x = pc_catenary.points[i].x; 
+        pts_.y = pc_catenary.points[i].y; 
+        pts_.z = pc_catenary.points[i].z; 
+        pts_c_.push_back(pts_);
+        double dist_cat_obs = getPointDistanceFullMap(use_distance_function, pts_);
+        if (d_min_point_cat > dist_cat_obs)
+          min_dist_obs_cat = dist_cat_obs;
+      }
+    }
+    // std::cout << "pc_catenary.size()= " << pc_catenary.size() << " , pts_.size()=" << pts_c_.size() <<" , num_pts_cat_= " << num_pts_cat_ << " , quot= " << quot << std::endl;
+
   }
   catch (tf2::TransformException &ex) {
     ROS_WARN("%s",ex.what());
@@ -225,9 +270,7 @@ std_msgs::ColorRGBA catenaryChecker::getGray(int num) {
   return color;
 }
 
-
-visualization_msgs::Marker catenaryChecker::pointsToMarker(const std::vector<Point> &points,
-					  const std::string frame_id, int n_lines){
+visualization_msgs::Marker catenaryChecker::pointsToMarker(const std::vector<Point> &points, const std::string frame_id, int n_lines){
   visualization_msgs::Marker _marker;
   _marker.header.frame_id = frame_id;
   _marker.header.stamp = ros::Time::now();
@@ -267,6 +310,36 @@ visualization_msgs::Marker catenaryChecker::pointsToMarker(const std::vector<Poi
   }
 
   return _marker;
+}
+
+double catenaryChecker::getPointDistanceFullMap(bool use_dist_func_, geometry_msgs::Point p_)
+{
+	double dist;
+	Eigen::Vector3d obs_, pos_;
+
+	if(use_dist_func_){
+		bool is_into_ = grid_3D->isIntoMap(p_.x,p_.y,p_.z);
+		if(is_into_)
+			dist =  grid_3D->getPointDist((double)p_.x,(double)p_.y,(double)p_.z) ;
+		else
+			dist = -1.0;
+	}
+	else{
+		pos_.x() = p_.x;
+		pos_.y() = p_.y; 
+		pos_.z() = p_.z; 
+		obs_ = nn_obs.nearestObstacleMarsupial(nn_obs.kdtree, pos_, nn_obs.obs_points);
+		dist = sqrt(pow(obs_.x()-pos_.x(),2) + pow(obs_.y()-pos_.y(),2) + pow(obs_.z()-pos_.z(),2));
+	}
+
+	return dist;
+}
+
+void catenaryChecker::getDataForDistanceinformation(Grid3d *grid3D_, const sensor_msgs::PointCloud2::ConstPtr& msg, bool use_distance_function_)
+{
+	grid_3D = grid3D_;
+  nn_obs.setInput(*msg);
+  use_distance_function = use_distance_function_;
 }
 
 // int main (int argc, char **argv)

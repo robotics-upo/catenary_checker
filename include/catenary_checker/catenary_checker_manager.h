@@ -17,8 +17,9 @@
 #include <catenary_checker/parable.hpp>
 #include <catenary_checker/grid3d.hpp>
 #include "catenary_checker/bisection_catenary_3D.h"
+#include "catenary_checker/near_neighbor.hpp"
 
-
+#define PRINTF_YELLOW "\x1B[33m"
 #define PRINTF_GREEN "\x1B[32m"
 
 class CatenaryCheckerManager
@@ -29,7 +30,7 @@ public:
     // ~CatenaryCheckerManager();
     void PointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
     void Init(double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_analytical_method_);
-    void SearchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_);
+    bool SearchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_);
     bool NumericalSolutionCatenary(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_);
     double getPointDistanceFullMap(bool use_dist_func_, geometry_msgs::Vector3 p_);
 

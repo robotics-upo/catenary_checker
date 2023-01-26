@@ -13,8 +13,7 @@
 //! @param dist Maximum distance from an obstacle to the plane to be included
 //! @param obstacles Obstacles in the environment
 //! @return The length of the catenary, or -1 if not found
-float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,
-		    const pcl::PointCloud<pcl::PointXYZ> &pc, float dist);
+float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon);
 
 class PlaneParams {
 public:

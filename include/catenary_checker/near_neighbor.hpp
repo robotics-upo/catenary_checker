@@ -114,7 +114,7 @@ inline Eigen::Vector3d NearNeighbor::nearestObstacleVertex(const pcl::KdTreeFLAN
 inline Eigen::Vector3d NearNeighbor::nearestObstacleMarsupial(const pcl::KdTreeFLANN <pcl::PointXYZ> &kdT_, Eigen::Vector3d vert_, pcl::PointCloud <pcl::PointXYZ>::Ptr o_p_ )
 {
 	Eigen::Vector3d ret_;
-	
+
 	pcl::PointXYZ searchPoints(vert_.x(),vert_.y(),vert_.z());
 
 	// K nearest neighbor search

@@ -52,7 +52,7 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
   if (_a == 0.0 && _b == 0.0 && _c == 0.0) {
     _b = (A.y - B.y)/(A.x - B.x);
     _c = A.y - _b * A.x;
-    std::cout << "Primera parabola. Parametros: " << toString() << "\n";
+    // std::cout << "Primera parabola. Parametros: " << toString() << "\n";
   }
 
   std::function<float(float)> f = std::bind(&Parable::apply, this, std::placeholders::_1);
@@ -63,11 +63,11 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
     }
   }
 
-  std::cout << "Parable::approximateParable -->  adding intersecting obstacles: number: "
-	    << artificial_obs.size() << std::endl;
+  // std::cout << "Parable::approximateParable -->  adding intersecting obstacles: number: "
+	//     << artificial_obs.size() << std::endl;
 
   if (artificial_obs.size() < 3 ) {
-    std::cout << "Parabola aproximada." << std::endl;
+    // std::cout << "Parabola aproximada." << std::endl;
     return true;
   }
 
@@ -78,9 +78,9 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
 
   for (auto &x:artificial_obs.convex_hull) {
     if (x.y < A.y || x.x < min_x || x.x > max_x) {
-      std::cout << "Parable::approximateParable ";  
-      std::cout << "Convex Hull failure: not restricted to the limits" << std::endl;
-      std::cout << "Conflicting point: " << x.toString() << std::endl;
+      // std::cout << "Parable::approximateParable ";  
+      // std::cout << "Convex Hull failure: not restricted to the limits" << std::endl;
+      // std::cout << "Conflicting point: " << x.toString() << std::endl;
       return false;
     }
   }
@@ -108,14 +108,14 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
   float lx = - _b/(2*_a);
   float ly = apply(lx);
   if (ly < min_y) {
-    std::cout << "Error: Parable::approximateParable the parable passes below: "
-	      << min_y << std::endl;
+    // std::cout << "Error: Parable::approximateParable the parable passes below: "
+	  //     << min_y << std::endl;
     return false;
   }
 
-  std::cout << "Parable::approximateParable. New params: " << toString() << std::endl;
+  // std::cout << "Parable::approximateParable. New params: " << toString() << std::endl;
   if (back == *this) {
-    std::cout << "Error: Parable::approximateParable: Detected same parable --> fail";
+    // std::cout << "Error: Parable::approximateParable: Detected same parable --> fail";
     return false;
   }
 

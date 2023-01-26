@@ -24,9 +24,8 @@ pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::Poi
   return reproject3D(parable2d, A, B);
 }
 
-float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,
-		    const pcl::PointCloud<pcl::PointXYZ> &pc, double plane_dist,
-		    float dbscan_min_points, float dbscan_epsilon) {
+float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon) 
+{
 
   double ret_val = -1.0;
 
@@ -60,8 +59,10 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
 					const pcl::PointXYZ &p1,
 					const pcl::PointXYZ &p2, const float max_dist)
 {
+  // std::cout << "project2D sizes: cloud_in:[" << cloud_in.size()  << "] , p1:[" << p1.x << " " << p1.y << " " << p1.z <<"] , p2:[" << p2.x << " " << p2.y << " " << p2.z <<  "] , max_dist:[" << max_dist << std::endl;
+
   PlaneParams plane = getVerticalPlane(p1, p2);
-  pcl::PointCloud<pcl::PointXY> ret;
+  pcl::PointCloud<pcl::PointXY> ret;  
 
   const std::chrono::steady_clock::time_point start(std::chrono::steady_clock::now());
 
@@ -70,9 +71,14 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
   float x_1_prima = -p1.x * plane.b + p1.y * plane.a;
   float x_2_prima = -p2.x * plane.b + p2.y * plane.a;
 
+  // std::cout << " x_1_prima = " << x_1_prima << " , x_2_prima = " << x_2_prima << std::endl;
+
   float min_x = std::min(x_1_prima, x_2_prima);
   float max_x = std::max(x_1_prima, x_2_prima);
   float max_y = std::max(p1.z, p2.z);
+
+  // std::cout << " min_x = " << min_x << " , max_x = " << max_x << " , max_y = " << max_y << std::endl;
+
 
   for (int i = cloud_in.size() - 1; i >= 0 ; i--) {
     const pcl::PointXYZ &p = cloud_in[i];
@@ -104,10 +110,10 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
   }
   const std::chrono::steady_clock::time_point end(std::chrono::steady_clock::now());
 
-  std::cout << "Project2d. Cloud in size: " << cloud_in.size() << std::endl;
-  std::cout << "Got plane: " << plane.toString() << std::endl;
+  // std::cout << "Project2d. Cloud in size: " << cloud_in.size() << std::endl;
+  // std::cout << "Got plane: " << plane.toString() << std::endl;
   const auto t = std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count();
-  std::cout << "Elapsed time: " << t << " us\n";
+  // std::cout << "Elapsed time: " << t << " us\n";
 
   return ret;
 }
@@ -210,7 +216,7 @@ std::vector<Obstacle2D> getObstacles(DBSCAN *dbscan) {
   int dbscan_min_points = dbscan->getMinimumClusterSize();
   for (int i = 1; i < dbscan->getNClusters(); i++) {
     auto cluster = dbscan->getCluster(i);
-    printf("Cluster %d. Size: %lu", i, cluster.size());
+    // printf("Cluster %d. Size: %lu", i, cluster.size());
     if (cluster.size() > dbscan_min_points) {
       auto curr_obstacle = toObstacle(cluster);
       ret.push_back(curr_obstacle);
