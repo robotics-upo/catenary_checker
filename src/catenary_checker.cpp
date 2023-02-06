@@ -79,7 +79,6 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
 
   // std::cout << " min_x = " << min_x << " , max_x = " << max_x << " , max_y = " << max_y << std::endl;
 
-
   for (int i = cloud_in.size() - 1; i >= 0 ; i--) {
     const pcl::PointXYZ &p = cloud_in[i];
     float dist = plane.getSignedDistance(p);
@@ -87,9 +86,7 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
     if (fabsf(dist) < max_dist) {
             
       // Get the point of the plane
-      pcl::PointXYZ p_plane(p.x - plane.a * dist, 
-			    p.y - plane.b * dist, 
-			    p.z);
+      pcl::PointXYZ p_plane(p.x - plane.a * dist, p.y - plane.b * dist, p.z);
 
       // std::cout << "Adding Point. (" << p.x << ", " << p.y << ", "
       // << p.z << ")\t Abs Dist: " << fabsf(dist) << "\n";
@@ -101,10 +98,8 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
 
       // Before adding the points, check if they pass these
 
-      if (projected_point.x > min_x && projected_point.x < max_x &&
-	  projected_point.y < max_y) {
-
-	ret.push_back(projected_point);
+      if (projected_point.x > min_x && projected_point.x < max_x && projected_point.y < max_y) {
+	      ret.push_back(projected_point);
       }
     }
   }
@@ -118,8 +113,7 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
   return ret;
 }
 
-pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
-					   const pcl::PointXYZ &p1, const pcl::PointXYZ &p2)
+pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, const pcl::PointXYZ &p1, const pcl::PointXYZ &p2)
 {
   pcl::PointCloud<pcl::PointXYZ> ret;
   pcl::PointXYZ delta(p2);

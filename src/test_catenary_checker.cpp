@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
   std::vector<Obstacle2D> scenario;
 
   Point2D p1, p2;
-  p1.x = 3;   p1.y = 3.5; 
+  p1.x = 3;   p1.y = 3.0; 
   p2.x = 4.2; p2.y = 4.7;
 
   scenario.push_back(Obstacle2D::rectangle(p1, p2));

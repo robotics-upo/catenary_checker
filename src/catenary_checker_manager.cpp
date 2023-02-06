@@ -43,12 +43,18 @@ bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Point &pi_, con
    bool is_founded;
    pts_c_.clear();
     if (use_analytical_method){
-        is_founded = cc->analyticalCheckCatenary(pi_, pf_, pts_c_);
+        if(is_founded = cc->analyticalCheckCatenary(pi_, pf_, pts_c_)){
+			min_dist_obs_cat = cc->min_dist_obs_cat;
+			length_cat_final = cc->length_cat;
+		}
+		else{
+			min_dist_obs_cat = -1.0;
+			length_cat_final = -1.0;
+		}
 		// for (size_t i = 0; i < pts_c_.size() ; i++){
 		// 	printf("CatenaryCheckerManager::SearchCatenary: pts_c_[%f %f %f]\n", pts_c_[i].x,pts_c_[i].y,pts_c_[i].z);
 		// }
-		min_dist_obs_cat = cc->min_dist_obs_cat;
-		length_cat_final = cc->length_cat;
+		// printf("is_founded catenary = %s \t\n\n",is_founded?"true":"false");
     }
 	else
         is_founded = NumericalSolutionCatenary(pi_, pf_ ,pts_c_);

@@ -57,6 +57,8 @@ using namespace std;
 ////////////
 std::vector<Point2D> findConvexHull(std::vector<Point2D> inputPoints)
 {
+    // std::cout << "findConvexHull inputPoints.size() = " << inputPoints.size() << "\n";
+  
   if(inputPoints.size() < 3) {
     std::cout << "Error - findConvexHull must be called with at least 3 points.";
     throw("findConvexHull");

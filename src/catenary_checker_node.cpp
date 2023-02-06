@@ -30,8 +30,7 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   dbscan_theta = nh->param<float>("dbscan_theta", 0.1);
   use_dbscan_lines = nh->param<bool>("use_dbscan_lines", true);
 
-  ROS_INFO("Catenary checker node. Global frame: %s. Base frame: %s",
-	   base_frame.c_str(), global_frame.c_str());
+  ROS_INFO("Catenary checker node. Global frame: %s. Base frame: %s", base_frame.c_str(), global_frame.c_str());
   ROS_INFO("Plane dist: %f. Publish pc, marker: %d, %d ", plane_dist, publish_pc, publish_marker);
   ROS_INFO("DBscan epsilon: %f. DBScan min points: %d ", dbscan_epsilon, dbscan_min_points);
   if (use_dbscan_lines) {
@@ -87,18 +86,15 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     
     // auto check_cat = checkCatenary(robot, target, pcl_pc, plane_dist, dbscan_min_points, dbscan_epsilon);
 
-    // ROS_INFO("Robot: %f %f %f \t Target: %f %f %f", robot.x, robot.y, robot.z,
-	  //    target.x, target.y, target.z);
-    // ROS_INFO("Got PC. Sizes: original:%lu \t pcl_2:%lu \t pcl_pc:%lu",
-	  //    pc->data.size(), pcl_pc2.data.size(), pcl_pc.size());
+    // ROS_INFO("Robot: %f %f %f \t Target: %f %f %f", robot.x, robot.y, robot.z, target.x, target.y, target.z);
+    // ROS_INFO("Got PC. Sizes: original:%lu \t pcl_2:%lu \t pcl_pc:%lu", pc->data.size(), pcl_pc2.data.size(), pcl_pc.size());
 
     auto points_2d = project2D(pcl_pc, robot, target, plane_dist);
     // ROS_INFO("Obtained 2D cloud projection. Number of points: %lu", points_2d.size());
     if (publish_pc) {
       auto points_3d = reproject3D(points_2d, robot, target);
 
-      // ROS_INFO("Publishing 2D cloud reconverted to 3D . Number of points: %lu",
-	    //    points_3d.size());
+      // ROS_INFO("Publishing 2D cloud reconverted to 3D . Number of points: %lu", points_3d.size());
 
       pcl::toPCLPointCloud2(points_3d, pcl_pc2);
          
@@ -112,67 +108,95 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     }
          
     if (use_dbscan_lines) {
-      dbscan = clusterize_lines(points_2d, dbscan_min_points, dbscan_epsilon,
-				dbscan_gamma, dbscan_theta);
+      dbscan = clusterize_lines(points_2d, dbscan_min_points, dbscan_epsilon, dbscan_gamma, dbscan_theta);
     } else {
       dbscan = clusterize(points_2d, dbscan_min_points, dbscan_epsilon);
     }
-    // ROS_INFO("Clusterized with DBSCAN. N_clusters: %d. \tN_points: %lu",
-	  //    dbscan->getNClusters(), dbscan->getPoints().size());
+    // ROS_INFO("Clusterized with DBSCAN. N_clusters: %d. \tN_points: %lu",dbscan->getNClusters(), dbscan->getPoints().size());
     if (publish_marker) {
       // ROS_INFO("Trying to publish marker");
       marker_publisher.publish(pointsToMarker(dbscan->getPoints(), global_frame, 1000));
     }
     // ROS_INFO("Marker published");
 
-    //Tranlate to Obstacles 2D
-    std::vector<Obstacle2D> scenario = getObstacles(dbscan); 
-    // ROS_INFO("Got the scenario");
-    
-    // Get the initial parable (line between A and B)
-    auto plane = getVerticalPlane(robot,target); 
-    Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
-    Point2D B(target.y * plane.a - target.x * plane.b, target.z);
-    Parable parable;
-    get_catenary = parable.approximateParable(scenario, A, B);
-
-    // ROS_INFO("Got parable: %s", parable.toString().c_str()); 
-
-    pcl::PointCloud<pcl::PointXYZ> pc_catenary = getParablePoints(parable,robot,target);
-    double d_ = sqrt(pow(robot.x - target.x,2)+pow(robot.y - target.y,2)+pow(robot.z - target.z,2));
-    length_cat = parable.getLength(robot.x, target.x);
-    if (length_cat < d_)
-      length_cat = d_ * 1.001;
+    // double d_ = sqrt(pow(robot.x - target.x,2)+pow(robot.y - target.y,2)+pow(robot.z - target.z,2));
+    // if (length_cat < d_)
+    //   length_cat = d_ * 1.001;
     // std::cout << "length_cat= " << length_cat << std::endl;
-		double d_min_point_cat = 100000.0;
+
     int num_pts_per_unit_length = 10;
-    int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
-    if (pc_catenary.size() < num_pts_cat_)
-      num_pts_cat_ = pc_catenary.size();
-    int quot = round((int)pc_catenary.size() / num_pts_cat_);
-    // std::cout << "length_cat= " << length_cat << std::endl;
-
-    // if (pc_catenary.size() < 1){
-    //    /********************* To obligate pause method and check Planning result *********************/
-		//     std::string y_ ;
-		//     std::cout << " ***(pc_catenary.size() < 1 Press key to continue: " << std::endl;
-		//     std::cin >> y_ ;
-    //     int flag_ = 1/pc_catenary.size();
-		//     /*************************************************************************************************/
-    // }
-
-    for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
-      // std::cout << "i=[" << i << "] , pc_catenary.size()/quot=[" << i%quot << "]" << std::endl;
-      if (i%quot == 0){
-        pts_.x = pc_catenary.points[i].x; 
-        pts_.y = pc_catenary.points[i].y; 
-        pts_.z = pc_catenary.points[i].z; 
-        pts_c_.push_back(pts_);
-        double dist_cat_obs = getPointDistanceFullMap(use_distance_function, pts_);
-        if (d_min_point_cat > dist_cat_obs)
-          min_dist_obs_cat = dist_cat_obs;
+    double d_min_point_cat = 100000.0;
+    
+    if (robot.x == target.x && robot.y == target.y)
+    {
+      length_cat = fabs(robot.z - target.z) *1.01;
+      int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
+      for (size_t i = 0 ; i < num_pts_cat_ ; i ++){
+          pts_.x = robot.x; 
+          pts_.y = robot.y; 
+          pts_.z = robot.z + (length_cat/num_pts_cat_)*(i+1); 
+          pts_c_.push_back(pts_);
+          double dist_cat_obs = getPointDistanceFullMap(use_distance_function, pts_);
+          if (d_min_point_cat > dist_cat_obs){
+            min_dist_obs_cat = dist_cat_obs;
+            d_min_point_cat = dist_cat_obs;
+          }
       }
     }
+    else
+    {
+      //Tranlate to Obstacles 2D
+      std::vector<Obstacle2D> scenario = getObstacles(dbscan); 
+      // ROS_INFO("scenario: %lu \n",scenario.size());
+      
+      // Get the initial parable (line between A and B)
+      auto plane = getVerticalPlane(robot,target); 
+      Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
+      Point2D B(target.y * plane.a - target.x * plane.b, target.z);
+      Parable parable;
+      get_catenary = parable.approximateParable(scenario, A, B);
+
+      if (!get_catenary)
+        return false;
+
+      // ROS_INFO("Got parable: %s", parable.toString().c_str()); 
+
+      pcl::PointCloud<pcl::PointXYZ> pc_catenary = getParablePoints(parable,robot,target);
+      
+      // if (robot.x - target.x > 0.1)
+        length_cat = parable.getLength(A.x, B.x);
+      // else 
+      //   length_cat = parable.getLength(robot.y, target.y);
+    
+      int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
+
+      if (pc_catenary.size() < num_pts_cat_)
+        num_pts_cat_ = pc_catenary.size();
+      int quot = round((int)pc_catenary.size() / num_pts_cat_);
+      // std::cout << "length_cat= " << length_cat << std::endl;
+
+      for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
+        // std::cout << "i=[" << i << "] , pc_catenary.size()/quot=[" << i%quot << "]" << std::endl;
+        if (i%quot == 0){
+          pts_.x = pc_catenary.points[i].x; 
+          pts_.y = pc_catenary.points[i].y; 
+          pts_.z = pc_catenary.points[i].z; 
+          pts_c_.push_back(pts_);
+          double dist_cat_obs = getPointDistanceFullMap(use_distance_function, pts_);
+          if (d_min_point_cat > dist_cat_obs){
+            min_dist_obs_cat = dist_cat_obs;
+            d_min_point_cat = dist_cat_obs;
+          }
+        }
+      }
+    }
+
+    //    /********************* To obligate pause method and check Planning result *********************/
+		    // std::string y_ ;
+		    // std::cout << " Press key to continue: " << std::endl;
+		    // std::cin >> y_ ;
+		//     /*************************************************************************************************/
+
     // std::cout << "pc_catenary.size()= " << pc_catenary.size() << " , pts_.size()=" << pts_c_.size() <<" , num_pts_cat_= " << num_pts_cat_ << " , quot= " << quot << std::endl;
 
   }
