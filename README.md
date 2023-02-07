@@ -5,9 +5,10 @@ Simple algorithm for check whether a catenary can be found in a environment in s
 
 The code presented here has been tested in Ubuntu 20.04, with ROS Noetic and requires qt5-charts and qt5-widgets libraries.
 
-To compile it, please download it into the src folder of your favourite catkin_ws. 
+To compile it, please download it into the src folder of your favourite catkin_ws.  (tested in Ubuntu 20.04)
 
 ```
+  sudo aptitude install libqt5charts5-dev libqt5widgets5    
   cd ~/catkin_ws/src
   git clone https://github.com/robotics-upo/catenary_checker
 ```
