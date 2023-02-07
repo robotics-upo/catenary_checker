@@ -3,12 +3,30 @@ Simple algorithm for check whether a catenary can be found in a environment in s
 
 ## Installation and dependencies
 
-The code presented here has been tested in Ubuntu 20.04, with ROS Noetic and requires qt5-charts and qt5-widgets libraries.
+The code presented here has been tested in Ubuntu 20.04, with ROS Noetic and requires qt5-charts and qt5-widgets libraries. To install them you can use apt-get (tested in Ubuntu 20.04):
 
-To compile it, please download it into the src folder of your favourite catkin_ws.  (tested in Ubuntu 20.04)
 
 ```
-  sudo aptitude install libqt5charts5-dev libqt5widgets5    
+  sudo apt-get install libqt5charts5-dev libqt5widgets5 
+```
+
+Moreover, it requires our wonderful DBScan-line library :
+```
+  git clone https://github.com/robotics-upo/dbscan_line
+  cd dbscan_line
+  mkdir build
+  cd build
+  cmake ..
+  make
+  sudo make install
+```
+
+
+### Compile it with catkin:
+
+To compile it, please clone the repository into the src folder of your favourite catkin_ws. For example:
+
+```
   cd ~/catkin_ws/src
   git clone https://github.com/robotics-upo/catenary_checker
 ```
