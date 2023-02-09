@@ -147,6 +147,14 @@ target_link_libraries(test_catenary_checker
 #    dbscan_line
 #    )
 
+add_executable(create_grid3d_node src/create_grid3d_node.cpp) 
+target_link_libraries(create_grid3d_node
+${PROJECT_NAME}
+${catkin_LIBRARIES}
+dbscan_line
+Qt5::Charts
+Qt5::Widgets)
+
 # add_executable(create_grid3d_node src/create_grid3d_node.cpp) 
 # target_link_libraries(create_grid3d_node ${PROJECT_NAME})
 
