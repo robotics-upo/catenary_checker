@@ -38,12 +38,6 @@ cd ~/catkin_ws
 catkin_make
 ```
 
-This code depends on our DBScan-Line clustering algorithm, which is available at:
-
-https://github.com/robotics-upo/dbscan_line
-
-Please follow the instructions there to install it into your system
-
 ### A simple test
 
 To run a simple test, make sure that the ROS environment variables are loaded (source the setup.bash file of your catkin workspace) and then simply execute:
