@@ -58,7 +58,6 @@ void catenaryChecker::getPointCloud(const sensor_msgs::PointCloud2::ConstPtr& pc
 bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
 {
   static int seq = 0;
-  pts_c_.clear();
   geometry_msgs::Point pts_; // To save Catenary point
   // Get the pose of the robot or die
   // geometry_msgs::TransformStamped transformStamped;    //Commented by SMR to integrate in RRT
@@ -86,16 +85,17 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     
     // auto check_cat = checkCatenary(robot, target, pcl_pc, plane_dist, dbscan_min_points, dbscan_epsilon);
 
-    // ROS_INFO("Robot: %f %f %f \t Target: %f %f %f", robot.x, robot.y, robot.z, target.x, target.y, target.z);
+    std::cout << "catenaryChecker::getPointCloud: Robot:[" << robot.x << "," << robot.y << "," << robot.z << "] , Target:[" << target.x << "," << target.y << "," << target.z << "]" << std::endl;
+    std::cout << "Preparando para cancular Plano 2D" << std::endl;
+      // ROS_INFO("Publishing 2D cloud reconverted to 3D . Number of points: %lu", points_3d.size());
+    
     // ROS_INFO("Got PC. Sizes: original:%lu \t pcl_2:%lu \t pcl_pc:%lu", pc->data.size(), pcl_pc2.data.size(), pcl_pc.size());
 
     auto points_2d = project2D(pcl_pc, robot, target, plane_dist);
     // ROS_INFO("Obtained 2D cloud projection. Number of points: %lu", points_2d.size());
     if (publish_pc) {
+    std_::cout << "Preparando para cancular Plano 3D" << std::endl;
       auto points_3d = reproject3D(points_2d, robot, target);
-
-      // ROS_INFO("Publishing 2D cloud reconverted to 3D . Number of points: %lu", points_3d.size());
-
       pcl::toPCLPointCloud2(points_3d, pcl_pc2);
          
       sensor_msgs::PointCloud2 out_pc2;
@@ -105,6 +105,7 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
       out_pc2.header.frame_id = global_frame;
 
       pc_publisher.publish(out_pc2);
+    std_::cout << "Plano 3D calculado" << std::endl;
     }
          
     if (use_dbscan_lines) {
@@ -125,23 +126,29 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     // std::cout << "length_cat= " << length_cat << std::endl;
 
     int num_pts_per_unit_length = 10;
-    double d_min_point_cat = 100000.0;
+    // double d_min_point_cat = 100000.0;
     
-    if (robot.x == target.x && robot.y == target.y)
+    pts_c_.clear();
+    
+    std_::cout << "Preparando para obtener Parabola" << std::endl;
+    if ( (fabs(robot.x - target.x) < 0.01) && (fabs(robot.y == target.y) < 0.01 ) )
     {
       length_cat = fabs(robot.z - target.z) *1.01;
+      // std::cout << "catenaryChecker::getPointCloud -if- length_cat= " << length_cat << std::endl;
       int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
       for (size_t i = 0 ; i < num_pts_cat_ ; i ++){
           pts_.x = robot.x; 
           pts_.y = robot.y; 
           pts_.z = robot.z + (length_cat/num_pts_cat_)*(i+1); 
           pts_c_.push_back(pts_);
-          double dist_cat_obs = getPointDistanceFullMap(use_distance_function, pts_);
-          if (d_min_point_cat > dist_cat_obs){
-            min_dist_obs_cat = dist_cat_obs;
-            d_min_point_cat = dist_cat_obs;
-          }
+          // double dist_cat_obs = getPointDistanceFullMap(use_distance_function, pts_);
+          // if (d_min_point_cat > dist_cat_obs){
+          //   min_dist_obs_cat = dist_cat_obs;
+          //   d_min_point_cat = dist_cat_obs;
+          // }
       }
+      min_dist_obs_cat = -1.0;
+    std_::cout << "Parabola en 1 plano Calculada" << std::endl;
     }
     else
     {
@@ -153,6 +160,7 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
       auto plane = getVerticalPlane(robot,target); 
       Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
       Point2D B(target.y * plane.a - target.x * plane.b, target.z);
+      std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
       Parable parable;
       get_catenary = parable.approximateParable(scenario, A, B);
 
@@ -162,33 +170,35 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
       // ROS_INFO("Got parable: %s", parable.toString().c_str()); 
 
       pcl::PointCloud<pcl::PointXYZ> pc_catenary = getParablePoints(parable,robot,target);
+      // std::cout << "catenaryChecker::getPointCloud: pc_catenary.size()=" << pc_catenary.size() << std::endl;
       
       // if (robot.x - target.x > 0.1)
         length_cat = parable.getLength(A.x, B.x);
       // else 
       //   length_cat = parable.getLength(robot.y, target.y);
     
-      int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
-
-      if (pc_catenary.size() < num_pts_cat_)
-        num_pts_cat_ = pc_catenary.size();
-      int quot = round((int)pc_catenary.size() / num_pts_cat_);
-      // std::cout << "length_cat= " << length_cat << std::endl;
+      // int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
+      // if (pc_catenary.size() < num_pts_cat_)
+      //   num_pts_cat_ = pc_catenary.size();
+      // int quot = round((int)pc_catenary.size() / num_pts_cat_);
+      // std::cout << "catenaryChecker::getPointCloud -else- length_cat= " << length_cat << std::endl;
 
       for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
-        // std::cout << "i=[" << i << "] , pc_catenary.size()/quot=[" << i%quot << "]" << std::endl;
-        if (i%quot == 0){
-          pts_.x = pc_catenary.points[i].x; 
-          pts_.y = pc_catenary.points[i].y; 
-          pts_.z = pc_catenary.points[i].z; 
+        // if (i%quot == 0){
+          pts_.x = pc_catenary.points[pc_catenary.size()-(1+i)].x; 
+          pts_.y = pc_catenary.points[pc_catenary.size()-(1+i)].y; 
+          pts_.z = pc_catenary.points[pc_catenary.size()-(1+i)].z; 
           pts_c_.push_back(pts_);
-          double dist_cat_obs = getPointDistanceFullMap(use_distance_function, pts_);
-          if (d_min_point_cat > dist_cat_obs){
-            min_dist_obs_cat = dist_cat_obs;
-            d_min_point_cat = dist_cat_obs;
-          }
-        }
+ //  std::cout << "catenaryChecker: catenary points[" << pts_.x << " " << pts_.y << " " << pts_.z <<"]" << std::endl;
+          // double dist_cat_obs = getPointDistanceFullMap(use_distance_function, pts_);
+          // if (d_min_point_cat > dist_cat_obs){
+          //   min_dist_obs_cat = dist_cat_obs;
+          //   d_min_point_cat = dist_cat_obs;
+          // }
+        // }
       }
+      min_dist_obs_cat = -1.0;
+    std_::cout << "Parabola Calculada" << std::endl;
     }
 
     //    /********************* To obligate pause method and check Planning result *********************/
@@ -355,7 +365,6 @@ double catenaryChecker::getPointDistanceFullMap(bool use_dist_func_, geometry_ms
 		obs_ = nn_obs.nearestObstacleMarsupial(nn_obs.kdtree, pos_, nn_obs.obs_points);
 		dist = sqrt(pow(obs_.x()-pos_.x(),2) + pow(obs_.y()-pos_.y(),2) + pow(obs_.z()-pos_.z(),2));
 	}
-
 	return dist;
 }
 
@@ -366,20 +375,3 @@ void catenaryChecker::getDataForDistanceinformation(Grid3d *grid3D_, const senso
   use_distance_function = use_distance_function_;
 }
 
-// int main (int argc, char **argv)
-// {
-//   std::string node_name = "catenary_checker_node";
-
-//   ros::init(argc, argv, node_name);
-
-//   ros::NodeHandlePtr nh;
-
-//   catenaryChecker cc(nh);
-
-//   while (ros::ok()) {
-//     ros::spinOnce();
-//         // r.sleep();
-//   }	
-
-//   return 0;
-// }

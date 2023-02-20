@@ -149,8 +149,10 @@ std::string Parable::toString() const {
 
 std::vector<Point2D> Parable::getPoints(float &x1, float &x2, float delta_t) const {
   std::vector<Point2D> ret_val;
+  // std::cout << "x1 = " << x1 << " , x2 = " << x2 << std::endl;
   for (float x = x1; x <= x2; x+=delta_t) {
     Point2D p(x, apply(x));
+    // std::cout << "p.x = " << p.x << " , p.y = " << p.y << std::endl;
     ret_val.push_back(p);
   }
 
@@ -162,6 +164,8 @@ float Parable::getLength(float &x1, float &x2, float delta_t) const {
   // sqrt(1+(2ax+b)^2) = sqrt(1+4a²x²+b²+4abx)dx
   // This integral has no primitive --> should be approximated
   float ret_val=0.0f;
+  float ret_val1=0.0f; 
+  float ret_val2=0.0f; 
 
   float a_2 = _a * _a * 4.0f;
   float b_2 = _b * _b;
@@ -171,6 +175,9 @@ float Parable::getLength(float &x1, float &x2, float delta_t) const {
     ret_val += std::sqrt(1 + b_2 + a_2 * x * x + a_b_4 * x);
   }
   ret_val *= delta_t;
+    // ret_val2 = std::sqrt(1 + b_2 + a_2 * x2 * x2 + a_b_4 * x2);
+    // ret_val1 = std::sqrt(1 + b_2 + a_2 * x1 * x1 + a_b_4 * x1);
+    // ret_val = ret_val2 - ret_val1;
 
   return ret_val;
 

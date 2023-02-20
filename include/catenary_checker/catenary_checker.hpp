@@ -41,7 +41,7 @@ PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
 pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
 					  const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
 
-pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B);
+pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B, float delta_t=0.05);
 
 DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &pc_2d, int minPts, float epsilon);
 DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts,

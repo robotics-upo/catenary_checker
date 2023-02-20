@@ -5,13 +5,13 @@
 pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
 					   const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
 
-pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B) {
+pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B, float delta_t) {
   // Project to 2D the init and goal points
   auto plane = getVerticalPlane(A, B);
   Point2D A_(A.y * plane.a - A.x * plane.b, A.z);
   Point2D B_(B.y * plane.a - B.x * plane.b, B.z);
 
-  auto parable2d_points = parable.getPoints(A_.x, B_.x);
+  auto parable2d_points = parable.getPoints(A_.x, B_.x, delta_t);
   pcl::PointCloud<pcl::PointXY> parable2d;
   pcl::PointXY pcl_point;
   for (auto &p:parable2d_points) {

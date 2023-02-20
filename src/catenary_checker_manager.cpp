@@ -6,9 +6,8 @@ CatenaryCheckerManager::CatenaryCheckerManager(std::string node_name_)
     nh.reset(new ros::NodeHandle("~"));
 	std::string node_name = "catenaryChecker_" + node_name_;
 
-    use_distance_function = false;
-
 	grid_3D = new Grid3d(node_name);
+
 	cc = new catenaryChecker(nh);
     
     point_cloud_sub_ = nh->subscribe<sensor_msgs::PointCloud2>("/octomap_point_cloud_centers", 1, &CatenaryCheckerManager::PointCloudCallback, this);
@@ -22,19 +21,25 @@ void CatenaryCheckerManager::PointCloudCallback(const sensor_msgs::PointCloud2::
     ROS_INFO(PRINTF_YELLOW "CatenaryCheckerManager::PointCloudCallback: Received Point Cloud");
 }
  
-void CatenaryCheckerManager::Init(double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_analytical_method_)
+void CatenaryCheckerManager::Init(double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_parable_, bool use_distance_function_)
 {
     distance_catenary_obstacle = dist_cat_;
     length_tether_max = l_cat_max_;
     ws_z_min = ws_z_min_;
     step = step_; 
     catenary_state = false;
-    use_analytical_method = use_analytical_method_;
+    use_parable = use_parable_;
+	use_distance_function = use_distance_function_;
 	
-	if (use_analytical_method)
-        ROS_INFO(PRINTF_GREEN "Catenary Checker Manager: Using ANALYTICAL METHOD");
+	if (use_parable)
+        ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using PARABLE METHOD");
     else
-        ROS_INFO(PRINTF_GREEN "Catenary Checker Manager: Using NUMERICAL METHOD from Ceres Solver");
+        ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using NUMERICAL METHOD from Ceres Solver");
+
+	if (use_distance_function_)
+        ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using DISTANCE FUNCTION");
+    else
+        ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using KDTree");
 	
 }
 
@@ -42,7 +47,7 @@ bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Point &pi_, con
 {
    bool is_founded;
    pts_c_.clear();
-    if (use_analytical_method){
+    if (use_parable){
         if(is_founded = cc->analyticalCheckCatenary(pi_, pf_, pts_c_)){
 			min_dist_obs_cat = cc->min_dist_obs_cat;
 			length_cat_final = cc->length_cat;
@@ -54,7 +59,7 @@ bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Point &pi_, con
 		// for (size_t i = 0; i < pts_c_.size() ; i++){
 		// 	printf("CatenaryCheckerManager::SearchCatenary: pts_c_[%f %f %f]\n", pts_c_[i].x,pts_c_[i].y,pts_c_[i].z);
 		// }
-		// printf("is_founded catenary = %s \t\n\n",is_founded?"true":"false");
+		// printf("\t\t CatenaryCheckerManager::SearchCatenary is_founded catenary = %s , min_dist_obs_cat=%f , length_cat_final=%f \n",is_founded?"true":"false",min_dist_obs_cat,length_cat_final);
     }
 	else
         is_founded = NumericalSolutionCatenary(pi_, pf_ ,pts_c_);
