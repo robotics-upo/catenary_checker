@@ -26,7 +26,13 @@ public:
   catenaryChecker(ros::NodeHandlePtr nh);
   visualization_msgs::Marker pointsToMarker(const std::vector<Point> &points, const std::string frame_id, int n_lines = -1);
   void getPointCloud(const sensor_msgs::PointCloud2ConstPtr &pc_msg);
-  bool analyticalCheckCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_);
+  bool analyticalCheckCatenary(const geometry_msgs::Point &pi_,
+                               const geometry_msgs::Point &pf_,
+                               std::vector<geometry_msgs::Point> &pts_c_);
+
+  bool precomputedCheckCatenary(const pcl::PointXYZ &pi_,
+                                const pcl::PointXYZ &pf_,
+                                std::vector<geometry_msgs::Point> pts_c_);
   double getPointDistanceFullMap(bool use_dist_func_, geometry_msgs::Point p_);
   void getDataForDistanceinformation(Grid3d *grid3D_, const sensor_msgs::PointCloud2::ConstPtr& msg, bool use_distance_function_);
   std_msgs::ColorRGBA getColor(int num);
@@ -53,6 +59,11 @@ public:
   bool use_distance_function;
   double min_dist_obs_cat, length_cat_final; // to fill q_init in RRT
   double length_cat;
+
+  // Discretization of 2D planes
+  std::vector<Scenario> discretized_planes;
+  int n_planes = -1;
+  pcl::PointXYZ fixed_point;
 
 protected:
 

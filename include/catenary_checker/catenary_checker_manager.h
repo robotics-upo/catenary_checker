@@ -26,26 +26,26 @@ class CatenaryCheckerManager
 {
 
 public:
-    CatenaryCheckerManager(std::string node_name_);
-    // ~CatenaryCheckerManager();
-    void PointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
-    void Init(double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_parable_, bool use_distance_function_);
-    bool SearchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_);
-    bool NumericalSolutionCatenary(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_);
-    double getPointDistanceFullMap(bool use_dist_func_, geometry_msgs::Vector3 p_);
+  CatenaryCheckerManager(std::string node_name_);
+  // ~CatenaryCheckerManager();
+  void PointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
+  void Init(double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_parable_, bool use_distance_function_);
+  bool SearchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_);
+  bool NumericalSolutionCatenary(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_);
+  double getPointDistanceFullMap(bool use_dist_func_, geometry_msgs::Vector3 p_);
 
 	bisectionCatenary bc;
-    NearNeighbor nn_obs;
-    catenaryChecker *cc;
+  NearNeighbor nn_obs;
+  catenaryChecker *cc = NULL;
 
-    ros::NodeHandlePtr nh;
-    ros::Subscriber point_cloud_sub_;
-    sensor_msgs::PointCloud2::ConstPtr point_cloud;
+  ros::NodeHandlePtr nh;
+  ros::Subscriber point_cloud_sub_;
+  sensor_msgs::PointCloud2::ConstPtr point_cloud;
 
-    bool use_parable;
-    double distance_catenary_obstacle, length_tether_max, ws_z_min, step;
-    double min_dist_obs_cat, length_cat_final; // to fill q_init
-    double use_distance_function, catenary_state; 
+  bool use_parable;
+  double distance_catenary_obstacle, length_tether_max, ws_z_min, step;
+  double min_dist_obs_cat, length_cat_final; // to fill q_init
+  double use_distance_function, catenary_state; 
 
 private:
     Grid3d *grid_3D;

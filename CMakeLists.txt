@@ -4,7 +4,7 @@ project(catenary_checker)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++14)
 
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -85,6 +85,7 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
+   src/2d_projection.cpp 
    src/catenary_checker.cpp 
    src/obstacle_2d.cpp 
    src/convex_hull.cpp
