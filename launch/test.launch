@@ -29,7 +29,7 @@
   <arg name="use_dbscan_lines" default="true"/>
   <arg name="dbscan_min_points" default="5"/>
   
-  <node name="catenary_checker" pkg="catenary_checker" type="catenary_checker_node" output="screen"  launch-prefix="xterm -e gdb -ex run --args">
+  <node name="catenary_checker" pkg="catenary_checker" type="catenary_checker_node" output="screen"  > <!-- launch-prefix="xterm -e gdb -ex run - -args" -->
     <param name="plane_dist" value="$(arg plane_dist)"/>
     <param name="dbscan_min_points" value="$(arg dbscan_min_points)"/>
     <param name="dbscan_epsilon" value="$(arg dbscan_epsilon)"/>

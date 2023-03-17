@@ -201,13 +201,25 @@ bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
     ROS_INFO("Number of precomputed planes: %d", static_cast<int>(discretized_planes.size()));
   }
 
-  float angle = atan2(pf_.y - pi_.y, pf_.x - pi_.x);
+  float angle = atanf((pf_.y - pi_.y)/(pf_.x - pi_.x));
+  if (angle < 0)
+    angle += M_PI;
   int i = round(angle / M_PI * n_planes);
+  if (i >= discretized_planes.size()) {
+    std::cout << "i before = " << i;
+    i = i % discretized_planes.size();
+    std::cout << "\t i after = " << i<< std::endl;
+  }
 
-  auto plane = getVerticalPlane(pi_, pf_); 
+  auto aux = pi_; // Aux point to get the vertical plane properly
+  aux.x += cos(angle);
+  aux.y += sin(angle);
+
+  auto plane = getVerticalPlane(pi_, aux); 
   Point2D A(pi_.y * plane.a - pi_.x * plane.b, pi_.z);
   Point2D B(pf_.y * plane.a - pf_.x * plane.b, pf_.z);
-  std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
+  std::cout << "catenaryChecker::precomputedCheckCatenary: A:[" <<
+    A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
   Parable parable;
   get_catenary = parable.approximateParable(discretized_planes.at(i), A, B);
 
