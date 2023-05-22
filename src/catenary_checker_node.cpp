@@ -38,7 +38,6 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   }
 }
 
-
 void catenaryChecker::getPointCloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
 {
   pc = pc_msg;
@@ -189,6 +188,9 @@ bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
   }
 
   if (discretized_planes.size() < n_planes) {
+    struct timespec start_planes, finish_planes;
+    clock_gettime(CLOCK_REALTIME, &start_planes);
+
     ROS_INFO("Precomputing planes:");
     pcl::PointCloud<pcl::PointXYZ> pcl_pc;
     pcl::PCLPointCloud2 pcl_pc2;
@@ -199,6 +201,12 @@ bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
     discretized_planes = preprocessObstacle2D(pi_, pcl_pc, n_planes, plane_dist,
                                               dbscan_min_points, dbscan_epsilon);
     ROS_INFO("Number of precomputed planes: %d", static_cast<int>(discretized_planes.size()));
+    clock_gettime(CLOCK_REALTIME, &finish_planes);
+    auto sec_planes = finish_planes.tv_sec - start_planes.tv_sec;
+    auto msec_planes = (1000000000 - start_planes.tv_nsec) + finish_planes.tv_nsec;
+    float time_planes = (msec_planes + sec_planes * 1000000000.0)/1000000000.0;
+    std::cout << "Precomputed time: " << time_planes << std::endl << std::endl;
+
   }
 
   float angle = atanf((pf_.y - pi_.y)/(pf_.x - pi_.x));

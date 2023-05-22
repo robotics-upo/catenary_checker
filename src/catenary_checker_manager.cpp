@@ -1,6 +1,5 @@
 #include <catenary_checker/catenary_checker_manager.h>
 
-
 CatenaryCheckerManager::CatenaryCheckerManager(std::string node_name_)
 {
   nh.reset(new ros::NodeHandle("~"));

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(catenary_checker)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++14 -fPIC)
 
 set(CMAKE_BUILD_TYPE Release)
 
@@ -109,9 +109,9 @@ target_link_libraries(${PROJECT_NAME}
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 
-# add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp )
+add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp )
 add_executable(test_catenary_checker src/test_catenary_checker.cpp)
-# add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
+add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -123,16 +123,16 @@ add_executable(test_catenary_checker src/test_catenary_checker.cpp)
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(test_catenary_checker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME})
-# add_dependencies(${PROJECT_NAME}_manager_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_manager_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#    ${catkin_LIBRARIES}
-#    ${PROJECT_NAME}
-#    Qt5::Charts
-#    Qt5::Widgets
-#    dbscan_line
-#    )
+target_link_libraries(${PROJECT_NAME}_node
+    ${catkin_LIBRARIES}
+    ${PROJECT_NAME}
+    Qt5::Charts
+    Qt5::Widgets
+    dbscan_line
+    )
 target_link_libraries(test_catenary_checker
    ${PROJECT_NAME}
    ${catkin_LIBRARIES}
@@ -140,13 +140,13 @@ target_link_libraries(test_catenary_checker
    Qt5::Charts
    Qt5::Widgets
    )
-# target_link_libraries(catenary_checker_manager_node
-#    ${catkin_LIBRARIES}
-#    ${PROJECT_NAME}
-#    Qt5::Charts
-#    Qt5::Widgets
-#    dbscan_line
-#    )
+target_link_libraries(catenary_checker_manager_node
+   ${catkin_LIBRARIES}
+   ${PROJECT_NAME}
+   Qt5::Charts
+   Qt5::Widgets
+   dbscan_line
+    )
 
 add_executable(create_grid3d_node src/create_grid3d_node.cpp) 
 target_link_libraries(create_grid3d_node

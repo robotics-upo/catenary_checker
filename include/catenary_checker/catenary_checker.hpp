@@ -18,17 +18,24 @@ float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenar
 //! @param A First point
 //! @param B Second point
 //! @param pc Point cloud where the obstacles will be obtained
-//! @param dist Maximum distance from an obstacle to the plane to be included
-//! @param obstacles Obstacles in the environment
+//! @param plane_dist Maximum distance from an obstacle to the plane to be included
+//! @param dbscan_min_points Minimum points that clusters consist of
+//! @param dbscan_epsilon Max. distance between points in a cluster
 //! @return The length of the catenary, or -1 if not found
 float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon);
 
 pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B, float delta_t=0.05);
 
+//! @brief Makes a preprocess of several planes in a given (x,y) position (UGV fixed)
+//! @param A First point (fixed)
+//! @param pc Point cloud where the obstacles will be obtained
+//! @param n_planes Number of planes to be calculated
+//! @param plane_dist Maximum distance from an obstacle to the plane to be included
+//! @param obstacles Obstacles in the environment
+//! @return The length of the catenary, or -1 if not found
 std::vector<Scenario> preprocessObstacle2D(const pcl::PointXYZ &A, const pcl::PointCloud<pcl::PointXYZ> &pc, int n_planes, float plane_dist, int dbscan_min_points, float dbscan_epsilon);
 
 // Clustering and 2D Obstacles related
-
 Scenario PC2Obstacles(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon);
 
 DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &pc_2d, int minPts, float epsilon);
