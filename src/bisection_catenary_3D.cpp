@@ -85,8 +85,6 @@ bisectionCatenary::bisectionCatenary()
     factor_bisection_b = 1000.0;
     first_coll = 0;
     last_coll = 0;
-    received_grid = false;
-    get_distance_data = false;
 
     use_markers = false;
 } 
@@ -100,9 +98,51 @@ bisectionCatenary::bisectionCatenary(ros::NodeHandlePtr nhP_)
     factor_bisection_b = 1000.0;
     first_coll = 0;
     last_coll = 0;
-    received_grid = false;
-    get_distance_data = false;
     nhP = nhP_;
+
+    use_markers = true;
+
+	points_between_cat_marker_pub_ = nhP->advertise<visualization_msgs::MarkerArray>("points_between_cat_marker", 1);
+} 
+
+bisectionCatenary::bisectionCatenary(Grid3d* g_3D_ , double bound_obst_, octomap::OcTree* octotree_full_,
+                                    pcl::KdTreeFLANN <pcl::PointXYZ> trav_kdT_, pcl::PointCloud <pcl::PointXYZ>::Ptr trav_pc_)
+{
+    num_point_per_unit_length = 10;
+    resolution = 0.05;
+    div_res = 1.0/resolution;
+    factor_bisection_a = 1000.0;
+    factor_bisection_b = 1000.0;
+    first_coll = 0;
+    last_coll = 0;
+
+    grid_3D = g_3D_; 
+    bound_obst = bound_obst_;
+    octotree_full = octotree_full_;
+    kdt_trav = trav_kdT_; 
+    pc_trav = trav_pc_; 
+
+    use_markers = true;
+
+} 
+
+bisectionCatenary::bisectionCatenary(ros::NodeHandlePtr nhP_, Grid3d* g_3D_ , double bound_obst_, octomap::OcTree* octotree_full_,
+                                    pcl::KdTreeFLANN <pcl::PointXYZ> trav_kdT_, pcl::PointCloud <pcl::PointXYZ>::Ptr trav_pc_)
+{
+    num_point_per_unit_length = 10;
+    resolution = 0.05;
+    div_res = 1.0/resolution;
+    factor_bisection_a = 1000.0;
+    factor_bisection_b = 1000.0;
+    first_coll = 0;
+    last_coll = 0;
+    nhP = nhP_;
+
+    grid_3D = g_3D_; 
+    bound_obst = bound_obst_;
+    octotree_full = octotree_full_;
+    kdt_trav = trav_kdT_; 
+    pc_trav = trav_pc_; 
 
     use_markers = true;
 
@@ -111,22 +151,13 @@ bisectionCatenary::bisectionCatenary(ros::NodeHandlePtr nhP_)
 
 // bisectionCatenary::~bisectionCatenary(){} 
 
-bool bisectionCatenary::configBisection(double _l, double _x1, double _y1, double _z1, double _x2, double _y2, double _z2, bool get_distance_data_)
+bool bisectionCatenary::configBisection(double _l, double _x1, double _y1, double _z1, double _x2, double _y2, double _z2)
 {
     resetVariables();
   
-    get_distance_data = get_distance_data_;
-    if ( (get_distance_data && !received_grid) || (!get_distance_data && received_grid) ){ 
-        printf(PRINTF_RED" Warnning: you are traying to use Bisection Method using grid dintance, but grid object is still empty.");
-        printf(PRINTF_RED" Check that you are calling readDataForCollisionAnalisys() method before call configBisection() method, and in the latter defined get_distance_data_ argument as true. \n");
-        printf(PRINTF_REGULAR" \n");
-    }
-
     L =_l;
     X1 =_x1; Y1 = _y1; Z1= _z1;
     X2 = _x2; Y2 = _y2;  Z2= _z2;
-
-    L_minor_than_D = false;
     
     distance_3d = sqrt(pow(X2-X1,2)+pow(Y2-Y1,2)+pow(Z2-Z1,2)); //Distance between lashing represent in 3D
     
@@ -137,9 +168,9 @@ bool bisectionCatenary::configBisection(double _l, double _x1, double _y1, doubl
     if (L > distance_3d)
         getNumberPointsCatenary(L);
     else{
-        getNumberPointsCatenary(1.001*distance_3d);
-        printf("Warning: Input Length minor that necesary distance between point to apply bisection method\n");
-        L_minor_than_D = true;
+        getNumberPointsCatenary(1.01*distance_3d);
+        printf("Warning: Input Length minor that necesary distance between point to apply bisection method L=%f , D=%f\n",1.01*distance_3d, distance_3d);
+        printf("P1= [%f %f %f]  P2=[%f %f %f]\n",X1,Y1,Z1,X2,Y2,Z2);
     }
 
     mid_p_cat = ceil(num_point_catenary/2.0);
@@ -203,14 +234,13 @@ void bisectionCatenary::checkStateCatenary(double _x1, double _y1, double _z1, d
         _direc_y = 0.0;    
 }
 
-void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, bool dist_interpolation_)
+void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, bool get_distance_data_)
 {
     std::vector<geometry_msgs::Point> v_p_bet_cat;
     double p_z_min = 1000.0;
     dist_obst_cat.clear(); pos_cat_in_coll.clear(); cat_between_obs.clear();
     if (!x_const || !y_const){ 
         double x_value_, y_value_, x_step;
-        // int check_continuity_ = 0;
         x_step = (XB)/num_point_catenary;
         x_value_ = 0.0;
         
@@ -238,18 +268,18 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, b
             
             x_value_ = x_value_ + x_step;
 
-            if(get_distance_data){
+            if(get_distance_data_){
                 bool is_into_ = grid_3D->isIntoMap(p_x_,p_y_,p_z_);
                 if(is_into_){
-                    if (dist_interpolation_){
+                    // if (dist_interpolation_){
                     TrilinearParams d = grid_3D->getPointDistInterpolation((double)p_x_, (double)p_y_, (double)p_z_);
                     double x = p_.x;
                     double y = p_.y;
                     double z = p_.z;
                     dist_cat_obs= (d.a0 + d.a1*x + d.a2*y + d.a3*z + d.a4*x*y + d.a5*x*z + d.a6*y*z + d.a7*x*y*z); 
-                    }
-                    else
-                        dist_cat_obs =  grid_3D->getPointDist(p_x_,p_y_,p_z_);
+                    // }
+                    // else
+                    //     dist_cat_obs =  grid_3D->getPointDist(p_x_,p_y_,p_z_);
                 }
                 else
                     dist_cat_obs = -1.0;
@@ -269,7 +299,6 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, b
                     }
                     double tetha_ = atan2((p_.y-v_p_[i-1].y),(p_.x-v_p_[i-1].x));
                     v_p_bet_cat.clear();
-                    // printf("n_p_bet_cat = %i , interval=[%f/%f] d_p_cat=%f , p_[%f %f %f] p_-1[%f %f %f] \n", n_p_bet_cat, interval_xy, interval_z, d_p_cat, p_.x, p_.y, p_.z,  v_p_[i-1].x,  v_p_[i-1].y,  v_p_[i-1].z);
                     
                     for (int j = 0; j < n_p_bet_cat + 1 ; j++){
                         geometry_msgs::Point p_b_cat_;
@@ -278,7 +307,6 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, b
                         p_b_cat_.z = v_p_[i-1].z + (j)*(interval_z);
                         v_p_bet_cat.push_back(p_b_cat_);
                         if(j > 0){
-                            // printf("\t v_p_bet_cat.size()=%lu p_b_cat_[%f %f %f]\n", v_p_bet_cat.size(), p_b_cat_.x, p_b_cat_.y, p_b_cat_.z);
                             double p_b_cat_x_ = resolution * round( (p_b_cat_.x) * div_res);
                             double p_b_cat_y_ = resolution * round( (p_b_cat_.y) * div_res);
                             double p_b_cat_z_ = resolution * round( (p_b_cat_.z) * div_res);
@@ -310,7 +338,6 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, b
                             through_obst.push_back(ray_cat_coll_);
 
                             if (d_obt_cat < bound_obst*a_ && ray_cat_coll_){
-                            // if (d_obt_cat < bound_obst*a_){
                                 cat_between_obs.push_back(i);	
                                 if (first_coll == 0){
                                     first_coll  = i-1;   
@@ -325,13 +352,8 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, b
                     if (use_markers) 
                         markerPoints(p_bet_cat_marker, v_p_bet_cat, points_between_cat_marker_pub_);
                 }
-                // }        
             }
           
-            
-            // if ( ((last_coll-first_coll) == check_continuity_ ) && check_continuity_ != 0 && first_coll != 0 && last_coll != 0)
-            //     last_coll = num_point_catenary;
-
             v_p_.push_back(p_);
             if (p_z_min > p_.z){
                 min_point_z_cat.x = p_.x; 
@@ -346,15 +368,11 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, b
 				mid_point_cat.z = p_.z;
             }
         }
-        // for (size_t k  = 0 ; k < pos_cat_in_coll.size() ; k++){
-        //     printf("pos_cat_in_coll[%lu]=%i \n",k, pos_cat_in_coll[k]);
-        // }
     }
     else{
         v_p_.clear();
         getPointCatenaryStraight(v_p_);
     }
-    
 }
 
 void bisectionCatenary::getPointCatenaryStraight(std::vector<geometry_msgs::Point> &v_p_)
@@ -369,7 +387,6 @@ void bisectionCatenary::getPointCatenaryStraight(std::vector<geometry_msgs::Poin
         p_.y = resolution * ( round(Y1*div_res ));
         p_.z = resolution * ( round((Z1 + _step* (double)i)*div_res) );    
         v_p_.push_back(p_);
-        // printf("point_cat = [%f %f %f]\n",p_.x, p_.y, p_.z);
     }
 }
 
@@ -399,14 +416,6 @@ double bisectionCatenary::resolveBisection(double a1_, double b1_, int mode_)
                 xa_ = xr;
             
             error = fabs(functionBisection(xr,mode_));
-            // if (error < tolerance){
-            //     if (mode_ == 0)
-            //         printf("SOLUTION FOUNDED!!! for 'PHI(phi) = %f'  'phi = %f'\n",functionBisection(xr,mode_),xr);
-            //     else if (mode_ == 1)
-            //         printf("SOLUTION FOUNDED!!! for 'CatenaryA(X0) = %f'  'X0 = %f'\n",functionBisection(xr,mode_),xr);
-            //     else if (mode_ == 2)
-            //         printf("SOLUTION FOUNDED!!! for 'CatenaryB(Y0) = %f'  'Y0 = %f'\n",functionBisection(xr,mode_),xr);
-            // }
         }
     }
     return xr;
@@ -504,17 +513,6 @@ void bisectionCatenary::resetVariables()
     h_value = 0.0;
     x_const = y_const = z_const = false;
     dist_obst_cat.clear();
-}
-
-void bisectionCatenary::readDataForCollisionAnalisys(Grid3d* g_3D_ , double bound_obst_, octomap::OcTree* octotree_full_,
-                                                    pcl::KdTreeFLANN <pcl::PointXYZ> trav_kdT_, pcl::PointCloud <pcl::PointXYZ>::Ptr trav_pc_)
-{
-   grid_3D = g_3D_; 
-   received_grid = true;
-   bound_obst = bound_obst_;
-   octotree_full = octotree_full_;
-   kdt_trav = trav_kdT_; 
-   pc_trav = trav_pc_; 
 }
 
 void bisectionCatenary::getStatusCollisionCat(std::vector<double> &dist_obst_cat_, std::vector<int> &pos_cat_in_coll_, std::vector<int> &cat_between_obs_, int &first_coll_, int &last_coll_)

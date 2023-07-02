@@ -92,8 +92,8 @@ bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Poin
 			check_catenary = false;
 			break;
 		}
-		bool just_one_axe = bc.configBisection(length_catenary_, p_reel_.x, p_reel_.y, p_reel_.z, p_final_.x, p_final_.y, p_final_.z, false);
-		bc.getPointCatenary3D(points_catenary_);
+		bool just_one_axe = bc.configBisection(length_catenary_, p_reel_.x, p_reel_.y, p_reel_.z, p_final_.x, p_final_.y, p_final_.z);
+		bc.getPointCatenary3D(points_catenary_, false);
 
 		double d_min_point_cat = 100000;
 		if (points_catenary_.size() > 2){

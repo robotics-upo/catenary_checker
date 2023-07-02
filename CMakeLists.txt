@@ -26,6 +26,7 @@ find_package(Qt5Charts REQUIRED)
 
 find_package(PCL 1.8 REQUIRED)
 find_package(PCL REQUIRED)
+find_package(Ceres REQUIRED)
 
 include_directories( include/
   ${catkin_INCLUDE_DIRS}
@@ -33,12 +34,18 @@ include_directories( include/
   ${PCL_INCLUDE_DIRS}
   ${Qt5Widgets_INCLUDE_DIRS}
   ${Qt5Charts_INCLUDE_DIRS}
+  ${CERES_INCLUDE_DIRS}
+
 )
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 set(EXTERNAL_INCLUDE_DIRS ${PCL_INCLUDE_DIRS} )
 set(EXTERNAL_LIBS ${PCL_LIBRARIES} )
+
+if (BUILD_SHARED_LIBS)
+  remove_definitions(-DCERES_BUILDING_SHARED_LIBRARY)
+endif()
 
 
 ###################################
@@ -93,10 +100,13 @@ add_library(${PROJECT_NAME}
    src/bisection_catenary_3D.cpp
    src/catenary_checker_node.cpp 
    src/catenary_checker_manager_node.cpp
+   src/solve_parable_parameter.cpp
 )
 target_link_libraries(${PROJECT_NAME}
    ${EXTERNAL_LIBS}
    ${catkin_LIBRARIES}
+   Ceres::ceres
+   ${CERES_LIBRARIES}
 )
 
 ## Add cmake target dependencies of the library
