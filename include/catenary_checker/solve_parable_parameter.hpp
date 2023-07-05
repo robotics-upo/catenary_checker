@@ -59,7 +59,7 @@ class ParableParametersSolver
 
     bool solve(double _xA, double _yA, double _xB, double _yB, double _A);
     void getParableParameters(double &_p, double &_q, double &_r);
-    
+  
     int max_num_iterations;
     double p, q, r; 
 

@@ -26,12 +26,6 @@ bool ParableParametersSolver::solve(double _xA, double _yA, double _xB, double _
   // Set up a cost funtion per point into the cloud
   CostFunction* cf1 = new ceres::AutoDiffCostFunction<ParableParameters, 3, 3>( new ParableParameters(_xA, _yA, _xB, _yB, _A) );
   problem.AddResidualBlock(cf1, NULL, x);
-  // problem.SetParameterLowerBound(x, 0, -100.0);
-	// problem.SetParameterLowerBound(x, 1, -100.0);
-	// problem.SetParameterLowerBound(x, 2, 0.0);
-	// problem.SetParameterUpperBound(x, 0, 100.0);
-	// problem.SetParameterUpperBound(x, 1, 100.0);
-	// problem.SetParameterUpperBound(x, 2, 20.0);
 
   // Run the solver!
   Solver::Options options;
@@ -57,3 +51,6 @@ void ParableParametersSolver::getParableParameters(double &_p, double &_q, doubl
   _q = q;
   _r = r;
 }
+
+
+

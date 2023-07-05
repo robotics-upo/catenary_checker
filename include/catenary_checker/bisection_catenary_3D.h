@@ -17,7 +17,7 @@
 #include <vector>
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Vector3.h>
 
 #include <octomap_msgs/Octomap.h> 
 #include <octomap/OcTree.h>
@@ -46,7 +46,7 @@ class bisectionCatenary
         };
         vector <points_interval> vector_sign_change;
 
-        vector <geometry_msgs::Point> catenary_chain_points_3D;
+        vector <geometry_msgs::Vector3> catenary_chain_points_3D;
 
         /*
         @brief: This is the constructor just to compute catenary using bisection method
@@ -73,21 +73,21 @@ class bisectionCatenary
         //Find points with sign changes in interval a-b, times that function pass through the origin 
         virtual bool lookingSignChanging (double a, double b, int mode_);
         virtual double functionBisection(double xr_aux, int mode_);
-        virtual void getPointCatenary3D(vector<geometry_msgs::Point> &_v_p, bool get_distance_data_ = false);
-        virtual void getPointCatenaryStraight(vector<geometry_msgs::Point> &_v_p);
+        virtual void getPointCatenary3D(vector<geometry_msgs::Vector3> &_v_p, bool get_distance_data_ = false);
+        virtual void getPointCatenaryStraight(vector<geometry_msgs::Vector3> &_v_p);
         virtual void resetVariables();
         virtual void setFactorBisection(double _fa,double _fb);
         virtual void checkStateCatenary(double _x1, double _y1, double _z1, double _x2, double _y2, double _z2);
         virtual void getNumberPointsCatenary(double _length);
         virtual bool setNumPointsPerUnitLength(int n);
         virtual void setResolution(int res_);
-        virtual void getMinPointZCat(geometry_msgs::Point &p_, int &n_);
-        virtual void getMidPointCat(geometry_msgs::Point &p_, int &n_);
+        virtual void getMinPointZCat(geometry_msgs::Vector3 &p_, int &n_);
+        virtual void getMidPointCat(geometry_msgs::Vector3 &p_, int &n_);
         virtual void getStatusCollisionCat(std::vector<double> &dist_obst_cat_, std::vector<int> &pos_cat_in_coll_, 
                                             std::vector<int> &cat_between_obs_, int &first_coll_, int &last_coll_);
 
         virtual void clearMarkers(visualization_msgs::MarkerArray _marker, int _s, ros::Publisher c_m_pub_);
-        virtual void markerPoints(visualization_msgs::MarkerArray _marker, std::vector<geometry_msgs::Point> _vector, ros::Publisher c_m_pub_);
+        virtual void markerPoints(visualization_msgs::MarkerArray _marker, std::vector<geometry_msgs::Vector3> _vector, ros::Publisher c_m_pub_);
 
         
         //Length Catenary Chain 
@@ -97,7 +97,7 @@ class bisectionCatenary
           
         double factor_bisection_a, factor_bisection_b, min_distance_cat_obs;
 
-        geometry_msgs::Point min_point_z_cat, mid_point_cat;
+        geometry_msgs::Vector3 min_point_z_cat, mid_point_cat;
         int pos_in_cat_z_min, mid_p_cat;
 
         // To manage information related with distance obst-cat, catenary feasibility, and grid3D

@@ -234,9 +234,9 @@ void bisectionCatenary::checkStateCatenary(double _x1, double _y1, double _z1, d
         _direc_y = 0.0;    
 }
 
-void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, bool get_distance_data_)
+void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Vector3> &v_p_, bool get_distance_data_)
 {
-    std::vector<geometry_msgs::Point> v_p_bet_cat;
+    std::vector<geometry_msgs::Vector3> v_p_bet_cat;
     double p_z_min = 1000.0;
     dist_obst_cat.clear(); pos_cat_in_coll.clear(); cat_between_obs.clear();
     if (!x_const || !y_const){ 
@@ -249,7 +249,7 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, b
         v_p_.clear();
 
         double dist_cat_obs;
-        geometry_msgs::Point p_;
+        geometry_msgs::Vector3 p_;
         float p_x_, p_y_, p_z_;
         first_coll = last_coll = 0;
 
@@ -301,7 +301,7 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, b
                     v_p_bet_cat.clear();
                     
                     for (int j = 0; j < n_p_bet_cat + 1 ; j++){
-                        geometry_msgs::Point p_b_cat_;
+                        geometry_msgs::Vector3 p_b_cat_;
                         p_b_cat_.x = v_p_[i-1].x + cos(tetha_) * interval_xy*(j);
                         p_b_cat_.y = v_p_[i-1].y + sin(tetha_) * interval_xy*(j);
                         p_b_cat_.z = v_p_[i-1].z + (j)*(interval_z);
@@ -375,13 +375,13 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Point> &v_p_, b
     }
 }
 
-void bisectionCatenary::getPointCatenaryStraight(std::vector<geometry_msgs::Point> &v_p_)
+void bisectionCatenary::getPointCatenaryStraight(std::vector<geometry_msgs::Vector3> &v_p_)
 {
     double _step = distance_3d / (double) num_point_catenary;
 
     for(int i=0; i < num_point_catenary ; i++)
     {       
-        geometry_msgs::Point p_;
+        geometry_msgs::Vector3 p_;
 
         p_.x = resolution * ( round(X1*div_res ));
         p_.y = resolution * ( round(Y1*div_res ));
@@ -484,7 +484,7 @@ void bisectionCatenary::setResolution(int res_)
 
 inline void bisectionCatenary::setFactorBisection(double _fa,double _fb){factor_bisection_a = _fa; factor_bisection_b = _fb;}
 
-void bisectionCatenary::getMinPointZCat(geometry_msgs::Point &p_, int &n_)
+void bisectionCatenary::getMinPointZCat(geometry_msgs::Vector3 &p_, int &n_)
 {
     p_.x = min_point_z_cat.x;
     p_.y = min_point_z_cat.y;
@@ -492,7 +492,7 @@ void bisectionCatenary::getMinPointZCat(geometry_msgs::Point &p_, int &n_)
     n_ = pos_in_cat_z_min;
 }
 
-void bisectionCatenary::getMidPointCat(geometry_msgs::Point &p_, int &n_)
+void bisectionCatenary::getMidPointCat(geometry_msgs::Vector3 &p_, int &n_)
 {
     p_.x = mid_point_cat.x;
     p_.y = mid_point_cat.y;
@@ -525,7 +525,7 @@ void bisectionCatenary::getStatusCollisionCat(std::vector<double> &dist_obst_cat
     last_coll_ = last_coll;
 }
     
-void bisectionCatenary::markerPoints(visualization_msgs::MarkerArray _marker, std::vector<geometry_msgs::Point> _vector, ros::Publisher c_m_pub_)
+void bisectionCatenary::markerPoints(visualization_msgs::MarkerArray _marker, std::vector<geometry_msgs::Vector3> _vector, ros::Publisher c_m_pub_)
 {
     std::string string_marker;
     std::string ns_marker;

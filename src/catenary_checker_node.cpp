@@ -55,10 +55,10 @@ void catenaryChecker::getPointCloud(const sensor_msgs::PointCloud2::ConstPtr& pc
 
 //! Gets a point and checks if there exists
 // void checkCatenary(const geometry_msgs::PoseStampedConstPtr &target_pose) //Commented by SMR to integrate in RRT
-bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
+bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Vector3 &pi_, const geometry_msgs::Vector3 &pf_, std::vector<geometry_msgs::Vector3> &pts_c_)
 {
   static int seq = 0;
-  geometry_msgs::Point pts_; // To save Catenary point
+  geometry_msgs::Vector3 pts_; // To save Catenary point
   // Get the pose of the robot or die
   // geometry_msgs::TransformStamped transformStamped;    //Commented by SMR to integrate in RRT
   DBSCAN *dbscan = NULL;
@@ -350,7 +350,7 @@ visualization_msgs::Marker catenaryChecker::pointsToMarker(const std::vector<Poi
   return _marker;
 }
 
-double catenaryChecker::getPointDistanceFullMap(bool use_dist_func_, geometry_msgs::Point p_)
+double catenaryChecker::getPointDistanceFullMap(bool use_dist_func_, geometry_msgs::Vector3 p_)
 {
 	double dist;
 	Eigen::Vector3d obs_, pos_;

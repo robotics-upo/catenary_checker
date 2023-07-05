@@ -43,7 +43,7 @@ void CatenaryCheckerManager::Init(double dist_cat_, double l_cat_max_, double ws
 	
 }
 
-bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
+bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Vector3 &pi_, const geometry_msgs::Vector3 &pf_, std::vector<geometry_msgs::Vector3> &pts_c_)
 {
    bool is_founded;
    pts_c_.clear();
@@ -67,7 +67,7 @@ bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Point &pi_, con
 	return is_founded;
 }
 
-bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_)
+bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Vector3 &p_reel_, const geometry_msgs::Vector3 &p_final_, std::vector<geometry_msgs::Vector3> &points_catenary_)
 {
 	double dist_init_final_ = sqrt(pow(p_reel_.x - p_final_.x,2) + pow(p_reel_.y - p_final_.y,2) + pow(p_reel_.z - p_final_.z,2));
 	double delta_ = 0.0;	//Initial Value
@@ -101,7 +101,7 @@ bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Poin
 			if (n_points_cat_dis_ < 5)
 				n_points_cat_dis_ = 5;
 			for (size_t i = 0 ; i < points_catenary_.size() ; i++){
-				geometry_msgs::Point point_cat;
+				geometry_msgs::Vector3 point_cat;
 				geometry_msgs::Vector3 p_in_cat_;
 				if (points_catenary_[i].z < ws_z_min*step + ((1*step)+security_dis_ca_)){
 					check_catenary = false;
