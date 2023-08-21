@@ -17,6 +17,9 @@ int main(int argc, char **argv)
 
     loop_rate.sleep();
   }
+
+  checker.exportStats("cat_stats.m");
+
   return 0;
 }
  

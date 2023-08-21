@@ -295,19 +295,19 @@ public:
 		m_gridSlicePub.publish(m_gridSliceMsg);
 	}
 	
-	bool isIntoMap(double x, double y, double z)
+	inline bool isIntoMap(double x, double y, double z) const
 	{
 		// printf("x=[%f / %f / %f]  y=[%f / %f / %f]  z=[%f / %f / %f]\n", min_X, x, max_X, min_Y, y, max_Y, min_Z, z, max_Z);
 		return (x > min_X && y > min_Y && z > min_Z && x < max_X && y < max_Y && z < max_Z);
 	}
 
-	double getPointDist(double x, double y, double z)
+	inline double getPointDist(double x, double y, double z) const
 	{
 		// printf("getPointDist: point2grid(%f, %f, %f)=%i\n",x,y,z,point2grid(x, y, z));
 		return m_grid[point2grid(x, y, z)].dist;
 	}
 
-	double getPointDistProb(double x, double y, double z)
+	inline double getPointDistProb(double x, double y, double z) const
 	{
 		return m_grid[point2grid(x, y, z)].prob;
 	}
@@ -647,14 +647,10 @@ protected:
 		m_icp.setInputTarget(m_cloud);
 	}
 	
-	void computeGrid(void)
+	void computeGrid()
 	{
 		printf("\n \tReady to Compute Grid 3D\n");
 
-		// std::string name_output_file = "/home/simon/grid_stage.txt";
-		// std::cout << "Saving data in output file for Grid3D : " << name_output_file << std::endl;
-		// ofs.open(name_output_file.c_str(), std::ofstream::app);
-		
 		//Publish percent variable
 		std_msgs::Float32 percent_msg;
 		percent_msg.data = 0;
@@ -681,46 +677,43 @@ protected:
 		double count=0;
 		double percent;
 		double size=m_gridSizeX*m_gridSizeY*m_gridSizeZ;
-		for(int iz=0; iz<m_gridSizeZ; iz++)
-		{
-			for(int iy=0; iy<m_gridSizeY; iy++)
-			{
-				for(int ix=0; ix<m_gridSizeX; ix++)
-				{
-					searchPoint.x = (min_X*m_oneDivRes+ix)*m_resolution;
-					searchPoint.y = (min_Y*m_oneDivRes+iy)*m_resolution;
-					searchPoint.z = (min_Z*m_oneDivRes+iz)*m_resolution;
-					index = ix + iy*m_gridStepY + iz*m_gridStepZ;
-					++count;
-					percent = count/size *100.0;
-					ROS_INFO_THROTTLE(0.5,"Progress: %lf %%", percent);	
 
-					// printf("index=[%i] m_resolution=[%f] searchPoint=[%f %f %f] ",index, m_resolution, searchPoint.x, searchPoint.y, searchPoint.z);
-					
-					if(m_kdtree.nearestKSearch(searchPoint, 1, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
-					{
-						dist = pointNKNSquaredDistance[0];
-						m_grid[index].dist = sqrt(dist);
-						m_grid[index].prob = gaussConst1*exp(-dist*dist*gaussConst2);
-					}
-					else
-					{
-						m_grid[index].dist = -1.0;
-						m_grid[index].prob =  0.0;
-					}
-					// printf(" , m_grid.dist= %f , m_grid.prob=%f\n", m_grid[index].dist, m_grid[index].prob);
+    int iy, ix, iz;
+#pragma omp parallel for shared(m_grid) private(ix, iy, iz, percent, count, size)
+    for(iz=0; iz<m_gridSizeZ; iz++)
+      {
+        for(iy=0; iy<m_gridSizeY; iy++)
+          {
+            for(ix=0; ix<m_gridSizeX; ix++)
+              {
+                searchPoint.x = (min_X*m_oneDivRes+ix)*m_resolution;
+                searchPoint.y = (min_Y*m_oneDivRes+iy)*m_resolution;
+                searchPoint.z = (min_Z*m_oneDivRes+iz)*m_resolution;
+                index = ix + iy*m_gridStepY + iz*m_gridStepZ;
+                ++count;
+                percent = count/size *100.0;
+                ROS_INFO_THROTTLE(0.5,"Progress: %lf %%", percent);	
+                  
+                // printf("index=[%i] m_resolution=[%f] searchPoint=[%f %f %f] ",index, m_resolution, searchPoint.x, searchPoint.y, searchPoint.z);
+                  
+                if(m_kdtree.nearestKSearch(searchPoint, 1, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+                  {
+                    dist = pointNKNSquaredDistance[0];
+                    m_grid[index].dist = sqrt(dist);
+                    m_grid[index].prob = gaussConst1*exp(-dist*dist*gaussConst2);
+                  }
+                else
+                  {
+                    m_grid[index].dist = -1.0;
+                    m_grid[index].prob =  0.0;
+                  }
+                // printf(" , m_grid.dist= %f , m_grid.prob=%f\n", m_grid[index].dist, m_grid[index].prob);
+                  
+                  
 
-
-					// if (ofs.is_open()) {
-					// 	ofs << "index=["<< index << "] m_resolution=[" << m_resolution << "] searchPoint=[" << searchPoint.x << " " <<searchPoint.y<< " " 
-					// 	<< searchPoint.z << "]  , m_grid.dist= "<< m_grid[index].dist << " , m_grid.prob= " << m_grid[index].prob << " ;" << std::endl;
-					// } 
-					// else 
-					// 	std::cout << "Couldn't be open the output data file for Grid3D" << std::endl;
-				}
-			}
-		}
-		// ofs.close();
+              }
+          }
+      }
 
 	}
 	
@@ -761,7 +754,7 @@ protected:
 			m_gridSliceMsg.data[i] = (int8_t)(m_grid[i+offset].prob*maxProb);
 	}
 	
-	inline int point2grid(const float &x, const float &y, const float &z)
+	inline int point2grid(const float &x, const float &y, const float &z) const
 	{
 		int value_ = (round((x-min_X)*m_oneDivRes)) + round((y-min_Y)*m_oneDivRes)*m_gridStepY + round((z-min_Z)*m_oneDivRes)*m_gridStepZ;
 		// printf("x= %f , y= %f , z= %f / min_X= %f , min_Y= %f , min_Z= %f \n",x, y, z, min_X, min_Y, min_Z);

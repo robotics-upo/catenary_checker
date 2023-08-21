@@ -162,25 +162,24 @@ std::vector<Point2D> Parable::getPoints(float &x1, float &x2, float delta_t) con
 float Parable::getLength(float &x1, float &x2, float delta_t) const {
   // We have to integrate: integral(x1,x2) of: sqrt(1+df/dx^2)dx
   // sqrt(1+(2ax+b)^2) = sqrt(1+4a²x²+b²+4abx)dx
-  // This integral has no primitive --> should be approximated
-  float ret_val=0.0f;
-  float ret_val1=0.0f; 
-  float ret_val2=0.0f; 
+  // This integral has no easy primitive --> can be approximated
+  float ret_val = 0.0f;
 
-  float a_2 = _a * _a * 4.0f;
-  float b_2 = _b * _b;
+  float a_2_4 = _a * _a * 4.0f;
+  float b_2_plus_1 = 1.0f + _b * _b;
   float a_b_4 = _a * _b * 4.0f;
 
-  for (float x = x1; x <= x2; x += delta_t) {
-    ret_val += std::sqrt(1 + b_2 + a_2 * x * x + a_b_4 * x);
+  if (x1 > x2) {
+    float aux = x1;
+    x1 = x2;
+    x2 = aux;
   }
-  ret_val *= delta_t;
-    // ret_val2 = std::sqrt(1 + b_2 + a_2 * x2 * x2 + a_b_4 * x2);
-    // ret_val1 = std::sqrt(1 + b_2 + a_2 * x1 * x1 + a_b_4 * x1);
-    // ret_val = ret_val2 - ret_val1;
 
-  return ret_val;
+  for (float x = x1; x <= x2; x += delta_t) {
+    ret_val += std::sqrt(b_2_plus_1 + a_2_4 * x * x + a_b_4 * x);
+  }
 
+  return ret_val * delta_t;
 }
 
 

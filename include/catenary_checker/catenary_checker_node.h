@@ -32,7 +32,7 @@ public:
 
   bool precomputedCheckCatenary(const pcl::PointXYZ &pi_,
                                 const pcl::PointXYZ &pf_,
-                                std::vector<geometry_msgs::Point> pts_c_);
+                                std::vector<geometry_msgs::Point> &pts_c_);
   double getPointDistanceFullMap(bool use_dist_func_, geometry_msgs::Point p_);
   void getDataForDistanceinformation(Grid3d *grid3D_, const sensor_msgs::PointCloud2::ConstPtr& msg, bool use_distance_function_);
   std_msgs::ColorRGBA getColor(int num);
@@ -59,6 +59,8 @@ public:
   bool use_distance_function;
   double min_dist_obs_cat, length_cat_final; // to fill q_init in RRT
   double length_cat;
+
+  float precomputing_time = -1.0;
 
   // Discretization of 2D planes
   std::vector<Scenario> discretized_planes;

@@ -24,7 +24,7 @@ float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenar
 //! @return The length of the catenary, or -1 if not found
 float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon);
 
-pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B, float delta_t=0.05);
+float getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B, pcl::PointCloud<pcl::PointXYZ> &par_points, float delta_t=0.05);
 
 //! @brief Makes a preprocess of several planes in a given (x,y) position (UGV fixed)
 //! @param A First point (fixed)

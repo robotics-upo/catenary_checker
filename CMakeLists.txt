@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.0.2)
 project(catenary_checker)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++14 -fPIC)
+add_compile_options(-std=c++14 -fPIC -fopenmp)
+add_link_options(-fopenmp)
 
 set(CMAKE_BUILD_TYPE Release)
 

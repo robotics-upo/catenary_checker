@@ -2,7 +2,8 @@
 #include "catenary_checker/parable.hpp"
 #include <chrono>
 
-pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B, float delta_t) {
+float getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B,
+                       pcl::PointCloud<pcl::PointXYZ> &p, float delta_t) {
   // Project to 2D the init and goal points
   auto plane = getVerticalPlane(A, B);
   Point2D A_(A.y * plane.a - A.x * plane.b, A.z);
@@ -11,14 +12,22 @@ pcl::PointCloud<pcl::PointXYZ> getParablePoints(Parable &parable, const pcl::Poi
   auto parable2d_points = parable.getPoints(A_.x, B_.x, delta_t);
   pcl::PointCloud<pcl::PointXY> parable2d;
   pcl::PointXY pcl_point;
-  for (auto &p:parable2d_points) {
-    pcl_point.x = p.x;
-    pcl_point.y = p.y;
-    parable2d.push_back(pcl_point);
+  float length = 0.0f;
+  if (parable2d_points.size() > 0) {
+    for (size_t i = 1; i < parable2d_points.size(); i++) {
+      auto p = parable2d_points[i];
+      auto q = parable2d_points[i-1];
+      pcl_point.x = p.x;
+      pcl_point.y = p.y;
+      parable2d.push_back(pcl_point);
+      length += sqrtf(powf(p.x - q.x, 2.0) + powf(p.y - q.y, 2.0));
+    }
   }
 
   // Simon: This is an example to get the 3D parable:
-  return reproject3D(parable2d, A, B);
+  p = reproject3D(parable2d, A, B);
+
+  return length;
 }
 
 float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenario scenario) {
@@ -34,7 +43,7 @@ float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenar
   if (parable.approximateParable(scenario, A_, B_)) {
     ret_val = parable.getLength(A_.x, B_.x);
     // Simon if you want the 3D points you can use:
-    auto x = getParablePoints(parable, A, B);
+    //auto x = getParablePoints(parable, A, B);
   }
 
   return ret_val;

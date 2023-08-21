@@ -146,8 +146,8 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
         return false;
 
       // ROS_INFO("Got parable: %s", parable.toString().c_str()); 
-
-      pcl::PointCloud<pcl::PointXYZ> pc_catenary = getParablePoints(parable,robot,target);
+      pcl::PointCloud<pcl::PointXYZ> pc_catenary;
+      getParablePoints(parable,robot,target, pc_catenary);
       // std::cout << "catenaryChecker::getPointCloud: pc_catenary.size()=" << pc_catenary.size() << std::endl;
       
       length_cat = parable.getLength(A.x, B.x);
@@ -180,7 +180,7 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
 
 bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
                                                const pcl::PointXYZ &pf_,
-                                               std::vector<geometry_msgs::Point> pts_c_)
+                                               std::vector<geometry_msgs::Point> &pts_c_)
 {
   if (n_planes < 1) {
     ROS_INFO("catenaryChecker precomputedCheckCatenary Error: n_planes not positive");
@@ -203,45 +203,41 @@ bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
     ROS_INFO("Number of precomputed planes: %d", static_cast<int>(discretized_planes.size()));
     clock_gettime(CLOCK_REALTIME, &finish_planes);
     auto sec_planes = finish_planes.tv_sec - start_planes.tv_sec;
-    auto msec_planes = (1000000000 - start_planes.tv_nsec) + finish_planes.tv_nsec;
-    float time_planes = (msec_planes + sec_planes * 1000000000.0)/1000000000.0;
-    std::cout << "Precomputed time: " << time_planes << std::endl << std::endl;
-
+    auto msec_planes = finish_planes.tv_nsec - start_planes.tv_nsec;
+    precomputing_time = (msec_planes + sec_planes * 1000000000.0)/1000000000.0;
+    std::cout << "Precomputed time: " << precomputing_time << std::endl << std::endl;
   }
 
   float angle = atanf((pf_.y - pi_.y)/(pf_.x - pi_.x));
-  if (angle < 0)
+  float mult = 1.0f;
+  if (angle < 0) {
     angle += M_PI;
+    mult = -1.0;
+  }
   int i = round(angle / M_PI * n_planes);
   if (i >= discretized_planes.size()) {
-    std::cout << "i before = " << i;
     i = i % discretized_planes.size();
-    std::cout << "\t i after = " << i<< std::endl;
   }
 
   auto aux = pi_; // Aux point to get the vertical plane properly
-  aux.x += cos(angle);
-  aux.y += sin(angle);
+  aux.x += (pf_.x - pi_.x) * mult;
+  aux.y += (pf_.y - pi_.y) * mult;
 
   auto plane = getVerticalPlane(pi_, aux); 
   Point2D A(pi_.y * plane.a - pi_.x * plane.b, pi_.z);
   Point2D B(pf_.y * plane.a - pf_.x * plane.b, pf_.z);
-  std::cout << "catenaryChecker::precomputedCheckCatenary: A:[" <<
-    A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
   Parable parable;
   get_catenary = parable.approximateParable(discretized_planes.at(i), A, B);
 
   if (!get_catenary)
     return false;
 
-  pcl::PointCloud<pcl::PointXYZ> pc_catenary = getParablePoints(parable, pi_, pf_);
-  // std::cout << "catenaryChecker::getPointCloud: pc_catenary.size()=" << pc_catenary.size() << std::endl;
-      
-  length_cat = parable.getLength(A.x, B.x);
+  pcl::PointCloud<pcl::PointXYZ> pc_catenary;
+  length_cat = getParablePoints(parable, pi_, pf_, pc_catenary);
 
   geometry_msgs::Point pts_; // To save Catenary point
+  pts_c_.clear();
   for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
-    // if (i%quot == 0){
     pts_.x = pc_catenary.points[pc_catenary.size()-(1+i)].x; 
     pts_.y = pc_catenary.points[pc_catenary.size()-(1+i)].y; 
     pts_.z = pc_catenary.points[pc_catenary.size()-(1+i)].z; 
