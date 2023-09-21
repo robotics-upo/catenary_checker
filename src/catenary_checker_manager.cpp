@@ -5,8 +5,7 @@ CatenaryCheckerManager::CatenaryCheckerManager(std::string node_name_)
 {
     nh.reset(new ros::NodeHandle("~"));
 	std::string node_name = "catenaryChecker_" + node_name_;
-
-	grid_3D = new Grid3d(node_name);
+	std::cout << std::endl << "Starting clar CatenaryCheckManager from " << node_name << std::endl;
 
 	cc = new catenaryChecker(nh);
     
@@ -21,8 +20,9 @@ void CatenaryCheckerManager::PointCloudCallback(const sensor_msgs::PointCloud2::
     ROS_INFO(PRINTF_YELLOW "CatenaryCheckerManager::PointCloudCallback: Received Point Cloud");
 }
  
-void CatenaryCheckerManager::Init(double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_parable_, bool use_distance_function_)
+void CatenaryCheckerManager::Init(Grid3d *grid_3D_, double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_parable_, bool use_distance_function_)
 {
+	grid_3D = grid_3D_;
     distance_catenary_obstacle = dist_cat_;
     length_tether_max = l_cat_max_;
     ws_z_min = ws_z_min_;
@@ -56,10 +56,6 @@ bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Vector3 &pi_, c
 			min_dist_obs_cat = -1.0;
 			length_cat_final = -1.0;
 		}
-		// for (size_t i = 0; i < pts_c_.size() ; i++){
-		// 	printf("CatenaryCheckerManager::SearchCatenary: pts_c_[%f %f %f]\n", pts_c_[i].x,pts_c_[i].y,pts_c_[i].z);
-		// }
-		// printf("\t\t CatenaryCheckerManager::SearchCatenary is_founded catenary = %s , min_dist_obs_cat=%f , length_cat_final=%f \n",is_founded?"true":"false",min_dist_obs_cat,length_cat_final);
     }
 	else
         is_founded = NumericalSolutionCatenary(pi_, pf_ ,pts_c_);
@@ -76,7 +72,6 @@ bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Vect
 	bool increase_catenary;
 	double length_catenary_;
 	int n_points_cat_dis_;
-	double security_dis_ca_ = distance_catenary_obstacle;
 
 	double coef_safety;
 	if (dist_init_final_ < 4.0)
@@ -103,7 +98,7 @@ bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Vect
 			for (size_t i = 0 ; i < points_catenary_.size() ; i++){
 				geometry_msgs::Vector3 point_cat;
 				geometry_msgs::Vector3 p_in_cat_;
-				if (points_catenary_[i].z < ws_z_min*step + ((1*step)+security_dis_ca_)){
+				if (points_catenary_[i].z < ws_z_min*step + ((1*step)+distance_catenary_obstacle)){
 					check_catenary = false;
 					break;
 				}
@@ -118,7 +113,7 @@ bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Vect
 						min_dist_obs_cat = dist_cat_obs;
 						d_min_point_cat = dist_cat_obs;
 					}
-					if (dist_cat_obs < security_dis_ca_){
+					if (dist_cat_obs < distance_catenary_obstacle){
 						delta_ = delta_ + 0.005;
 						increase_catenary = true;
 						break;
@@ -140,7 +135,7 @@ bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Vect
 	}while (check_catenary);
 	
 	if (!founded_catenary ){//In case not feasible to find catenary
-		length_cat_final = -1.0;	
+		length_cat_final = -3.0;	
 		min_dist_obs_cat = -1.0;
 		points_catenary_.clear();
 	}

@@ -85,24 +85,6 @@ bisectionCatenary::bisectionCatenary()
     factor_bisection_b = 1000.0;
     first_coll = 0;
     last_coll = 0;
-
-    use_markers = false;
-} 
-
-bisectionCatenary::bisectionCatenary(ros::NodeHandlePtr nhP_)
-{
-    num_point_per_unit_length = 10;
-    resolution = 0.05;
-    div_res = 1.0/resolution;
-    factor_bisection_a = 1000.0;
-    factor_bisection_b = 1000.0;
-    first_coll = 0;
-    last_coll = 0;
-    nhP = nhP_;
-
-    use_markers = true;
-
-	points_between_cat_marker_pub_ = nhP->advertise<visualization_msgs::MarkerArray>("points_between_cat_marker", 1);
 } 
 
 bisectionCatenary::bisectionCatenary(Grid3d* g_3D_ , double bound_obst_, octomap::OcTree* octotree_full_,
@@ -122,31 +104,6 @@ bisectionCatenary::bisectionCatenary(Grid3d* g_3D_ , double bound_obst_, octomap
     kdt_trav = trav_kdT_; 
     pc_trav = trav_pc_; 
 
-    use_markers = true;
-
-} 
-
-bisectionCatenary::bisectionCatenary(ros::NodeHandlePtr nhP_, Grid3d* g_3D_ , double bound_obst_, octomap::OcTree* octotree_full_,
-                                    pcl::KdTreeFLANN <pcl::PointXYZ> trav_kdT_, pcl::PointCloud <pcl::PointXYZ>::Ptr trav_pc_)
-{
-    num_point_per_unit_length = 10;
-    resolution = 0.05;
-    div_res = 1.0/resolution;
-    factor_bisection_a = 1000.0;
-    factor_bisection_b = 1000.0;
-    first_coll = 0;
-    last_coll = 0;
-    nhP = nhP_;
-
-    grid_3D = g_3D_; 
-    bound_obst = bound_obst_;
-    octotree_full = octotree_full_;
-    kdt_trav = trav_kdT_; 
-    pc_trav = trav_pc_; 
-
-    use_markers = true;
-
-	points_between_cat_marker_pub_ = nhP->advertise<visualization_msgs::MarkerArray>("points_between_cat_marker", 1);
 } 
 
 // bisectionCatenary::~bisectionCatenary(){} 
@@ -168,9 +125,9 @@ bool bisectionCatenary::configBisection(double _l, double _x1, double _y1, doubl
     if (L > distance_3d)
         getNumberPointsCatenary(L);
     else{
+        printf("Warning: Input Length minor that necesary distance between point to apply bisection method L=%.4f D=%.4f for points: P1= [%.3f %.3f %.3f] P2=[%.3f %.3f %.3f]\n", distance_3d, distance_3d, X1,Y1,Z1,X2,Y2,Z2);
+        printf("Warning: length propouse to compute points L=%.4f \n", 1.01*distance_3d);
         getNumberPointsCatenary(1.01*distance_3d);
-        printf("Warning: Input Length minor that necesary distance between point to apply bisection method L=%f , D=%f\n",1.01*distance_3d, distance_3d);
-        printf("P1= [%f %f %f]  P2=[%f %f %f]\n",X1,Y1,Z1,X2,Y2,Z2);
     }
 
     mid_p_cat = ceil(num_point_catenary/2.0);
@@ -254,8 +211,6 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Vector3> &v_p_,
         first_coll = last_coll = 0;
 
         min_distance_cat_obs = 1000.0;
-        if (use_markers)
-            clearMarkers(p_bet_cat_marker, 50, points_between_cat_marker_pub_);
 
         for(size_t i=0; i < num_point_catenary ; i++){
             y_value_ = (c_value * cosh((x_value_ - Xc)/c_value)+ (Yc - c_value)); // evalute CatenaryChain
@@ -349,8 +304,6 @@ void bisectionCatenary::getPointCatenary3D(vector<geometry_msgs::Vector3> &v_p_,
                             }
                         }
                     }
-                    if (use_markers) 
-                        markerPoints(p_bet_cat_marker, v_p_bet_cat, points_between_cat_marker_pub_);
                 }
             }
           

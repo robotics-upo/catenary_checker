@@ -108,6 +108,8 @@ public:
 
 		m_nodeName = node_name;
 
+		std::cout << std::endl << "	Initialazing  Grid3d  Class: from " <<  node_name << " node" << std::endl << std::endl;
+
 		if(!lnh.getParam("global_frame_id", m_globalFrameId))
 			m_globalFrameId = "map";	
 		if(!lnh.getParam("map_path", m_mapPath))

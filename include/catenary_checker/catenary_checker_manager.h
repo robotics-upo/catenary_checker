@@ -29,7 +29,7 @@ public:
     CatenaryCheckerManager(std::string node_name_);
     // ~CatenaryCheckerManager();
     void PointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
-    void Init(double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_parable_, bool use_distance_function_);
+    void Init(Grid3d *grid_3D_, double dist_cat_, double l_cat_max_, double ws_z_min_, double step_, bool use_parable_, bool use_distance_function_);
     bool SearchCatenary(const geometry_msgs::Vector3 &pi_, const geometry_msgs::Vector3 &pf_, std::vector<geometry_msgs::Vector3> &pts_c_);
     bool NumericalSolutionCatenary(const geometry_msgs::Vector3 &p_reel_, const geometry_msgs::Vector3 &p_final_, std::vector<geometry_msgs::Vector3> &points_catenary_);
     double getPointDistanceFullMap(bool use_dist_func_, geometry_msgs::Vector3 p_);
@@ -47,8 +47,9 @@ public:
     double min_dist_obs_cat, length_cat_final; // to fill q_init
     double use_distance_function, catenary_state; 
 
-private:
     Grid3d *grid_3D;
+
+private:
 
 };
 

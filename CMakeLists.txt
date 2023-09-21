@@ -101,6 +101,7 @@ add_library(${PROJECT_NAME}
    src/catenary_checker_node.cpp 
    src/catenary_checker_manager_node.cpp
    src/solve_parable_parameter.cpp
+   src/check_collision_path_planner.cpp
 )
 target_link_libraries(${PROJECT_NAME}
    ${EXTERNAL_LIBS}

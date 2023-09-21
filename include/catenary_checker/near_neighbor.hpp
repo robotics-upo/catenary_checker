@@ -83,11 +83,11 @@ inline void NearNeighbor::setKDTree(const std::vector<Eigen::Vector3d> &obs_)
 
 inline void NearNeighbor::setKDTree(const sensor_msgs::PointCloud2 &pc2_)
 {
-	ROS_INFO(PRINTF_MAGENTA "KDTree : Executed SetKDTree PointCloud2");
+	// ROS_INFO(PRINTF_MAGENTA "KDTree : Executed SetKDTree PointCloud2");
 	obs_points.reset(new pcl::PointCloud <pcl::PointXYZ>);
 	pcl::fromROSMsg(pc2_,*obs_points);
 
-	ROS_INFO(PRINTF_MAGENTA "KDTree : Size obs_points = [%lu]",obs_points->size());
+	// ROS_INFO(PRINTF_MAGENTA "KDTree : Size obs_points = [%lu]",obs_points->size());
 
 	kdtree.setInputCloud(obs_points);
 }

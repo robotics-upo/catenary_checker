@@ -35,12 +35,12 @@ bool ParableParametersSolver::solve(double _xA, double _yA, double _xB, double _
   Solve(options, &problem, &summary);
 
   // Some debug information
-  std::cout << summary.BriefReport() << "\n";
+  // std::cout << summary.BriefReport() << "\n";
 
   // Get the solution
   p = x[0]; q = x[1]; r = x[2]; 
 
-  std::cout <<"  p: " << p << " , q: " << q << " , r: "<< r << std::endl;
+  // std::cout <<"  p: " << p << " , q: " << q << " , r: "<< r << std::endl;
       
   return true; 
 }

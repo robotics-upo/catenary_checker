@@ -43,6 +43,12 @@ class GetParableParameter
 		virtual void getParablePoints(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, parable_parameters param_, std::vector<geometry_msgs::Vector3> &v_p_);
     	virtual void getPointParableStraight(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, std::vector<geometry_msgs::Vector3> &v_p_);
     	virtual void checkStateParable(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_);
+		// virtual void compute3DParable(vector<geometry_msgs::Vector3> &v_p_, 
+		// 							  geometry_msgs::Vector3 p1_, 
+		// 							  geometry_msgs::Vector3 p2_, 
+		// 							  double p, 
+		// 							  double q, 
+		// 							  double r);
 		
 
 		vector<geometry_msgs::Vector3> v_p_ugv, v_p_uav;
@@ -95,7 +101,6 @@ inline void GetParableParameter::ParametersParable()
 
 	for(size_t i = 0 ; i < v_p_ugv.size() ; i++){
 		p_reel_ = getReelPoint(v_p_ugv[i].x, v_p_ugv[i].y, v_p_ugv[i].z, v_r_ugv[i].x, v_r_ugv[i].y, v_r_ugv[i].z, v_r_ugv[i].w);
-		std::cout << "Cat ["<< i << "] " << std::endl;
 		ComputeParableArea(p_reel_, v_p_uav[i], vec_len_cat_init[i]);
 		PPS.solve(v_pts_A_2D[i].x, v_pts_A_2D[i].y, v_pts_B_2D[i].x, v_pts_B_2D[i].y, vec_areas[i]);
 		PPS.getParableParameters(param_p, param_q, param_r);
@@ -105,6 +110,69 @@ inline void GetParableParameter::ParametersParable()
 		v_parable_params.push_back(parable_params_);
 	}
 } 
+
+// inline void GetParableParameter::compute3DParable(
+// 						vector<geometry_msgs::Vector3> &v_p_, 
+// 						geometry_msgs::Vector3 p1_, 
+// 						geometry_msgs::Vector3 p2_, 
+// 						double p, 
+// 						double q, 
+// 						double r)
+// {
+// 	v_p_.clear();
+// 	double u_x, u_y, d_;
+// 	double fix_value = 0.01;
+// 	bool change_x = true; 
+// 	bool change_y = true;
+
+// 	if(p1_.x > p2_.x)
+// 		u_x = 1.0;
+// 	else if(p2_.x < p2_.x)
+// 		u_x = -1.0;
+// 	else
+// 		u_x = 0.0;    
+		
+// 	if(p2_.y > p2_.y)
+// 		u_y = 1.0;
+// 	else if(p2_.y < p2_.y)
+// 		u_y = -1.0;
+// 	else
+// 		u_y = 0.0;  
+	
+// 	if ((p2_.x - p2_.x) < fix_value && (p2_.x - p2_.x) > -1.0*fix_value) 
+// 		change_x = false;
+// 	if ((p2_.y - p2_.y) < fix_value && (p2_.y - p2_.y) > -1.0*fix_value)
+// 		change_y = false;
+
+// 	// About distance between UGV and UAV in the plane
+// 	if ( !change_x && !change_y )  //Not change in X-Y plane, so parable can't be compute
+// 		d_ = sqrt(pow(p2_.z-p1_.z,2)); 
+// 	else
+// 		d_ = sqrt(pow(p2_.x-p1_.x,2)+pow(p2_.y-p1_.y,2)); 
+	
+// 	int num_point_per_unit_length = 10;
+// 	int np_ = round( (double)num_point_per_unit_length * d_);
+	
+// 	double x_  =  0.0;
+// 	double tetha_ = atan((p2_.y - p2_.y)/(p2_.x - p2_.x));
+
+// 	geometry_msgs::Vector3 point_;
+// 	for(int i = 0; i < np_; i++){  
+// 		if ( !change_x && !change_y ){ // To check difference position between UGV and UAV only in z-axe, so parable it is not computed
+// 			double _step = d_ / (double) np_;
+// 			point_.x = p1_.x;
+// 			point_.y = p1_.y;
+// 			point_.z = p1_.z+ _step* (double)i;    
+// 		}
+// 		else{ 	// In case that UGV and UAV are not in the same point the plane X-Y
+// 			x_ = x_ + (d_/ np_);
+// 			point_.x = p1_.x + u_x * cos(tetha_) * x_;
+// 			point_.y = p1_.y + u_y * sin(tetha_) * x_;
+// 			point_.z = p * x_* x_ + q * x_ + r;
+// 		}
+// 		v_p_.push_back(point_);
+// 	}
+// }
 
 inline void GetParableParameter::ComputeParableArea(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, double length_)
 {
@@ -124,11 +192,7 @@ inline void GetParableParameter::ComputeParableArea(geometry_msgs::Vector3 p1_, 
     Y_2_ = (bc.c_value * bc.c_value * sinh((x2_ - bc.Xc)/bc.c_value)+ (bc.Yc - bc.c_value)*x2_); 
 	area_ = Y_2_ - Y_1_;
 	getParableInPlane(p1_, p2_, pt_A_2D_, pt_B_2D_);
-	// pt_A_2D_.x = x1_;
-	// pt_A_2D_.y = y1_;
-	// pt_B_2D_.x = x2_;
-	// pt_B_2D_.y = y2_;
-	std::cout << "   Y_1_= " << Y_1_ << " , Y_2_= " << Y_2_ << " , area = " << area_<<  std::endl;
+	// std::cout << "   Y_1_= " << Y_1_ << " , Y_2_= " << Y_2_ << " , area = " << area_<<  std::endl;
 	vec_areas.push_back(area_);
 	v_pts_A_2D.push_back(pt_A_2D_);
 	v_pts_B_2D.push_back(pt_B_2D_);
@@ -151,8 +215,6 @@ inline geometry_msgs::Vector3 GetParableParameter::getReelPoint(const float px_,
 
 	return ret;
 }
-
-
 
 inline void GetParableParameter::getParableInPlane(geometry_msgs::Vector3 v1_, geometry_msgs::Vector3 v2_, points_2D &pA_, points_2D &pB_){
 	geometry_msgs::Vector3 vd, va;
@@ -200,18 +262,23 @@ inline void GetParableParameter::getParablePoints(geometry_msgs::Vector3 p1_, ge
   	v_p_.clear();
 
 	d_ = sqrt(pow(p1_.x - p2_.x,2) + pow(p1_.y - p2_.y,2));
+	
 	if (d_ < 1.0)
-		d_ = 1.0;
-	num_point_catenary = round( (double)num_point_per_unit_length * d_);
+		num_point_catenary = floor(d_ * 10.0);
+	else
+		num_point_catenary = floor( (double)num_point_per_unit_length * d_);
+	
 	tetha_ = atan(fabs(p2_.y - p1_.y)/fabs(p2_.x - p1_.x));
 	
-	if (!x_const || !y_const){ 
+	if (!x_const && !y_const){ 
 		for(int i = 0; i < num_point_catenary; i++){
 			x_ = x_ + (d_/(double)num_point_catenary);
 			p_.x = p1_.x + _direc_x* cos(tetha_) * x_;
 			p_.y = p1_.y + _direc_y* sin(tetha_) * x_;
 			p_.z = param_.p * x_* x_ + param_.q * x_ + param_.r;
       		v_p_.push_back(p_);
+			if (p_.z > p2_.z)	// This condition is to stop the parables vector points when parable parameter doesnt cut the extreme points
+				break;
 		}
 	}
 	else{
@@ -221,47 +288,59 @@ inline void GetParableParameter::getParablePoints(geometry_msgs::Vector3 p1_, ge
 
 inline void GetParableParameter::getPointParableStraight(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, std::vector<geometry_msgs::Vector3> &v_p_)
 {
-	
-	double d_ = fabs(p1_.z - p2_.z);
-	int num_point_catenary = round( (double)num_point_per_unit_length * d_);
+	v_p_.clear();
+	double dx_ = p2_.x - p1_.x ;
+	double dy_ = p2_.y - p1_.y ;
+	double dz_ = p2_.z - p1_.z ;
+	int num_point_catenary = round( (double)num_point_per_unit_length * fabs(dz_));
 
-    double _step = d_ / (double) num_point_catenary;
+    double x_step = dx_ / (double) num_point_catenary;
+    double y_step = dy_ / (double) num_point_catenary;
+    double z_step = dz_ / (double) num_point_catenary;
+
+	// printf("GetParableParameter Straigth Tether: d_=[%.3f %.3f %.3f], num_point_catenary= %i , step=[%.3f %.3f %.3f] , p1_.z=%f, num_point_per_unit_length=%i\n",dx_,dy_,dz_, num_point_catenary, x_step, y_step,z_step, p1_.z ,  num_point_per_unit_length);
 
     for(int i=0; i < num_point_catenary ; i++)
     {       
         geometry_msgs::Vector3 p_;
 
-        p_.x = p1_.x;
-        p_.y = p1_.y;
-        p_.z = ( p1_.z+ _step* (double)i);    
+        p_.x = (p1_.x + x_step* (double)i);
+        p_.y = (p1_.y + y_step* (double)i);
+        p_.z = (p1_.z + z_step* (double)i);    
         v_p_.push_back(p_);
+		// std::cout << "straigth parable : " << p_.x << ", " << p_.y << ", " << p_.z << std::endl;
     }
 }
 
 inline void GetParableParameter::checkStateParable(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_)
 {
-  x_const = y_const = z_const = false;
+  	x_const = y_const = z_const = false;
 
-  if( fabs(p1_.x - p2_.x) <  0.001)
-        x_const = true;
-  if( fabs(p1_.y - p2_.y) <  0.001)
-        y_const = true;
-  if( fabs(p1_.z - p2_.z) <  0.001)
+//   if( fabs(p1_.x - p2_.x) <  0.05)
+//         x_const = true;
+//   if( fabs(p1_.y - p2_.y) <  0.05)
+//         y_const = true;
+	if (sqrt(pow(p1_.x - p2_.x,2)+pow(p1_.y - p2_.y,2)) < 0.25)
+		x_const = y_const= true;
+
+  	if( fabs(p1_.z - p2_.z) <  0.01)
         z_const = true;
 
-  if(p2_.x > p1_.x)
-        _direc_x = 1.0;
-  else if(p2_.x < p1_.x)
-        _direc_x = -1.0;
-  else if(p2_.x == p1_.x)
-        _direc_x = 0.0;    
-  
-  if(p2_.y > p1_.y)
-        _direc_y = 1.0;
-  else if(p2_.y < p1_.y)
-        _direc_y = -1.0;
-  else if(p2_.y == p1_.y)
-        _direc_y = 0.0;    
+	if(p2_.x > p1_.x)
+			_direc_x = 1.0;
+	else if(p2_.x < p1_.x)
+			_direc_x = -1.0;
+	else if(p2_.x == p1_.x)
+			_direc_x = 0.0;    
+	
+	if(p2_.y > p1_.y)
+			_direc_y = 1.0;
+	else if(p2_.y < p1_.y)
+			_direc_y = -1.0;
+	else if(p2_.y == p1_.y)
+			_direc_y = 0.0;    
 }
+
+
 
 #endif
