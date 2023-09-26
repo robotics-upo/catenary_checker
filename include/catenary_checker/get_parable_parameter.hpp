@@ -74,8 +74,10 @@ class GetParableParameter
 
 inline GetParableParameter::GetParableParameter(){}
 
-inline GetParableParameter::GetParableParameter(vector<geometry_msgs::Vector3> v_p_init_ugv_, vector<geometry_msgs::Vector3> v_p_init_uav_, 
-												vector<float> &v_l_cat_init_, vector<geometry_msgs::Quaternion> v_init_r_ugv_, 
+inline GetParableParameter::GetParableParameter(vector<geometry_msgs::Vector3> v_p_init_ugv_, 
+												vector<geometry_msgs::Vector3> v_p_init_uav_, 
+												vector<float> &v_l_cat_init_, 
+												vector<geometry_msgs::Quaternion> v_init_r_ugv_, 
 												geometry_msgs::TransformStamped p_reel_local_)
 {
 	v_p_ugv.clear();
@@ -102,7 +104,11 @@ inline void GetParableParameter::ParametersParable()
 	for(size_t i = 0 ; i < v_p_ugv.size() ; i++){
 		p_reel_ = getReelPoint(v_p_ugv[i].x, v_p_ugv[i].y, v_p_ugv[i].z, v_r_ugv[i].x, v_r_ugv[i].y, v_r_ugv[i].z, v_r_ugv[i].w);
 		ComputeParableArea(p_reel_, v_p_uav[i], vec_len_cat_init[i]);
-		PPS.solve(v_pts_A_2D[i].x, v_pts_A_2D[i].y, v_pts_B_2D[i].x, v_pts_B_2D[i].y, vec_areas[i]);
+		PPS.loadInitialSolution(0.3, 0.01, p_reel_.z);
+		// PPS.solve(v_pts_A_2D[i].x, v_pts_A_2D[i].y, v_pts_B_2D[i].x, v_pts_B_2D[i].y, vec_areas[i]);
+		double d_ = sqrt(pow(p_reel_.x-v_p_uav[i].x,2)+pow(p_reel_.y-v_p_uav[i].y,2));
+		// std::cout << "Solving ["<< i <<"]" << std::endl;
+		PPS.solve(0, p_reel_.z, d_, v_p_uav[i].z, vec_areas[i]);
 		PPS.getParableParameters(param_p, param_q, param_r);
 		parable_params_.p = param_p;
 		parable_params_.q = param_q;
@@ -255,33 +261,89 @@ inline void GetParableParameter::getParablePoints(geometry_msgs::Vector3 p1_, ge
   	num_point_per_unit_length = 20;
 	geometry_msgs::Vector3 p_;
 	int	num_point_catenary;
-	double d_, x_, y_, tetha_;
+	double d_, x_, y_, tetha_, dx_, dy_, dz_, dxy_;
+	// double dir_x_, dir_y_;
 	d_ = x_ = y_ = 0.0;
 
   	checkStateParable(p1_, p2_);
   	v_p_.clear();
 
-	d_ = sqrt(pow(p1_.x - p2_.x,2) + pow(p1_.y - p2_.y,2));
+	d_ = sqrt(pow(p1_.x - p2_.x,2) + pow(p1_.y - p2_.y,2) + pow(p1_.z - p2_.z,2));
+	
+	dx_ = (p2_.x - p1_.x);
+	// if (dx_ < 0.0)
+	// 	dir_x_ = -1.0;
+	// else
+	// 	dir_x_ = 1.0;
+	
+	dy_ = (p2_.y - p1_.y);
+	// if (dy_ < 0.0)
+	// 	dir_y_ = -1.0;
+	// else
+	// 	dir_y_ = 1.0;
+	
+	dz_ = (p2_.z - p1_.z);
+	
+	dxy_ = sqrt(pow(p1_.x - p2_.x,2) + pow(p1_.y - p2_.y,2) );
 	
 	if (d_ < 1.0)
-		num_point_catenary = floor(d_ * 10.0);
+		num_point_catenary = ceil(d_ * 10.0);
 	else
-		num_point_catenary = floor( (double)num_point_per_unit_length * d_);
+		num_point_catenary = ceil( (double)num_point_per_unit_length * d_);
 	
-	tetha_ = atan(fabs(p2_.y - p1_.y)/fabs(p2_.x - p1_.x));
-	
-	if (!x_const && !y_const){ 
+
+	// if (!x_const && !y_const || (!(dxy_ > 0.4) &&  !(dz_ > 4.0)) ){ 
+	if(!x_const || !y_const){ 
+		// std::cout << "	Case 1" << std::endl;
+		if (x_const)
+			tetha_ = 1.5707;
+		else if(y_const)
+			tetha_ = 0.0;
+		else
+			tetha_ = atan(fabs(p2_.y - p1_.y)/fabs(p2_.x - p1_.x));
+
 		for(int i = 0; i < num_point_catenary; i++){
-			x_ = x_ + (d_/(double)num_point_catenary);
+			x_ = x_ + (dxy_/(double)num_point_catenary);
 			p_.x = p1_.x + _direc_x* cos(tetha_) * x_;
 			p_.y = p1_.y + _direc_y* sin(tetha_) * x_;
 			p_.z = param_.p * x_* x_ + param_.q * x_ + param_.r;
-      		v_p_.push_back(p_);
 			if (p_.z > p2_.z)	// This condition is to stop the parables vector points when parable parameter doesnt cut the extreme points
 				break;
-		}
+      		v_p_.push_back(p_);
+				// std::cout << "		Case 1: num_point_catenary=" << num_point_catenary << " dxy_=" << dxy_ << " v_p_.size()=" << v_p_.size() <<" , fabs(p2_.y - p1_.y)="<< fabs(p2_.y - p1_.y)<< " , fabs(p2_.x - p1_.x)=" << fabs(p2_.x - p1_.x) <<std::endl;
+				// std::cout << "			param_=[" <<param_.p <<","<< param_.q <<","<< param_.r <<"] , tetha_=" << tetha_ << " , cos(tetha_)=" << cos(tetha_)<< " , sin(tetha_)=" << sin(tetha_) << std::endl;
+		}		
+	// }else if(x_const && !y_const){ 
+	// 	std::cout << "	Case 2" << std::endl;
+	// 	for(int i = 0; i < num_point_catenary; i++){
+	// 		x_ = x_ + dir_y_* (dxy_/(double)num_point_catenary);
+	// 		p_.x = (p2_.x + p1_.x)/2.0;
+	// 		p_.y = p1_.y  + x_;
+	// 		p_.z = param_.p * x_* x_ + param_.q * x_ + param_.r;
+	// 		if (p_.z > p2_.z)	// This condition is to stop the parables vector points when parable parameter doesnt cut the extreme points
+	// 			break;
+    //   		v_p_.push_back(p_);
+	// 			// std::cout << "		Case 2: num_point_catenary=" << num_point_catenary << " dxy_=" << dxy_ << " v_p_.size()=" << v_p_.size() <<" , fabs(p2_.y - p1_.y)="<< fabs(p2_.y - p1_.y)<< " , fabs(p2_.x - p1_.x)=" << fabs(p2_.x - p1_.x) <<std::endl;
+	// 			// std::cout << "			param_=[" <<param_.p <<","<< param_.q <<","<< param_.r <<"] , tetha_=" << tetha_ << " , cos(tetha_)=" << cos(tetha_)<< " , sin(tetha_)=" << sin(tetha_) << std::endl;
+	// 	}
+	// }
+	// else if(!x_const && y_const){ 
+	// 	std::cout << "	Case 3" << std::endl;
+	// 	for(int i = 0; i < num_point_catenary; i++){
+	// 		x_ = x_ + dir_x_* (dxy_/(double)num_point_catenary);
+	// 		p_.x = p1_.x + x_;
+	// 		p_.y = (p2_.y + p1_.y)/2.0;
+	// 		p_.z = param_.p * x_* x_ + param_.q * x_ + param_.r;
+	// 		if (p_.z > p2_.z)	// This condition is to stop the parables vector points when parable parameter doesnt cut the extreme points
+	// 			break;
+    //   		v_p_.push_back(p_);
+	// 			// std::cout << "		Case 3: num_point_catenary=" << num_point_catenary << " dxy_=" << dxy_ << " v_p_.size()=" << v_p_.size() <<" , fabs(p2_.y - p1_.y)="<< fabs(p2_.y - p1_.y)<< " , fabs(p2_.x - p1_.x)=" << fabs(p2_.x - p1_.x) <<std::endl;
+	// 			// std::cout << "			param_=[" <<param_.p <<","<< param_.q <<","<< param_.r <<"] , tetha_=" << tetha_ << " , cos(tetha_)=" << cos(tetha_)<< " , sin(tetha_)=" << sin(tetha_) << std::endl;
+	// 	}
 	}
 	else{
+		// std::cout << "		Case 4: Straight Tether"<<std::endl;
+		// std::cout << "	Case 4" << std::endl;
 		getPointParableStraight(p1_, p2_, v_p_);
 	}
 }
@@ -316,14 +378,14 @@ inline void GetParableParameter::checkStateParable(geometry_msgs::Vector3 p1_, g
 {
   	x_const = y_const = z_const = false;
 
-//   if( fabs(p1_.x - p2_.x) <  0.05)
-//         x_const = true;
-//   if( fabs(p1_.y - p2_.y) <  0.05)
-//         y_const = true;
-	if (sqrt(pow(p1_.x - p2_.x,2)+pow(p1_.y - p2_.y,2)) < 0.25)
+	if( fabs(p2_.x - p1_.x) <  0.01)
+			x_const = true;
+	if( fabs(p2_.y - p1_.y) <  0.01)
+			y_const = true;
+	if (sqrt(pow(p2_.x - p1_.x,2) + pow(p2_.y - p1_.y,2)) < 0.25 && fabs(p2_.z - p1_.z) > 0.4)
 		x_const = y_const= true;
 
-  	if( fabs(p1_.z - p2_.z) <  0.01)
+  	if( fabs(p2_.z - p1_.z) <  0.01)
         z_const = true;
 
 	if(p2_.x > p1_.x)

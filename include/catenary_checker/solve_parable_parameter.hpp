@@ -59,12 +59,13 @@ class ParableParametersSolver
 
     bool solve(double _xA, double _yA, double _xB, double _yB, double _A);
     void getParableParameters(double &_p, double &_q, double &_r);
+    void loadInitialSolution(double p1_, double p2_, double p3_ );
   
     int max_num_iterations;
     double p, q, r; 
+    double parameter1, parameter2, parameter3;
 
   private:
-
 
 };
 

@@ -1,22 +1,24 @@
 #include <catenary_checker/check_collision_path_planner.h>
 
 
-checkCollisionPathPlanner::checkCollisionPathPlanner(std::string node_name_, Grid3d *grid_3D_, sensor_msgs::PointCloud2::ConstPtr pc_, geometry_msgs::Vector3 p_reel_ugv_, double d_obs_ugv_, double d_obs_uav_, double d_obs_tether_)
+checkCollisionPathPlanner::checkCollisionPathPlanner(std::string node_name_, Grid3d *grid_3D_, geometry_msgs::Vector3 p_reel_ugv_, 
+													double d_obs_ugv_, double d_obs_uav_, double d_obs_tether_,
+													double length_tether_max_, double ws_z_min_, double step_, bool use_parable_, bool use_distance_function_)
 {
     //The tf buffer is used to lookup the base link position(tf from world frame to robot base frame)
     node_name = node_name_;
 	grid_3D = grid_3D_;
 	pc_obs_ugv = pc_;
-	nn_obs_ugv.setInput(*pc_obs_ugv);
+	// nn_obs_ugv.setInput(*pc_obs_ugv);
 	p_reel_ugv = p_reel_ugv_;
 	nh.reset(new ros::NodeHandle("~"));
 
-    // nh->param("distance_obstacle_ugv", distance_obstacle_ugv, (double)1.0);
-    // nh->param("distance_obstacle_uav", distance_obstacle_uav, (double)1.0);
-    // nh->param("distance_tether_obstacle", distance_tether_obstacle, (double)0.1);
 	distance_obstacle_ugv = d_obs_ugv_;
 	distance_obstacle_uav = d_obs_uav_;
 	distance_tether_obstacle = d_obs_tether_;
+
+    // CheckCM->Init(grid_3D, distance_tether_obstacle, length_tether_max, ws_z_min, map_resolution, use_parable, use_distance_function);
+	
 }
 
 bool checkCollisionPathPlanner::CheckStatus(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<double> ct_)
@@ -28,12 +30,14 @@ bool checkCollisionPathPlanner::CheckStatus(trajectory_msgs::MultiDOFJointTrajec
     double len_cat_, dist_;
 	bisectionCatenary bc;
 	count_ugv_coll = count_uav_coll = count_tether_coll = 0;
+	v_pos_coll_tether.clear();
 
     std::cout << std::endl << "	checkCollisionPathPlanner started: analizing collision status for the marsupial agents" << std::endl; 
     std::cout << "	                                   d_obs_ugv=" <<distance_obstacle_ugv << 
 				 " , d_obs_uav="<< distance_obstacle_uav << 
 				 " , d_obs_tether="<< distance_tether_obstacle<< std::endl; 
 	
+	int aux_coll_theter_ = 0;
 	for (size_t i= 0 ; i <  mt_.points.size(); i++){
 		p_ugv_.x = mt_.points.at(i).transforms[0].translation.x;
 		p_ugv_.y = mt_.points.at(i).transforms[0].translation.y;
@@ -55,13 +59,13 @@ bool checkCollisionPathPlanner::CheckStatus(trajectory_msgs::MultiDOFJointTrajec
 		q_.w = mt_.points.at(i).transforms[0].rotation.w;
 		
 
-		dist_ = getPointDistanceFullMap(true, p_ugv_,i,"UGV");
+		dist_ = CheckCM->getPointDistanceObstaclesMap(false, p_ugv_,i,"UGV");
         if (dist_ < distance_obstacle_ugv){
 			count_ugv_coll++;
             std::cout << "      The agent UGV in the state = " << i << " is in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
         }
 
-        dist_ = getPointDistanceFullMap(false, p_uav_,i,"UAV");
+        dist_ = CheckCM->getPointDistanceObstaclesMap(true, p_uav_,i,"UAV");
         if (dist_ < distance_obstacle_uav){
             count_uav_coll++;
 		    std::cout << "      The agent UAV in the state = " << i << " idistance_tether_obstacles in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
@@ -73,11 +77,17 @@ bool checkCollisionPathPlanner::CheckStatus(trajectory_msgs::MultiDOFJointTrajec
 		bool just_one_axe = bc.configBisection(len_cat_, p_reel_.x, p_reel_.y, p_reel_.z, p_uav_.x, p_uav_.y, p_uav_.z);
 		bc.getPointCatenary3D(points_catenary_, false);
 		for (size_t j = 0 ; j < points_catenary_.size() ; j++ ) {
-            dist_ = getPointDistanceFullMap(false, points_catenary_[j],i,"TETHER") ;
+            dist_ = CheckCM->getPointDistanceObstaclesMap(true, points_catenary_[j],i,"TETHER") ;
             if( dist_ < distance_tether_obstacle){
             	count_tether_coll++;
-            	std::cout << " 		The agent TETHER in the state = " << i << " position [" << j <<"] l=[" << len_cat_<<"] is in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
+				std::cout << " 		The agent TETHER in the state[" << i << "/"<< mt_.points.size() <<"] length["<< len_cat_<<"] position[" << j <<"/"<< points_catenary_.size() <<"] is in COLLISION ["
+						<< dist_ <<" mts to obstacle/"<< distance_tether_obstacle<<"] pto["<< points_catenary_[j].x <<", "<< points_catenary_[j].y << ", "<< points_catenary_[j].z <<"] reel[" 
+						<< p_reel_.x <<"," << p_reel_.y << "," << p_reel_.z <<"] UAV["<< p_uav_.x<<"," <<p_uav_.y <<"," << p_uav_.z << "]" <<std::endl; 
 			}
+		}
+		if(count_tether_coll != aux_coll_theter_){
+			v_pos_coll_tether.push_back(i);
+			aux_coll_theter_ = count_tether_coll;
 		}
 	}
 
@@ -107,18 +117,17 @@ bool checkCollisionPathPlanner::CheckStatus(vector<geometry_msgs::Vector3> v1_, 
 	// std::cout << "v1_= " << v1_.size() << " vq1_=" << vq1_.size() << " v2_=" << v2_.size() << " v3_=" << v3_.size() << std::endl;
     std::cout << std::endl << "	checkCollisionPathPlanner started: analizing collision status for the marsupial agents" << std::endl; 
 	
+	double bound_coll_factor = 0.5;
 	for (size_t i= 0 ; i <  v1_.size(); i++){
 
-        dist_ = getPointDistanceFullMap(true, v1_[i],i,"UGV");
-        // if (dist_ < 0.6){
-        if (dist_ < distance_obstacle_ugv){
+        dist_ = getPointDistanceObstaclesMap(false, v1_[i],i,"UGV");
+        if (dist_ < distance_obstacle_ugv * bound_coll_factor){
 			count_ugv_coll++;
             std::cout << "      The agent UGV in the state = " << i << " is in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
         }
 
-        dist_ = getPointDistanceFullMap(false, v2_[i],i,"UAV");
-        // if (dist_ < 0.6){
-        if (dist_ < distance_obstacle_uav){
+        dist_ = getPointDistanceObstaclesMap(true, v2_[i],i,"UAV");
+        if (dist_ < distance_obstacle_uav * bound_coll_factor){
             count_uav_coll++;
 		    std::cout << "      The agent UAV in the state = " << i << " is in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
 		}
@@ -130,10 +139,12 @@ bool checkCollisionPathPlanner::CheckStatus(vector<geometry_msgs::Vector3> v1_, 
 		// std::cout << "points_parable_.size() = " << points_parable_.size() << std::endl;
 
 		for (size_t j = 0 ; j < points_parable_.size() ; j++ ) {
-            dist_ = getPointDistanceFullMap(false, points_parable_[j],i,"TETHER") ;
-		    if( dist_ < (distance_tether_obstacle*0.5)){
+            dist_ = getPointDistanceObstaclesMap(true, points_parable_[j],i,"TETHER") ;
+		    if( dist_ < (distance_tether_obstacle * bound_coll_factor)){
             	count_tether_coll++;
-            	std::cout << " 		The agent TETHER in the state[" << i << "/"<< v1_.size()<<"] position[" << j <<"/"<< points_parable_.size() <<"] is in COLLISION ["<< dist_ <<" mts to obstacle/"<< distance_tether_obstacle*0.5<<"] pto["<< points_parable_[j].x <<", "<< points_parable_[j].y << ", "<< points_parable_[j].z <<"]" << std::endl; 
+            	std::cout << " 		The agent TETHER in the state[" << i << "/"<< v1_.size()<<"] position[" << j <<"/"<< points_parable_.size() <<"] is in COLLISION ["
+						<< dist_ <<" mts to obstacle/"<< distance_tether_obstacle*bound_coll_factor<<"] pto["<< points_parable_[j].x <<", "<< points_parable_[j].y << ", "<< points_parable_[j].z <<"] reel[" 
+						<< p_reel_.x <<"," << p_reel_.y << "," << p_reel_.z <<"] UAV["<< v2_[i].x<<"," <<v2_[i].y <<"," <<v2_[i].z << "]" <<std::endl; 
 			}
 		}
 	}
@@ -152,33 +163,30 @@ bool checkCollisionPathPlanner::CheckStatus(vector<geometry_msgs::Vector3> v1_, 
 	return ret_;
 }
 
-double checkCollisionPathPlanner::getPointDistanceFullMap(bool ugv_obstacle_, geometry_msgs::Vector3 p_, int pose_, string msg_)
+bool checkCollisionPathPlanner::CheckFreeCollisionPoint(geometry_msgs::Vector3 p_, string mode_, int pose_)
 {
-	double dist;
-
-	if(!ugv_obstacle_){
-		bool is_into_ = grid_3D->isIntoMap(p_.x,p_.y,p_.z);
-		if(is_into_)
-			dist =  grid_3D->getPointDist((double)p_.x,(double)p_.y,(double)p_.z) ;
-		else{
-            std::cout << "  The agent " << msg_ << " in the state = " << pose_ << " is out of the GRID["<<p_.x<< ", " << p_.y << ", " <<p_.z << "]"<< std::endl; 
-			dist = -1.0;
-        }
-    }
-	else{
-		Eigen::Vector3d pos_, obs_;
-		pos_.x() = p_.x;
-		pos_.y() = p_.y; 
-		pos_.z() = p_.z; 
-		obs_= nn_obs_ugv.nearestObstacleMarsupial(nn_obs_ugv.kdtree, pos_, nn_obs_ugv.obs_points);
-
-		if (pos_.z() < obs_.z()+0.05) // - 0.05 is because UGV can drive above 5 cm obstacles
-			dist = sqrt(pow(obs_.x()-pos_.x(),2) + pow(obs_.y()-pos_.y(),2) + pow(obs_.z()-pos_.z(),2));
-		else	
-			dist = 1.0; //For whole obstacle under or same altitud than UGV
+	double sefaty_distance_;
+	bool use_distance_function_;
+	if(mode_ == "UGV"){
+		sefaty_distance_ = distance_obstacle_ugv;
+		use_distance_function_ = false;
+	}else if(mode_ == "UAV"){
+		sefaty_distance_ = distance_obstacle_uav;
+		use_distance_function_ = true;
+	}else{
+		sefaty_distance_ = distance_tether_obstacle;
+		use_distance_function_ = true;
+	}	    
+    
+	double dist_ = getPointDistanceObstaclesMap(use_distance_function_, p_, pose_ ,mode_) ;
+	
+	if( dist_ < sefaty_distance_){
+		ROS_ERROR("checkCollisionPathPlanner::CheckFreeCollisionPoint : %s use_method[%s] Point in collision p[%.3f %.3f %.3f] d[%.3f/%.3f]",mode_.c_str(), use_distance_function_?"true":"false",p_.x,p_.y,p_.z, dist_, sefaty_distance_);
+		return false;
+	}else{
+		// ROS_INFO("checkCollisionPathPlanner::CheckFreeCollisionPoint : Point Not collision p[%.3f %.3f %.3%] d[%.3%/%.3f]",p_.x,p_.y,p_.z,dist_, sefaty_distance_);
+		return true;
 	}
-
-	return dist;
 }
 
 geometry_msgs::Vector3 checkCollisionPathPlanner::getReelNode(const geometry_msgs::Vector3 p_, const geometry_msgs::Quaternion q_)
@@ -204,3 +212,32 @@ double checkCollisionPathPlanner::getYawFromQuaternion(double x_, double y_, dou
 
 	return yaw_;
 }
+
+// double checkCollisionPathPlanner::getPointDistanceObstaclesMap(bool ugv_obstacle_, geometry_msgs::Vector3 p_, int pose_, string msg_)
+// {
+// 	double dist;
+
+// 	if(!ugv_obstacle_){
+// 		bool is_into_ = grid_3D->isIntoMap(p_.x,p_.y,p_.z);
+// 		if(is_into_)
+// 			dist =  grid_3D->getPointDist((double)p_.x,(double)p_.y,(double)p_.z) ;
+// 		else{
+//             std::cout << "\tThe agent " << msg_ << " in the state = " << pose_ << " is out of the GRID["<<p_.x<< ", " << p_.y << ", " <<p_.z << "]"<< std::endl; 
+// 			dist = -1.0;
+//         }
+//     }
+// 	else{
+// 		Eigen::Vector3d pos_, obs_;
+// 		pos_.x() = p_.x;
+// 		pos_.y() = p_.y; 
+// 		pos_.z() = p_.z; 
+// 		obs_= nn_obs_ugv.nearestObstacleMarsupial(nn_obs_ugv.kdtree, pos_, nn_obs_ugv.obs_points);
+
+// 		if (pos_.z() < obs_.z()+0.1) // - 0.05 is because UGV can drive above 5 cm obstacles
+// 			dist = sqrt(pow(obs_.x()-pos_.x(),2) + pow(obs_.y()-pos_.y(),2) + pow(obs_.z()-pos_.z(),2));
+// 		else	
+// 			dist = 1.0; //For whole obstacle under or same altitud than UGV
+// 	}
+
+// 	return dist;
+// }

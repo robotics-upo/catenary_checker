@@ -4,11 +4,21 @@
 ParableParametersSolver::ParableParametersSolver(void) 
 {
   // google::InitGoogleLogging("CatenaryCeresSolver");
-  max_num_iterations = 400;
+  max_num_iterations = 500;
+  parameter1 = 1.0;
+  parameter2 = 0.5;
+  parameter3 = 0.5;
 }
 
 ParableParametersSolver::~ParableParametersSolver(void)
 {
+} 
+
+void ParableParametersSolver::loadInitialSolution(double p1_, double p2_, double p3_ )
+{
+  parameter1 = p1_;
+  parameter2 = p2_;
+  parameter3 = p3_;
 } 
 
 
@@ -16,9 +26,9 @@ bool ParableParametersSolver::solve(double _xA, double _yA, double _xB, double _
 {
   // Initial solution
   double x[3];
-  x[0] = 1.0;
-  x[1] = 0.5;
-  x[2] = 0.5;
+  x[0] = parameter1;
+  x[1] = parameter2;
+  x[2] = parameter3;
           
    // Build the problem.
    Problem problem;

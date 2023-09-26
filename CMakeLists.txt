@@ -23,6 +23,8 @@ find_package(Qt5 REQUIRED COMPONENTS
   )
 
 find_package(Qt5Charts REQUIRED)
+find_package(Ceres REQUIRED)
+
 
 find_package(PCL 1.8 REQUIRED)
 find_package(PCL REQUIRED)
@@ -101,7 +103,7 @@ add_library(${PROJECT_NAME}
    src/catenary_checker_node.cpp 
    src/catenary_checker_manager_node.cpp
    src/solve_parable_parameter.cpp
-   src/check_collision_path_planner.cpp
+  #  src/check_collision_path_planner.cpp
 )
 target_link_libraries(${PROJECT_NAME}
    ${EXTERNAL_LIBS}
@@ -149,6 +151,8 @@ target_link_libraries(test_catenary_checker
    dbscan_line
    Qt5::Charts
    Qt5::Widgets
+   Ceres::ceres
+   ${CERES_LIBRARIES} 
    )
 # target_link_libraries(catenary_checker_manager_node
 #    ${catkin_LIBRARIES}
