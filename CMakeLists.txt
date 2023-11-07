@@ -28,7 +28,7 @@ find_package(Ceres REQUIRED)
 
 find_package(PCL 1.8 REQUIRED)
 find_package(PCL REQUIRED)
-find_package(Ceres REQUIRED)
+
 
 include_directories( include/
   ${catkin_INCLUDE_DIRS}
@@ -108,7 +108,7 @@ add_library(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
    ${EXTERNAL_LIBS}
    ${catkin_LIBRARIES}
-   Ceres::ceres
+
    ${CERES_LIBRARIES}
 )
 
