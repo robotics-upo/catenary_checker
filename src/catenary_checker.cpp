@@ -2,18 +2,36 @@
 #include "catenary_checker/parable.hpp"
 #include <chrono>
 
-float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,
-		    const pcl::PointCloud<pcl::PointXYZ> &pc, double plane_dist,
-		    float dbscan_min_points, float dbscan_epsilon) {
+float getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B,
+                       pcl::PointCloud<pcl::PointXYZ> &p, float delta_t) {
+  // Project to 2D the init and goal points
+  auto plane = getVerticalPlane(A, B);
+  Point2D A_(A.y * plane.a - A.x * plane.b, A.z);
+  Point2D B_(B.y * plane.a - B.x * plane.b, B.z);
 
-  double ret_val;
+  auto parable2d_points = parable.getPoints(A_.x, B_.x, delta_t);
+  pcl::PointCloud<pcl::PointXY> parable2d;
+  pcl::PointXY pcl_point;
+  float length = 0.0f;
+  if (parable2d_points.size() > 0) {
+    for (size_t i = 1; i < parable2d_points.size(); i++) {
+      auto p = parable2d_points[i];
+      auto q = parable2d_points[i-1];
+      pcl_point.x = p.x;
+      pcl_point.y = p.y;
+      parable2d.push_back(pcl_point);
+      length += sqrtf(powf(p.x - q.x, 2.0) + powf(p.y - q.y, 2.0));
+    }
+  }
 
-  // Project the points to 2D
-  auto points_2d = project2D(pc, A, B, plane_dist);
+  // Simon: This is an example to get the 3D parable:
+  p = reproject3D(parable2d, A, B);
 
-  // Get the obstacles 2D clustered
-  auto dbscan = clusterize(points_2d, dbscan_min_points, dbscan_epsilon);
-  auto scenario = getObstacles(dbscan);
+  return length;
+}
+
+float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenario scenario) {
+  double ret_val = -1.0;
 
   // Project to 2D the init and goal points
   auto plane = getVerticalPlane(A, B);
@@ -22,117 +40,30 @@ float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,
 
   // Get the parable
   Parable parable;
-  parable.approximateParable(scenario, A_, B_);
-
-  // Return the longitude of the parable
+  if (parable.approximateParable(scenario, A_, B_)) {
+    ret_val = parable.getLength(A_.x, B_.x);
+    // Simon if you want the 3D points you can use:
+    //auto x = getParablePoints(parable, A, B);
+  }
 
   return ret_val;
 }
 
-pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cloud_in,
-					const pcl::PointXYZ &p1,
-					const pcl::PointXYZ &p2, const float max_dist)
+float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon) 
 {
-  PlaneParams plane = getVerticalPlane(p1, p2);
-  pcl::PointCloud<pcl::PointXY> ret;
+  // Project the points to 2D
+  auto scenario = PC2Obstacles(A, B, pc, plane_dist, dbscan_min_points, dbscan_epsilon);
 
-  const std::chrono::steady_clock::time_point start(std::chrono::steady_clock::now());
-
-  // Get the x' coordinate of p1 and p2
-
-  float x_1_prima = -p1.x * plane.b + p1.y * plane.a;
-  float x_2_prima = -p2.x * plane.b + p2.y * plane.a;
-
-  float min_x = std::min(x_1_prima, x_2_prima);
-  float max_x = std::max(x_1_prima, x_2_prima);
-  float max_y = std::max(p1.z, p2.z);
-
-  for (int i = cloud_in.size() - 1; i >= 0 ; i--) {
-    const pcl::PointXYZ &p = cloud_in[i];
-    float dist = plane.getSignedDistance(p);
-        
-    if (fabsf(dist) < max_dist) {
-            
-      // Get the point of the plane
-      pcl::PointXYZ p_plane(p.x - plane.a * dist, 
-			    p.y - plane.b * dist, 
-			    p.z);
-
-      // std::cout << "Adding Point. (" << p.x << ", " << p.y << ", "
-      // << p.z << ")\t Abs Dist: " << fabsf(dist) << "\n";
-
-      // Translate to 2D --> x coord is:  - p.x * plane.b + p.y * plane.a
-      pcl::PointXY projected_point;
-      projected_point.x = p_plane.y * plane.a - p_plane.x * plane.b;
-      projected_point.y = p_plane.z;
-
-      // Before adding the points, check if they pass these
-
-      if (projected_point.x > min_x && projected_point.x < max_x &&
-	  projected_point.y < max_y) {
-
-	ret.push_back(projected_point);
-      }
-    }
-  }
-  const std::chrono::steady_clock::time_point end(std::chrono::steady_clock::now());
-
-  std::cout << "Project2d. Cloud in size: " << cloud_in.size() << std::endl;
-  std::cout << "Got plane: " << plane.toString() << std::endl;
-  const auto t = std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count();
-  std::cout << "Elapsed time: " << t << " us\n";
-
-  return ret;
+  return checkCatenary(A, B, scenario);
 }
 
-pcl::PointCloud<pcl::PointXYZ> reproject3D(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
-					   pcl::PointXYZ &p1, pcl::PointXYZ &p2)
-{
-  pcl::PointCloud<pcl::PointXYZ> ret;
-  pcl::PointXYZ delta(p2);
-  delta.x -= p1.x;
-  delta.y -= p1.y;
-  delta.z = 0;
-  float dist = sqrtf(delta.x * delta.x + delta.y * delta.y); // Normalize
-  delta.x /= dist;
-  delta.y /= dist;
+Scenario PC2Obstacles(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon) {
+  auto points_2d = project2D(pc, A, B, plane_dist);
 
-  auto plane = getVerticalPlane(p1, p2);
-    
-  for (int i = cloud_2d_in.size() - 1; i >= 0; i--) {
-    const pcl::PointXY &p_2d = cloud_2d_in[i];
-        
-    // Get the point of the plane and translate back to 3D
-    pcl::PointXYZ p_3d(p_2d.x * delta.x - plane.a * plane.d, 
-		       p_2d.x * delta.y - plane.b * plane.d, 
-		       p_2d.y);
-
-    ret.push_back(p_3d);
-  }
-
-  return ret;
+  // Get the obstacles 2D clustered
+  auto dbscan = clusterize(points_2d, dbscan_min_points, dbscan_epsilon);
+  return getObstacles(dbscan);
 }
-
-PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2) {
-  PlaneParams plane;
-
-  // The normal vector will be (v2 - v1).crossproduct(0,0,1) -->
-  // (x2 - x1, y2 - y1, z2 - z1) x (0, 0, 1) -->  n = (y2 - y1, x1 - x2, 0) 
-  plane.a = p2.y - p1.y;
-  plane.b = p1.x - p2.x;
-  plane.c = 0;
-
-  // Normalize:
-  float dist = sqrtf(plane.a * plane.a + plane.b * plane.b);
-  plane.a /= dist;
-  plane.b /= dist;
-    
-  // Get d by substituting another point ( n * p1 + d = 0 ) --> d = - n * p1
-  plane.d = - plane.a * p1.x - plane.b * p1.y;
-
-  return plane;
-}
-
 
 DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts, float epsilon)
 {
@@ -183,7 +114,7 @@ std::vector<Obstacle2D> getObstacles(DBSCAN *dbscan) {
   int dbscan_min_points = dbscan->getMinimumClusterSize();
   for (int i = 1; i < dbscan->getNClusters(); i++) {
     auto cluster = dbscan->getCluster(i);
-    printf("Cluster %d. Size: %lu", i, cluster.size());
+    // printf("Cluster %d. Size: %lu", i, cluster.size());
     if (cluster.size() > dbscan_min_points) {
       auto curr_obstacle = toObstacle(cluster);
       ret.push_back(curr_obstacle);
@@ -207,4 +138,23 @@ Obstacle2D toObstacle(const std::vector<Point> &obs) {
     ret.calculateConvexHull();
 
   return ret;
+}
+
+std::vector<Scenario> preprocessObstacle2D(const pcl::PointXYZ &A, const pcl::PointCloud<pcl::PointXYZ> &pc, int n_planes, float plane_dist, int dbscan_min_points, float dbscan_epsilon) {
+  std::vector<Scenario> planes;
+
+  // We have to sample only Pi (one plane goes to a direction and its opposite)
+  float increment = M_PI / static_cast<float>(n_planes);
+
+  float angle = 0.0;
+  for (int i = 0; i < n_planes; i++, angle += increment) {
+    pcl::PointXYZ B = A;
+    B.x += cos(angle);
+    B.y += sin(angle);
+
+    auto scene = PC2Obstacles(A, B, pc, plane_dist, dbscan_min_points, dbscan_epsilon);
+    planes.push_back(scene);
+  }
+
+  return planes;
 }

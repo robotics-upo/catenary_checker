@@ -31,7 +31,7 @@ To compile it, please clone the repository into the src folder of your favourite
   git clone https://github.com/robotics-upo/catenary_checker
 ```
 
-Then, use a compilation utility to build the binaries (for example catkin_make).
+Then, use a build utility to build the binaries (for example catkin_make).
 
 ```
 cd ~/catkin_ws

@@ -4,7 +4,7 @@
   <arg name="robot_x" default="1.5"/>
   <arg name="robot_y" default="2.0"/>
   <arg name="robot_z" default="0.5"/>
-  # Robot position. You better use a good odometry estrimator as LOAM
+  # Robot position. You better use a good odometry estimator as LOAM
   <node pkg="tf" type="static_transform_publisher" name="odom_tf" args="$(arg robot_x) $(arg robot_y) $(arg robot_z) 0 0 0 map base_link 10" />
 
   <arg name="target_x" default="1.25"/>
@@ -29,7 +29,7 @@
   <arg name="use_dbscan_lines" default="true"/>
   <arg name="dbscan_min_points" default="5"/>
   
-  <node name="catenary_checker" pkg="catenary_checker" type="catenary_checker_node" output="screen"  launch-prefix="xterm -e gdb -ex run --args">
+  <node name="catenary_checker" pkg="catenary_checker" type="catenary_checker_node" output="screen"  > <!-- launch-prefix="xterm -e gdb -ex run - -args" -->
     <param name="plane_dist" value="$(arg plane_dist)"/>
     <param name="dbscan_min_points" value="$(arg dbscan_min_points)"/>
     <param name="dbscan_epsilon" value="$(arg dbscan_epsilon)"/>
