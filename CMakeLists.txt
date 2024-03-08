@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(catenary_checker)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++14 -fPIC -fopenmp)
+add_compile_options(-std=c++17 -fPIC -fopenmp)
 add_link_options(-fopenmp)
 
 set(CMAKE_BUILD_TYPE Release)
@@ -27,6 +27,7 @@ find_package(Qt5Charts REQUIRED)
 
 find_package(PCL 1.8 REQUIRED)
 find_package(PCL REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 include_directories( include/
   ${catkin_INCLUDE_DIRS}
@@ -34,12 +35,13 @@ include_directories( include/
   ${PCL_INCLUDE_DIRS}
   ${Qt5Widgets_INCLUDE_DIRS}
   ${Qt5Charts_INCLUDE_DIRS}
+  ${yaml-cpp_INCLUDE_DIRS}
 )
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 set(EXTERNAL_INCLUDE_DIRS ${PCL_INCLUDE_DIRS} )
-set(EXTERNAL_LIBS ${PCL_LIBRARIES} )
+set(EXTERNAL_LIBS ${PCL_LIBRARIES} ${yaml-cpp_LIBRARIES})
 
 
 ###################################
@@ -70,18 +72,8 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
   ${Qt5Widgets_INCLUDE_DIRS}
   ${Qt5Charts_INCLUDE_DIRS}
-)
-
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
-
-set(EXTERNAL_INCLUDE_DIRS ${Eigen_INCLUDE_DIRS}${PCL_INCLUDE_DIRS} )
-set(EXTERNAL_LIBS ${PCL_LIBRARIES} )
-
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
   ${Qt5_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -95,10 +87,12 @@ add_library(${PROJECT_NAME}
    src/bisection_catenary_3D.cpp
    src/catenary_checker_node.cpp 
    src/catenary_checker_manager_node.cpp
+   src/preprocessed_scenario.cpp
 )
 target_link_libraries(${PROJECT_NAME}
    ${EXTERNAL_LIBS}
    ${catkin_LIBRARIES}
+   ${YAML_CPP_LIBRARIES}
 )
 
 ## Add cmake target dependencies of the library
@@ -112,7 +106,9 @@ target_link_libraries(${PROJECT_NAME}
 
 add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp )
 add_executable(test_catenary_checker src/test_catenary_checker.cpp)
-add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
+add_executable(test_preprocessed_scenario src/test_preprocessed_scenario.cpp)
+add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp)
+
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -124,6 +120,7 @@ add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.c
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(test_catenary_checker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME})
+add_dependencies(test_preprocessed_scenario ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME})
 add_dependencies(${PROJECT_NAME}_manager_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
@@ -133,6 +130,7 @@ target_link_libraries(${PROJECT_NAME}_node
     Qt5::Charts
     Qt5::Widgets
     dbscan_line
+    ${EXTERNAL_LIBRARIES}    
     )
 target_link_libraries(test_catenary_checker
    ${PROJECT_NAME}
@@ -140,13 +138,24 @@ target_link_libraries(test_catenary_checker
    dbscan_line
    Qt5::Charts
    Qt5::Widgets
+   ${EXTERNAL_LIBRARIES}   
    )
+target_link_libraries(test_preprocessed_scenario
+   ${PROJECT_NAME}
+   ${catkin_LIBRARIES}
+   dbscan_line
+   Qt5::Charts
+   Qt5::Widgets
+   ${EXTERNAL_LIBRARIES}   
+   )
+
 target_link_libraries(catenary_checker_manager_node
    ${catkin_LIBRARIES}
    ${PROJECT_NAME}
    Qt5::Charts
    Qt5::Widgets
    dbscan_line
+   ${EXTERNAL_LIBRARIES}
     )
 
 add_executable(create_grid3d_node src/create_grid3d_node.cpp) 
@@ -155,7 +164,9 @@ ${PROJECT_NAME}
 ${catkin_LIBRARIES}
 dbscan_line
 Qt5::Charts
-Qt5::Widgets)
+Qt5::Widgets
+${EXTERNAL_LIBRARIES}
+)
 
 # add_executable(create_grid3d_node src/create_grid3d_node.cpp) 
 # target_link_libraries(create_grid3d_node ${PROJECT_NAME})

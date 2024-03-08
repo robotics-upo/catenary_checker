@@ -2,6 +2,8 @@
 #include "catenary_checker/parable.hpp"
 #include <chrono>
 
+using namespace pcl;
+
 float getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B,
                        pcl::PointCloud<pcl::PointXYZ> &p, float delta_t) {
   // Project to 2D the init and goal points
@@ -30,7 +32,7 @@ float getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::Poin
   return length;
 }
 
-float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenario scenario) {
+float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenario &scenario) {
   double ret_val = -1.0;
 
   // Project to 2D the init and goal points
@@ -62,7 +64,7 @@ Scenario PC2Obstacles(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::
 
   // Get the obstacles 2D clustered
   auto dbscan = clusterize(points_2d, dbscan_min_points, dbscan_epsilon);
-  return getObstacles(dbscan);
+  return getObstacles(dbscan, A, B);
 }
 
 DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts, float epsilon)
@@ -109,8 +111,8 @@ DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
 }
 
 
-std::vector<Obstacle2D> getObstacles(DBSCAN *dbscan) {
-  std::vector<Obstacle2D> ret;
+Scenario getObstacles(DBSCAN *dbscan, pcl::PointXYZ A, pcl::PointXYZ B) {
+  Scenario ret;
   int dbscan_min_points = dbscan->getMinimumClusterSize();
   for (int i = 1; i < dbscan->getNClusters(); i++) {
     auto cluster = dbscan->getCluster(i);
@@ -120,6 +122,16 @@ std::vector<Obstacle2D> getObstacles(DBSCAN *dbscan) {
       ret.push_back(curr_obstacle);
     }
   }
+  ret.origin.x = A.x;
+  ret.origin.y = A.y;
+
+  float dx = B.x - A.x;
+  float dy = B.y - A.y;
+  float dist = sqrt(dx*dx + dy*dy);
+  ret.unit_vec.x = dx / dist;
+  ret.unit_vec.y = dy / dist;
+
+  ret.plane = getVerticalPlane(A,B);
 
   return ret;
 }
@@ -140,6 +152,8 @@ Obstacle2D toObstacle(const std::vector<Point> &obs) {
   return ret;
 }
 
+//! @brief Decomposes a 3D scenario into a vector of planes with different directions
+//! @brief passing through point A.
 std::vector<Scenario> preprocessObstacle2D(const pcl::PointXYZ &A, const pcl::PointCloud<pcl::PointXYZ> &pc, int n_planes, float plane_dist, int dbscan_min_points, float dbscan_epsilon) {
   std::vector<Scenario> planes;
 
@@ -158,3 +172,6 @@ std::vector<Scenario> preprocessObstacle2D(const pcl::PointXYZ &A, const pcl::Po
 
   return planes;
 }
+
+
+

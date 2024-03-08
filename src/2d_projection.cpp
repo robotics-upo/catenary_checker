@@ -11,7 +11,7 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
   PlaneParams plane = getVerticalPlane(p1, p2);
   pcl::PointCloud<pcl::PointXY> ret;  
 
-  const std::chrono::steady_clock::time_point start(std::chrono::steady_clock::now());
+  //const std::chrono::steady_clock::time_point start(std::chrono::steady_clock::now());
 
   // Get the x' coordinate of p1 and p2
 
@@ -50,11 +50,11 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
       }
     }
   }
-  const std::chrono::steady_clock::time_point end(std::chrono::steady_clock::now());
+  //const std::chrono::steady_clock::time_point end(std::chrono::steady_clock::now());
 
   // std::cout << "Project2d. Cloud in size: " << cloud_in.size() << std::endl;
   // std::cout << "Got plane: " << plane.toString() << std::endl;
-  const auto t = std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count();
+  // const auto t = std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count();
   // std::cout << "Elapsed time: " << t << " us\n";
 
   return ret;

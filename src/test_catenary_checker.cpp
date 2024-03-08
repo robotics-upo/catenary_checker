@@ -1,6 +1,7 @@
 #include "catenary_checker/catenary_checker.hpp"
 #include "catenary_checker/obstacle_2d.hpp"
 #include "catenary_checker/parable.hpp"
+#include "catenary_checker/preprocessed_scenario.hpp"
 #include <string>
 
 #include <QtWidgets/QApplication>
@@ -13,24 +14,27 @@
 #include <QtCharts/QPolarChart>
 #include <QtCharts/QChartView>
 #include <QtCore/QDebug>
+#include <fstream>
 
 using namespace std;
 
 // Add the Qt namespaces for god sake!!
 QT_CHARTS_USE_NAMESPACE
 
-QChartView *represent_problem(const std::vector<Obstacle2D> &scenario, const Point2D &A,
+QChartView *represent_problem(const vector<Obstacle2D> &scenario, const Point2D &A,
 			     const Point2D &B, const Parable &parabol);
+
+QChartView *represent_lines(const vector <TwoPoints> problems);
 
 int main(int argc, char **argv) {
   QApplication a(argc, argv);
-  std::vector<Obstacle2D> scenario;
+  Scenario scenario;
 
   Point2D p1, p2;
   p1.x = 3;   p1.y = 3.0; 
   p2.x = 4.2; p2.y = 4.7;
 
-  scenario.push_back(Obstacle2D::rectangle(p1, p2));
+  scenario.push_back(Obstacle2D::rectangle(p1, p2, 0.2f));
   
   p1.x = 2.0; p1.y = 2.8; 
   scenario.push_back(Obstacle2D::randomObstacle(p1, 20, 0.2));
@@ -40,10 +44,34 @@ int main(int argc, char **argv) {
 
   p1.x = 3; p1.y = 4;
   p2.x = 6; p2.y = 5;
-  scenario.push_back(Obstacle2D::rectangle(p1, p2));
+  scenario.push_back(Obstacle2D::rectangle(p1, p2, 0.2f));
 
   int i = 0;
 
+  YAML::Emitter e;
+  e << scenario;
+
+  // Test the saving and retrieving of the scenario
+  Scenario s;
+  if (argc >= 2) {
+    cout << "Exporting YAML of test scenario to file: " << argv[1];
+
+    ofstream ofs(argv[1]);
+    ofs << e.c_str() << endl << endl;
+
+    ofs.close();
+
+    ifstream ifs(argv[1]);
+
+    
+
+    if (s.loadScenario(std::string(argv[1]))) {
+      cout << "Could load scenario back. Size: " << s.size() << endl;
+    }
+  }
+
+
+  // Test the algorithm for getting a parable from an scenario
   Parable parable;
   // Put the origin (p1) and target (p2) coordinates
   p1.x = 1.5; p1.y = 2;
@@ -54,12 +82,16 @@ int main(int argc, char **argv) {
     std::cout << "Parable failed miserably!\n";
   }
 
-  auto chart_view = represent_problem(scenario, p1, p2, parable);
+  if (s.size() == 0) {
+    s = scenario;
+  }
+  auto chart_view = represent_problem(s, p1, p2, parable);
 
   QMainWindow window;
   window.setCentralWidget(chart_view);
   window.resize(800,600);
   window.show();
+
   
   return a.exec();
 }
@@ -104,3 +136,36 @@ QChartView *represent_problem(const std::vector<Obstacle2D> &scenario, const Poi
   return ret;
 
 }
+
+QChartView *represent_lines(const vector <TwoPoints> problems) {
+  QChartView *ret = new QChartView();
+  QChart *chart = new QChart();
+
+  static QColor colours[10] = {QColor("cyan"), QColor("magenta"), QColor("red"),
+                               QColor("darkRed"), QColor("darkCyan"), QColor("darkMagenta"),
+                               QColor("green"), QColor("darkGreen"), QColor("yellow"),
+                               QColor("blue")};  
+  
+  int i = 0;
+
+
+  for (auto &x:problems) {
+    auto series = new QLineSeries;
+    series->append(x.first.x, x.first.y);
+    series->append(x.second.x, x.second.y);
+    series->setColor(colours[i%10]);
+    series->setName("line");
+
+    cout <<"Line : " << x.first.toString() << "\t to \t" << x.second.toString() << endl;
+    chart->addSeries(series);
+    i++;
+
+  }
+  chart->legend()->setVisible(false);
+  chart->createDefaultAxes();
+  ret->setChart(chart);
+  ret->setRenderHint(QPainter::Antialiasing); 
+
+  return ret;
+}
+

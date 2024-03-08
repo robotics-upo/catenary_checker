@@ -7,7 +7,6 @@
 #ifndef __2D_PROYECTION_LIB__
 #define __2D_PROYECTION_LIB__
 
-typedef std::vector<Obstacle2D> Scenario;
 
 // ----------- Plane projection related classes / functions -----------
 
@@ -15,7 +14,7 @@ class PlaneParams {
 public:
   float a, b, c, d;
 
-  inline float getSignedDistance(const pcl::PointXYZ &p) {
+  inline float getSignedDistance(const pcl::PointXYZ &p) const {
     return a*p.x + b*p.y + c*p.z + d;
   }
 
@@ -26,6 +25,20 @@ public:
 
     return os.str();
   }
+
+  inline pcl::PointXYZ project3D(const Point2D &p) const {
+    pcl::PointXYZ p_3d(-p.x * b - a * d,
+                       p.x * a - b * d,
+                       p.y);
+    return p_3d;
+  }
+
+  inline Point2D project2D(const pcl::PointXYZ &p) const {
+    float dist = getSignedDistance(p);
+    pcl:: PointXYZ p_plane(p.x - a*dist, p.y - b*dist, p.z);
+    return Point2D(p_plane.y * a - p_plane.x * b, p_plane.z);
+  }
+
 };
 
 pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cloud_in,

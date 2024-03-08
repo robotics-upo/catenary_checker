@@ -11,15 +11,12 @@ int main(int argc, char **argv)
 
 	ros::Rate loop_rate(5);
 
-  while(ros::ok()){
+    while(ros::ok()){
 
-    ros::spinOnce();
+        ros::spinOnce();
 
-    loop_rate.sleep();
-  }
-
-  checker.exportStats("cat_stats.m");
-
-  return 0;
+        loop_rate.sleep();
+    }
+    return 0;
 }
  

@@ -3,16 +3,19 @@
 #include <dbscan_line/dbscan_lines.h>
 #include "catenary_checker/obstacle_2d.hpp"
 #include "catenary_checker/2d_projection.hpp"
-#include "parable.hpp"
+#include "catenary_checker/parable.hpp"
+#include "catenary_checker/scenario.hpp"
 
 #ifndef __CATENARY_CHECKER_LIB__
 #define __CATENARY_CHECKER_LIB__
+
+typedef std::pair<Point2D, Point2D> TwoPoints;
 
 //! @brief Checks for the existence of a Catenary between two 3D points with 2D obstacles
 //! @param A First point
 //! @param B Second point
 //! @param scenario The 2D scenario
-float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenario scenario);
+float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenario &scenario);
 
 //! @brief Checks for the existence of a Catenary between two 3D points in a PC
 //! @param A First point
@@ -39,10 +42,11 @@ std::vector<Scenario> preprocessObstacle2D(const pcl::PointXYZ &A, const pcl::Po
 Scenario PC2Obstacles(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon);
 
 DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &pc_2d, int minPts, float epsilon);
+
 DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts,
 			 float epsilon, float gamma, float theta);
 
-Scenario getObstacles(DBSCAN *dbscan);
+Scenario getObstacles(DBSCAN *dbscan, pcl::PointXYZ A, pcl::PointXYZ B);
 
 Obstacle2D toObstacle(const std::vector<Point> &obs);
 

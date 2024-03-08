@@ -76,7 +76,7 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
   auto points_2d = project2D(pcl_pc, robot, target, plane_dist);
   // ROS_INFO("Obtained 2D cloud projection. Number of points: %lu", points_2d.size());
   if (publish_pc) {
-    std::cout << "Preparando para cancular Plano 3D" << std::endl;
+    std::cout << "Preparando para calcular Plano 3D" << std::endl;
     auto points_3d = reproject3D(points_2d, robot, target);
     pcl::toPCLPointCloud2(points_3d, pcl_pc2);
          
@@ -128,9 +128,9 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     }
   else
     {
-      std::cout << "Compute Obstacles usind DBSCAN" << std::endl;
+      std::cout << "Compute Obstacles using DBSCAN" << std::endl;
       //Tranlate to Obstacles 2D
-      std::vector<Obstacle2D> scenario = getObstacles(dbscan); 
+      Scenario scenario = getObstacles(dbscan, robot, target); 
       // ROS_INFO("scenario: %lu \n",scenario.size());
       
       // Get the initial parable (line between A and B)

@@ -40,21 +40,16 @@ bool Parable::getParable(const Point2D &p1, const Point2D &p2, const Point2D &p3
     return true;
 }
 
-bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D &A,
+bool Parable::approximateParable(const Scenario &objects, Point2D &A,
 				 Point2D &B, float min_y) 
 {
-  // std::cout << "approximateParable    _a: " << _a << " , _b: " << _b <<  " , _c: " << _c <<std::endl;
   Obstacle2D artificial_obs;
-  std::vector<Obstacle2D> nonIntersection;
-  // artificial_obs.push_back(A);
-  // artificial_obs.push_back(B);
-
+  Scenario nonIntersection;
   Parable back(*this);
 
   if (_a == 0.0 && _b == 0.0 && _c == 0.0) {
     _b = (A.y - B.y)/(A.x - B.x);
     _c = A.y - _b * A.x;
-    // std::cout << "Primera parabola. Parametros: " << toString() << "\n";
   }
 
   std::function<float(float)> f = std::bind(&Parable::apply, this, std::placeholders::_1);
@@ -70,8 +65,6 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
     }
     flag_++;
   }
-
-  // std::cout << "Parable::approximateParable -->  adding intersecting obstacles: number: " << artificial_obs.size() << std::endl;
 
   if (artificial_obs.size() < 1 ) {
     // std::cout << "Parabola aproximada." << std::endl;

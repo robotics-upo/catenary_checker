@@ -4,6 +4,7 @@
 #include "catenary_checker/obstacle_2d.hpp"
 #include <vector>
 #include <QSplineSeries>
+#include "catenary_checker/scenario.hpp"
 
 // Stores a parable of the form: y = ax² + bx + c
 class Parable {
@@ -23,7 +24,7 @@ public:
 
   bool getParable(const Point2D &p1, const Point2D &p2, const Point2D &p3);
 
-  bool approximateParable(const std::vector<Obstacle2D> &objects, Point2D &A,
+  bool approximateParable(const Scenario &objects, Point2D &A,
 			  Point2D &B, float min_y = 0.0);
 
   float getLength(float &x1, float &x2, float delta_t = 0.01) const;

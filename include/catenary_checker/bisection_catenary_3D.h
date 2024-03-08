@@ -95,8 +95,8 @@ class bisectionCatenary
         int first_coll, last_coll, new_coll;
         int num_point_per_unit_length;
 
-	    ros::Publisher points_between_cat_marker_pub_;
-    	visualization_msgs::MarkerArray p_bet_cat_marker;
+	      ros::Publisher points_between_cat_marker_pub_;
+      	visualization_msgs::MarkerArray p_bet_cat_marker;
         ros::NodeHandlePtr nhP;
         bool use_markers, L_minor_than_D;
 
@@ -125,7 +125,7 @@ class bisectionCatenary
         
         // To manage information related with distance obst-cat, catenary feasibility, and grid3D
         Grid3d* grid_3D;
-	    NearNeighbor nn;
+  	    NearNeighbor nn;
         bool received_grid; 
         bool get_distance_data; // Is use to get data distance for catenary analysis
         double bound_obst;
