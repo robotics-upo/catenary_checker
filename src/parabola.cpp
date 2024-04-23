@@ -1,26 +1,26 @@
-#include "catenary_checker/parable.hpp"
+#include "catenary_checker/parabola.hpp"
 #include <limits>
 #include <iostream>
 #include <sstream>
 #include <cmath>
 
-Parable::Parable() { _a = _b = _c = 0.0f; }
+Parabola::Parabola() { _a = _b = _c = 0.0f; }
 
-Parable::Parable(float a, float b, float c) {
+Parabola::Parabola(float a, float b, float c) {
     _a = a;
     _b = b;
     _c = c;
 }
 
-Parable::Parable(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
-    getParable(p1, p2, p3);
+Parabola::Parabola(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
+    getParabola(p1, p2, p3);
 }
 
-float Parable::apply(float x) const { 
+float Parabola::apply(float x) const { 
     return _a * x * x + _b * x + _c;
 }
 
-bool Parable::getParable(const Point2D &p1, const Point2D &p2, const Point2D &p3) 
+bool Parabola::getParabola(const Point2D &p1, const Point2D &p2, const Point2D &p3) 
 {
     if (p1.x == p2.x || p2.x == p3.x || p1.x == p3.x)
         return false;
@@ -40,16 +40,16 @@ bool Parable::getParable(const Point2D &p1, const Point2D &p2, const Point2D &p3
     return true;
 }
 
-bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D &A,
+bool Parabola::approximateParabola(const std::vector<Obstacle2D> &objects, Point2D &A,
 				 Point2D &B, float min_y) 
 {
-  // std::cout << "approximateParable    _a: " << _a << " , _b: " << _b <<  " , _c: " << _c <<std::endl;
+  // std::cout << "approximateParabola    _a: " << _a << " , _b: " << _b <<  " , _c: " << _c <<std::endl;
   Obstacle2D artificial_obs;
   std::vector<Obstacle2D> nonIntersection;
   // artificial_obs.push_back(A);
   // artificial_obs.push_back(B);
 
-  Parable back(*this);
+  Parabola back(*this);
 
   if (_a == 0.0 && _b == 0.0 && _c == 0.0) {
     _b = (A.y - B.y)/(A.x - B.x);
@@ -57,7 +57,7 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
     // std::cout << "Primera parabola. Parametros: " << toString() << "\n";
   }
 
-  std::function<float(float)> f = std::bind(&Parable::apply, this, std::placeholders::_1);
+  std::function<float(float)> f = std::bind(&Parabola::apply, this, std::placeholders::_1);
   int flag_ = 0;
   for (auto &x:objects) {
     if (x.intersects(f)) {
@@ -71,7 +71,7 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
     flag_++;
   }
 
-  // std::cout << "Parable::approximateParable -->  adding intersecting obstacles: number: " << artificial_obs.size() << std::endl;
+  // std::cout << "Parabola::approximateParabola -->  adding intersecting obstacles: number: " << artificial_obs.size() << std::endl;
 
   if (artificial_obs.size() < 1 ) {
     // std::cout << "Parabola aproximada." << std::endl;
@@ -90,7 +90,7 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
 
   for (auto &x:artificial_obs.convex_hull) {
     if (x.y < A.y || x.x < min_x || x.x > max_x) {
-      // std::cout << "Parable::approximateParable ";  
+      // std::cout << "Parabola::approximateParabola ";  
       // std::cout << "Convex Hull failure: not restricted to the limits" << std::endl;
       // std::cout << "Conflicting point: " << x.toString() << std::endl;
       return false;
@@ -102,7 +102,7 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
   float best_c = 0.0;
 
   for (auto &x:artificial_obs.convex_hull) {
-    if (getParable(A, x, B)) {
+    if (getParabola(A, x, B)) {
       if (max_a < _a){
       //  std::cout << "_a: " << _a << " , _b: " << _b <<  " , _c: " << _c <<std::endl;
         max_a = _a;
@@ -123,31 +123,31 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
   float lx = - _b/(2*_a);
   float ly = apply(lx);
   if (ly < min_y) {
-    // std::cout << "Error: Parable::approximateParable the parable passes below: "  << min_y << std::endl;
+    // std::cout << "Error: Parabola::approximateParabola the parable passes below: "  << min_y << std::endl;
     return false;
   }
 
-  // std::cout << "Parable::approximateParable. New params: " << toString() << std::endl;
+  // std::cout << "Parabola::approximateParabola. New params: " << toString() << std::endl;
   if (back == *this) {
-    // std::cout << "Error: Parable::approximateParable: Detected same parable --> fail";
+    // std::cout << "Error: Parabola::approximateParabola: Detected same parable --> fail";
     return false;
   }
 
-  // return approximateParable(objects, A, B, min_y);
-  return approximateParable(nonIntersection, A, B, min_y);
+  // return approximateParabola(objects, A, B, min_y);
+  return approximateParabola(nonIntersection, A, B, min_y);
 }
 
-std::string Parable::toString() const {
+std::string Parabola::toString() const {
     std::ostringstream oss;
 
-    oss << "Parable parameters: (" << _a << ", " << _b ;
+    oss << "Parabola parameters: (" << _a << ", " << _b ;
     oss << ", " << _c << ")\n";
 
 
     return oss.str();
 }
 
-std::vector<Point2D> Parable::getPoints(float &x1, float &x2, float delta_t) const {
+std::vector<Point2D> Parabola::getPoints(float &x1, float &x2, float delta_t) const {
   std::vector<Point2D> ret_val;
   // std::cout << "x1 = " << x1 << " , x2 = " << x2 << std::endl;
   for (float x = x1; x <= x2; x+=delta_t) {
@@ -159,7 +159,7 @@ std::vector<Point2D> Parable::getPoints(float &x1, float &x2, float delta_t) con
   return ret_val;
 }
  
-float Parable::getLength(float &x1, float &x2, float delta_t) const {
+float Parabola::getLength(float &x1, float &x2, float delta_t) const {
   // We have to integrate: integral(x1,x2) of: sqrt(1+df/dx^2)dx
   // sqrt(1+(2ax+b)^2) = sqrt(1+4a²x²+b²+4abx)dx
   // This integral has no primitive --> should be approximated
@@ -188,7 +188,7 @@ float Parable::getLength(float &x1, float &x2, float delta_t) const {
 /// Using Qt Charts for representation
 using namespace QtCharts;
 
-QSplineSeries *Parable::toSeries(const std::string &name,
+QSplineSeries *Parabola::toSeries(const std::string &name,
 				 float x0, float x1, float spacing) const {
   QSplineSeries *ret = new QSplineSeries();
   ret->setName(QString::fromStdString(name));

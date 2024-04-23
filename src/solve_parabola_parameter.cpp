@@ -1,7 +1,7 @@
-#include "catenary_checker/solve_parable_parameter.hpp"
+#include "catenary_checker/solve_parabola_parameter.hpp"
 
 
-ParableParametersSolver::ParableParametersSolver(void) 
+ParabolaParametersSolver::ParabolaParametersSolver(void) 
 {
   // google::InitGoogleLogging("CatenaryCeresSolver");
   max_num_iterations = 500;
@@ -10,11 +10,11 @@ ParableParametersSolver::ParableParametersSolver(void)
   parameter3 = 0.5;
 }
 
-ParableParametersSolver::~ParableParametersSolver(void)
+ParabolaParametersSolver::~ParabolaParametersSolver(void)
 {
 } 
 
-void ParableParametersSolver::loadInitialSolution(double p1_, double p2_, double p3_ )
+void ParabolaParametersSolver::loadInitialSolution(double p1_, double p2_, double p3_ )
 {
   parameter1 = p1_;
   parameter2 = p2_;
@@ -22,7 +22,7 @@ void ParableParametersSolver::loadInitialSolution(double p1_, double p2_, double
 } 
 
 
-bool ParableParametersSolver::solve(double _xA, double _yA, double _xB, double _yB, double _A)
+bool ParabolaParametersSolver::solve(double _xA, double _yA, double _xB, double _yB, double _A, int _i)
 {
   // Initial solution
   double x[3];
@@ -34,8 +34,9 @@ bool ParableParametersSolver::solve(double _xA, double _yA, double _xB, double _
    Problem problem;
 
   // Set up a cost funtion per point into the cloud
-  CostFunction* cf1 = new ceres::AutoDiffCostFunction<ParableParameters, 3, 3>( new ParableParameters(_xA, _yA, _xB, _yB, _A) );
+  CostFunction* cf1 = new ceres::AutoDiffCostFunction<ParabolaParameters, 3, 3>( new ParabolaParameters(_xA, _yA, _xB, _yB, _A) );
   problem.AddResidualBlock(cf1, NULL, x);
+
 
   // Run the solver!
   Solver::Options options;
@@ -43,6 +44,8 @@ bool ParableParametersSolver::solve(double _xA, double _yA, double _xB, double _
   options.max_num_iterations = max_num_iterations;
   Solver::Summary summary;
   Solve(options, &problem, &summary);
+  if(summary.message == "Initial residual and Jacobian evaluation failed.")
+    printf("\t\t <<<< Failed in status: [%i] >>>>\n",_i);
 
   // Some debug information
   // std::cout << summary.BriefReport() << "\n";
@@ -55,7 +58,7 @@ bool ParableParametersSolver::solve(double _xA, double _yA, double _xB, double _
   return true; 
 }
 
-void ParableParametersSolver::getParableParameters(double &_p, double &_q, double &_r)
+void ParabolaParametersSolver::getParabolaParameters(double &_p, double &_q, double &_r)
 {
   _p = p;
   _q = q;

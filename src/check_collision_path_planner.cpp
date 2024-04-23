@@ -134,8 +134,8 @@ bool checkCollisionPathPlanner::CheckStatus(vector<geometry_msgs::Vector3> v1_, 
 		p_reel_ = getReelNode(v1_[i],vq1_[i]);
 
 		points_parable_.clear();
-		GetParableParameter GPP_;
-		GPP_.getParablePoints(p_reel_, v2_[i], v3_[i], points_parable_);
+		GetParabolaParameter GPP_;
+		GPP_.getParabolaPoints(p_reel_, v2_[i], v3_[i], points_parable_);
 		// std::cout << "points_parable_.size() = " << points_parable_.size() << std::endl;
 
 		for (size_t j = 0 ; j < points_parable_.size() ; j++ ) {

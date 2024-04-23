@@ -28,7 +28,6 @@ find_package(Ceres REQUIRED)
 
 find_package(PCL 1.8 REQUIRED)
 find_package(PCL REQUIRED)
-find_package(Ceres REQUIRED)
 
 include_directories( include/
   ${catkin_INCLUDE_DIRS}
@@ -97,12 +96,13 @@ add_library(${PROJECT_NAME}
    src/catenary_checker.cpp 
    src/obstacle_2d.cpp 
    src/convex_hull.cpp
-   src/parable.cpp
+   src/parabola.cpp
    src/catenary_checker_manager.cpp
    src/bisection_catenary_3D.cpp
    src/catenary_checker_node.cpp 
    src/catenary_checker_manager_node.cpp
-   src/solve_parable_parameter.cpp
+   src/solve_parabola_parameter.cpp
+   src/solve_catenary_parameter.cpp
   #  src/check_collision_path_planner.cpp
 )
 target_link_libraries(${PROJECT_NAME}

@@ -12,7 +12,7 @@
 
 #include <catenary_checker/catenary_checker.hpp>
 #include <catenary_checker/obstacle_2d.hpp>
-#include <catenary_checker/parable.hpp>
+#include <catenary_checker/parabola.hpp>
 #include <catenary_checker/grid3d.hpp>
 #include "catenary_checker/near_neighbor.hpp"
 

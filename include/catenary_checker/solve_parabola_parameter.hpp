@@ -12,10 +12,10 @@ using ceres::Problem;
 using ceres::Solver;
 using ceres::Solve;
 
-class ParableParameters
+class ParabolaParameters
 {
  public:
-    ParableParameters(double xA_, double yA_, double xB_, double yB_, double a_)
+    ParabolaParameters(double xA_, double yA_, double xB_, double yB_, double a_)
     {
       xA = xA_;
       yA = yA_;
@@ -24,7 +24,7 @@ class ParableParameters
       A = a_;
     }
 
-    ~ParableParameters(void) 
+    ~ParabolaParameters(void) 
     {
     }
 
@@ -46,19 +46,19 @@ class ParableParameters
 
     // Point to be evaluated
     double xA, yA, xB, yB;
-    // Parable area
+    // Parabola area
     double A;
 };
 
-class ParableParametersSolver
+class ParabolaParametersSolver
 {
   public:
 
-    ParableParametersSolver(void);
-    ~ParableParametersSolver(void);
+    ParabolaParametersSolver(void);
+    ~ParabolaParametersSolver(void);
 
-    bool solve(double _xA, double _yA, double _xB, double _yB, double _A);
-    void getParableParameters(double &_p, double &_q, double &_r);
+    bool solve(double _xA, double _yA, double _xB, double _yB, double _A, int _i);
+    void getParabolaParameters(double &_p, double &_q, double &_r);
     void loadInitialSolution(double p1_, double p2_, double p3_ );
   
     int max_num_iterations;
