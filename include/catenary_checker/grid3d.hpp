@@ -763,7 +763,7 @@ protected:
 			m_gridSliceMsg.data[i] = (int8_t)(m_grid[i+offset].prob*maxProb);
 	}
 	
-	inline int point2grid(const float &x, const float &y, const float &z)
+	int point2grid(const float &x, const float &y, const float &z)
 	{
 		int value_ = (round((x-min_X)*m_oneDivRes)) + round((y-min_Y)*m_oneDivRes)*m_gridStepY + round((z-min_Z)*m_oneDivRes)*m_gridStepZ;
 		// printf("x= %f , y= %f , z= %f / min_X= %f , min_Y= %f , min_Z= %f \n",x, y, z, min_X, min_Y, min_Z);

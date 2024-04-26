@@ -42,6 +42,7 @@ public:
     double getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Vector3 p_, int pose_, string msg_);
     bool CheckStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<double> ct_);
     bool CheckStatusCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_);
+    bool CheckStatusCatenaryCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_, vector<float> length_);
     bool CheckFreeCollisionPoint(geometry_msgs::Vector3 p_, string mode_, int pose_);
     geometry_msgs::Vector3 getReelNode(const geometry_msgs::Vector3 p_, const geometry_msgs::Quaternion q_);
     double getYawFromQuaternion(double x_, double y_, double z_, double w_);

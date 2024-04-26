@@ -236,11 +236,17 @@ double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_,
 
 double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Vector3 p_, int pose_, string msg_)
 {
-	double dist;
+	double dist, x, y, z;
 	if(use_dist_func_){
 		bool is_into_ = grid_3D->isIntoMap(p_.x,p_.y,p_.z);
-		if(is_into_)
-			dist =  grid_3D->getPointDist((double)p_.x,(double)p_.y,(double)p_.z) ;
+		if(is_into_){
+			x = (double)p_.x;
+			y = (double)p_.y;
+			z = (double)p_.z;
+			TrilinearParams p = grid_3D->getPointDistInterpolation(x,y,z);
+            dist = p.a0 + p.a1*x + p.a2*y + p.a3*z + p.a4*x*y + p.a5*x*z + p.a6*y*z + p.a7*x*y*z;
+			// dist =  grid_3D->getPointDist((double)p_.x,(double)p_.y,(double)p_.z) ;
+		}
 		else{
             std::cout << "\tThe agent " << msg_ << " in the state = " << pose_ << " is out of the GRID["<<p_.x<< ", " << p_.y << ", " <<p_.z << "]"<< std::endl; 
 			dist = -1.0;
@@ -400,6 +406,62 @@ bool CatenaryCheckerManager::CheckStatusCollision(vector<geometry_msgs::Vector3>
 	return ret_;
 }
 
+bool CatenaryCheckerManager::CheckStatusCatenaryCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_, vector<float> length_)
+{
+	bool ret_;
+
+	geometry_msgs::Vector3 p_reel_; 
+	std::vector<geometry_msgs::Vector3> points_tether_;
+    double len_cat_, dist_;
+	count_ugv_coll = count_uav_coll = count_tether_coll = 0;
+
+    std::cout << std::endl << "	CatenaryCheckerManager started: analizing collision status for the marsupial agents" << std::endl; 
+	
+	double bound_coll_factor = 0.5;
+	for (size_t i= 0 ; i <  v1_.size(); i++){
+
+        dist_ = getPointDistanceObstaclesMap(false, v1_[i],i,"UGV");
+        if (dist_ < distance_obstacle_ugv * bound_coll_factor){
+			count_ugv_coll++;
+            std::cout << "      The agent UGV in the state = " << i << " is in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
+        }
+
+        dist_ = getPointDistanceObstaclesMap(true, v2_[i],i,"UAV");
+        if (dist_ < distance_obstacle_uav * bound_coll_factor){
+            count_uav_coll++;
+		    std::cout << "      The agent UAV in the state = " << i << " is in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
+		}
+		p_reel_ = getReelNode(v1_[i],vq1_[i]);
+
+		points_tether_.clear();
+		GetTetherParameter GPP_;
+		GPP_.getCatenaryPoints(p_reel_, v2_[i], v3_[i], points_tether_, length_[i]);
+
+		for (size_t j = 0 ; j < points_tether_.size() ; j++ ) {
+            dist_ = getPointDistanceObstaclesMap(true, points_tether_[j],i,"CATENARY") ;
+		    if( dist_ < (distance_tether_obstacle * bound_coll_factor)){
+            	count_tether_coll++;
+            	std::cout << " 		The agent CATENARY in the state[" << i << "/"<< v1_.size()<<"] position[" << j <<"/"<< points_tether_.size() <<"] is in COLLISION ["
+						<< dist_ <<" mts to obstacle/"<< distance_tether_obstacle*bound_coll_factor<<"] pto["<< points_tether_[j].x <<", "<< points_tether_[j].y << ", "<< points_tether_[j].z <<"] reel[" 
+						<< p_reel_.x <<"," << p_reel_.y << "," << p_reel_.z <<"] UAV["<< v2_[i].x<<"," <<v2_[i].y <<"," <<v2_[i].z << "]" <<std::endl; 
+			}
+		}
+	}
+
+	if (count_ugv_coll > 0 || count_uav_coll > 0 || count_tether_coll > 0){
+		ROS_INFO_COND(true, PRINTF_RED "\n \t\tcheckCollisionPathPlanner: Marsupial system in collision for solution [ugv=%i  uav=%i  catenary=%i]",count_ugv_coll, count_uav_coll,count_tether_coll);
+		ret_ = false;
+	}
+	else{
+		ROS_INFO_COND(true, PRINTF_GREEN "\n \t\tcheckCollisionPathPlanner: Marsupial system collision free for solution [ugv=%i  uav=%i  catenary=%i]",count_ugv_coll, count_uav_coll,count_tether_coll);
+		ret_ = true;
+	}
+
+    std::cout << "	CatenaryCheckerManager finished" << std::endl << std::endl; 
+
+	return ret_;
+}
+
 bool CatenaryCheckerManager::CheckFreeCollisionPoint(geometry_msgs::Vector3 p_, string mode_, int pose_)
 {
 	double sefaty_distance_;
@@ -415,6 +477,7 @@ bool CatenaryCheckerManager::CheckFreeCollisionPoint(geometry_msgs::Vector3 p_, 
 		use_distance_function_ = true;
 	}	    
     
+	ROS_ERROR("CatenaryCheckerManager::CheckFreeCollisionPoint : p[%f %f %f] pose_[%i] mode=%s",p_.x,p_.y,p_.z, pose_, mode_.c_str());
 	double dist_ = getPointDistanceObstaclesMap(use_distance_function_, p_, pose_ ,mode_) ;
 	
 	if( dist_ < sefaty_distance_){

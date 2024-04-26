@@ -242,7 +242,8 @@ inline void GetTetherParameter::getParabolaInPlane(geometry_msgs::Vector3 v1_, g
 	pB_.y = v2_.z;
 }
 
-inline void GetTetherParameter::getParabolaPoints(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, tether_parameters param_, std::vector<geometry_msgs::Vector3> &v_p_)
+inline void GetTetherParameter::getParabolaPoints(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, tether_parameters param_, 
+													std::vector<geometry_msgs::Vector3> &v_p_)
 {
   	num_point_per_unit_length = 20;
 	geometry_msgs::Vector3 p_;
@@ -328,9 +329,9 @@ inline void GetTetherParameter::getCatenaryPoints(geometry_msgs::Vector3 p1_, ge
 			// std::cout << "["<< i <<"]			Points in Catenary: [" <<p_.x << ","<< p_.y << ","<< p_.z <<"] Parameters: [" <<param_.a<< ","<< param_.b << ","<< param_.c <<"] cosh=[" << cosh((x_ - param_.a)/param_.c) <<
 			// "], x_=["<< x_ <<"] , dxy_=[" << dxy_ << "] , dist_=["<< dist_ << "] , d_=["<< d_ <<"] , delta_z=["<< delta_z <<"] , L=["<< length_ <<"]" << std::endl;
 			if (p_.z > p2_.z){	// This condition is to stop the parabolas vector points when parabola parameter doesnt cut the extreme points
-				std::cout << "						["<< i <<"]	Points in Catenary: [" <<p_.x << ","<< p_.y << ","<< p_.z <<"] Parameters: [" <<param_.a<< ","<< param_.b << ","<< param_.c <<"] cosh=[" << cosh((x_ - param_.a)/param_.c) <<
-				"], x_=["<< x_ <<"] , dxy_=[" << dxy_ << "] , dist_=["<< dist_ << "] , d_=["<< d_ <<"] , delta_z=["<< delta_z <<"] , L=["<< length_ <<"]" << std::endl;
-				std::cout << "						break point  :   v_p_.size()= "<< v_p_.size() << std::endl;
+				// std::cout << "						["<< i <<"]	Points in Catenary: [" <<p_.x << ","<< p_.y << ","<< p_.z <<"] Parameters: [" <<param_.a<< ","<< param_.b << ","<< param_.c <<"] cosh=[" << cosh((x_ - param_.a)/param_.c) <<
+				// "], x_=["<< x_ <<"] , dxy_=[" << dxy_ << "] , dist_=["<< dist_ << "] , d_=["<< d_ <<"] , delta_z=["<< delta_z <<"] , L=["<< length_ <<"]" << std::endl;
+				// std::cout << "						break point  :   v_p_.size()= "<< v_p_.size() << std::endl;
 				break;
 			}
 			
