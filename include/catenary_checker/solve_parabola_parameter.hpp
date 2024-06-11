@@ -35,10 +35,11 @@ class ParabolaParameters
       T q = P_[1];
       T r = P_[2];
       
-      R_[0] = p * pow(xA,2) + q * xA + r - yA;
-      R_[1] = p * pow(xB,2) + q * xB + r - yB;
-      R_[2] = p * pow(xB,3)/T{3.0} + q * pow(xB,2)/T{2.0} + r * xB - (p * pow(xA,3)/T{3.0} + q * pow(xA,2)/T{2.0} + r * xA ) - A;
+      R_[0] = T{1.0}*(p * pow(xA,2) + q * xA + r - yA);
+      R_[1] = T{1.0}*(p * pow(xB,2) + q * xB + r - yB);
+      R_[2] = T{0.1}*(p * pow(xB,3)/T{3.0} + q * pow(xB,2)/T{2.0} + r * xB - (p * pow(xA,3)/T{3.0} + q * pow(xA,2)/T{2.0} + r * xA ) - A);
 
+  // std::cout <<"   R_[0]: " << R_[0] << " , R_[1]: " << R_[1] << " , R_[2]: "<< R_[2] << std::endl;
       return true;
     }
 

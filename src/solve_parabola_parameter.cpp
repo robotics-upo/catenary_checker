@@ -36,7 +36,7 @@ bool ParabolaParametersSolver::solve(double _xA, double _yA, double _xB, double 
   // Set up a cost funtion per point into the cloud
   CostFunction* cf1 = new ceres::AutoDiffCostFunction<ParabolaParameters, 3, 3>( new ParabolaParameters(_xA, _yA, _xB, _yB, _A) );
   problem.AddResidualBlock(cf1, NULL, x);
-
+  problem.SetParameterLowerBound(x, 0, 0.0);
 
   // Run the solver!
   Solver::Options options;
@@ -45,7 +45,7 @@ bool ParabolaParametersSolver::solve(double _xA, double _yA, double _xB, double 
   Solver::Summary summary;
   Solve(options, &problem, &summary);
   if(summary.message == "Initial residual and Jacobian evaluation failed.")
-    printf("\t\t <<<< Failed in status: [%i] >>>>\n",_i);
+    printf("\t\t <<<< Failed in status number: [%i] >>>>\n",_i);
 
   // Some debug information
   // std::cout << summary.BriefReport() << "\n";

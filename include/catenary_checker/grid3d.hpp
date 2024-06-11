@@ -140,6 +140,7 @@ public:
 		if(!lnh.getParam("ws_z_max", ws_z_max))
 			ws_z_max = 5;
 
+		std::cout << std::endl << "	Grid3d  Class: " <<  node_name << " node . ws_min=["<< ws_x_min <<","<<ws_y_min << "," << ws_z_min<<"] ws_max=["<< ws_x_max <<","<<ws_y_max << "," << ws_z_max<<"]" << std::endl << std::endl;
 		
 		// Load octomap 
 		m_octomap = NULL;
@@ -300,6 +301,10 @@ public:
 	bool isIntoMap(double x, double y, double z)
 	{
 		// printf("x=[%f / %f / %f]  y=[%f / %f / %f]  z=[%f / %f / %f]\n", min_X, x, max_X, min_Y, y, max_Y, min_Z, z, max_Z);
+auto index = point2grid(x, y, z);
+if (index < 0 || index >= m_gridSize) {
+    std::cerr << "		Error: Index out of bounds. Index: " << index << ". Size:"<< m_gridSize << ". Pto:"<<x<<","<<y<<","<<z<< std::endl;
+}
 		return (x > min_X && y > min_Y && z > min_Z && x < max_X && y < max_Y && z < max_Z);
 	}
 
