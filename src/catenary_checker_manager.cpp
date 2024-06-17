@@ -249,7 +249,7 @@ double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_,
 			// dist =  grid_3D->getPointDist((double)p_.x,(double)p_.y,(double)p_.z) ;
 		}
 		else{
-            std::cout << "\tThe agent " << msg_ << " in the state = " << pose_ << " is out of the GRID["<<p_.x<< ", " << p_.y << ", " <<p_.z << "]"<< std::endl; 
+            std::cout << "\tThe agent " << msg_ << "[" << pose_ << "] is out of GRID["<<p_.x<< ", " << p_.y << ", " <<p_.z << "]"<< std::endl; 
 			dist = -1.0;
         }
     }
