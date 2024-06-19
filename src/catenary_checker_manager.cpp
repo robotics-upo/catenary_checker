@@ -414,7 +414,8 @@ bool CatenaryCheckerManager::CheckStatusTetherCollision(vector<geometry_msgs::Ve
 	geometry_msgs::Vector3 p_reel_; 
 	std::vector<geometry_msgs::Vector3> points_tether_;
     double len_cat_, dist_;
-	count_ugv_coll = count_uav_coll = count_tether_coll = 0;
+	int first_coll_, last_coll_, count_total_tether_coll_;
+	count_ugv_coll = count_uav_coll = count_tether_coll = count_total_tether_coll_ = 0;
 
     std::cout << std::endl << "	CatenaryCheckerManager started: analizing collision status for the marsupial agents" << std::endl; 
 	
@@ -441,24 +442,33 @@ bool CatenaryCheckerManager::CheckStatusTetherCollision(vector<geometry_msgs::Ve
 		else
 			GPP_.getParabolaPoints(p_reel_, v2_[i], v3_[i], points_tether_);
 
+		count_tether_coll = 0;
+		first_coll_ = last_coll_ = -1;
 		for (size_t j = 0 ; j < points_tether_.size() ; j++ ) {
             dist_ = getPointDistanceObstaclesMap(true, points_tether_[j],i,"TETHER") ;
 		    // if( dist_ < (distance_tether_obstacle * bound_coll_factor)){
-		    if( dist_ < (0.02)){
+		    // if( dist_ < (0.02)){
+		    if( dist_ < (distance_tether_obstacle)){
             	count_tether_coll++;
-            	std::cout << " 		The agent TETHER in the state[" << i << "/"<< v1_.size()<<"] position[" << j <<"/"<< points_tether_.size() <<"] is in COLLISION ["
-						<< dist_ <<" mts to obstacle/"<< distance_tether_obstacle*bound_coll_factor<<"] pto["<< points_tether_[j].x <<", "<< points_tether_[j].y << ", "<< points_tether_[j].z <<"] reel[" 
-						<< p_reel_.x <<"," << p_reel_.y << "," << p_reel_.z <<"] UAV["<< v2_[i].x<<"," <<v2_[i].y <<"," <<v2_[i].z << "]" <<std::endl; 
+				if (first_coll_ == -1)
+					first_coll_ = j;
+				last_coll_ = j;
+            	// std::cout << " 		The agent TETHER in the state[" << i << "/"<< v1_.size()<<"] position[" << j <<"/"<< points_tether_.size() <<"] is in COLLISION ["
+				// << dist_ <<" mts to obstacle/"<< distance_tether_obstacle*bound_coll_factor<<"] pto["<< points_tether_[j].x <<", "<< points_tether_[j].y << ", "<< points_tether_[j].z <<"] reel[" 
+				// << p_reel_.x <<"," << p_reel_.y << "," << p_reel_.z <<"] UAV["<< v2_[i].x<<"," <<v2_[i].y <<"," <<v2_[i].z << "]" <<std::endl; 
 			}
 		}
+		if (count_tether_coll>0 )
+			std::cout << "TETHER ["<< i <<"] in collision. Total Points:["<< count_tether_coll <<"] , between["<< first_coll_ <<"-"<<last_coll_ <<"]" << std::endl;
+		count_total_tether_coll_ = count_total_tether_coll_ + count_tether_coll;
 	}
 
-	if (count_ugv_coll > 0 || count_uav_coll > 0 || count_tether_coll > 0){
-		ROS_INFO_COND(true, PRINTF_RED "\n \t\tcheckCollisionPathPlanner: Marsupial system in collision for solution [ugv=%i  uav=%i  tether=%i]",count_ugv_coll, count_uav_coll,count_tether_coll);
+	if (count_ugv_coll > 0 || count_uav_coll > 0 || count_total_tether_coll_ > 0){
+		ROS_INFO_COND(true, PRINTF_RED "\n \t\tcheckCollisionPathPlanner: Marsupial system in collision for solution [ugv=%i  uav=%i  tether=%i]",count_ugv_coll, count_uav_coll,count_total_tether_coll_);
 		ret_ = false;
 	}
 	else{
-		ROS_INFO_COND(true, PRINTF_GREEN "\n \t\tcheckCollisionPathPlanner: Marsupial system collision free for solution [ugv=%i  uav=%i  tether=%i]",count_ugv_coll, count_uav_coll,count_tether_coll);
+		ROS_INFO_COND(true, PRINTF_GREEN "\n \t\tcheckCollisionPathPlanner: Marsupial system collision free for solution [ugv=%i  uav=%i  tether=%i]",count_ugv_coll, count_uav_coll,count_total_tether_coll_);
 		ret_ = true;
 	}
 

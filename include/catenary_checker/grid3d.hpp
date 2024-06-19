@@ -206,7 +206,22 @@ public:
 
 		if(!lnh.getParam("sensor_dev", value))
 			value = 0.4;
+		
+		if(!lnh.getParam("ws_x_min", ws_x_min))
+			ws_x_min = 5;
+		if(!lnh.getParam("ws_x_max", ws_x_max))
+			ws_x_max = 5;
+		if(!lnh.getParam("ws_y_min", ws_y_min))
+			ws_y_min = -5;
+		if(!lnh.getParam("ws_y_max", ws_y_max))
+			ws_y_max = 5;
+		if(!lnh.getParam("ws_z_min", ws_z_min))
+			ws_z_min = 0;
+		if(!lnh.getParam("ws_z_max", ws_z_max))
+			ws_z_max = 5;
 
+		std::cout << std::endl << "	Grid3d  Class: " <<  node_name << " node . ws_min=["<< ws_x_min <<","<<ws_y_min << "," << ws_z_min<<"] ws_max=["<< ws_x_max <<","<<ws_y_max << "," << ws_z_max<<"]" << std::endl << std::endl;
+		
 
 		m_sensorDev = (float)value;
 		m_mapPath = map_path;
