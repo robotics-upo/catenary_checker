@@ -219,6 +219,8 @@ public:
 			ws_z_min = 0;
 		if(!lnh.getParam("ws_z_max", ws_z_max))
 			ws_z_max = 5;
+		if(!lnh.getParam("publish_point_cloud", m_publishPc))
+			m_publishPc = true;
 
 		std::cout << std::endl << "	Grid3d  Class: " <<  node_name << " node . ws_min=["<< ws_x_min <<","<<ws_y_min << "," << ws_z_min<<"] ws_max=["<< ws_x_max <<","<<ws_y_max << "," << ws_z_max<<"]" << std::endl << std::endl;
 		
@@ -256,6 +258,13 @@ public:
 					std::cout << "Grid map successfully saved on " << path << std::endl;
 			}			
 		}
+
+		if(m_publishPc)
+			{
+				m_pcPub = m_nh.advertise<sensor_msgs::PointCloud2>(node_name+"/map_point_cloud", 1, true);
+				std::cout << "Grid 3D publishing topic " << node_name+"/map_point_cloud" << std::endl;
+				// mapTimer = m_nh.createTimer(ros::Duration(1.0/m_publishPointCloudRate), &Grid3d::publishMapPointCloudTimer, this);
+			}
 
 		// Setup ICP
 		m_icp.setMaximumIterations (50);
