@@ -37,6 +37,8 @@ bool ParabolaParametersSolver::solve(double _xA, double _yA, double _xB, double 
   CostFunction* cf1 = new ceres::AutoDiffCostFunction<ParabolaParameters, 3, 3>( new ParabolaParameters(_xA, _yA, _xB, _yB, _A) );
   problem.AddResidualBlock(cf1, NULL, x);
   problem.SetParameterLowerBound(x, 0, 0.0);
+  problem.SetParameterUpperBound(x, 0, 50.0);
+  problem.SetParameterLowerBound(x, 2, 0.38);
 
   // Run the solver!
   Solver::Options options;

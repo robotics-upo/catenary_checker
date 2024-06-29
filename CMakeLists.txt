@@ -103,6 +103,7 @@ add_library(${PROJECT_NAME}
    src/catenary_checker_manager_node.cpp
    src/solve_parabola_parameter.cpp
    src/solve_catenary_parameter.cpp
+   src/solve_parabola_correction_parameter.cpp
   #  src/check_collision_path_planner.cpp
 )
 target_link_libraries(${PROJECT_NAME}

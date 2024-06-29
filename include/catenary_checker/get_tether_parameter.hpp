@@ -171,7 +171,7 @@ inline void GetTetherParameter::ParametersParabola(vector<float> v_param_x_, vec
 	for(size_t i = 0 ; i < v_p_ugv.size() ; i++){
 		p_reel_ = getReelPoint(v_p_ugv[i].x, v_p_ugv[i].y, v_p_ugv[i].z, v_r_ugv[i].x, v_r_ugv[i].y, v_r_ugv[i].z, v_r_ugv[i].w);
 		ComputeCatenaryArea(p_reel_, v_p_uav[i], vec_len_cat_init[i], v_param_x_[i], v_param_y_[i], v_param_c_[i]);
-		PPS.loadInitialSolution(1.0, 0.01, p_reel_.z);
+		PPS.loadInitialSolution(0.0, 0.01, p_reel_.z);
 		double d_ = sqrt(pow(p_reel_.x-v_p_uav[i].x,2)+pow(p_reel_.y-v_p_uav[i].y,2));
 		PPS.solve(0.0, p_reel_.z, d_, v_p_uav[i].z, vec_areas[i], i );
 		PPS.getParabolaParameters(param_a, param_b, param_c);
@@ -312,7 +312,8 @@ inline void GetTetherParameter::getCatenaryPoints(geometry_msgs::Vector3 p1_, ge
 	double delta_z = (p2_.z - p1_.z);
 	double dxy_ = sqrt(delta_x * delta_x + delta_y * delta_y );
 	double dist_= sqrt(delta_x * delta_x + delta_y * delta_y + delta_z * delta_z );
-	d_ = length_;
+	d_ = dist_;
+	// d_ = length_;
 	if (dxy_ < 0.0001){
 		u_x = u_y = 0.0;
 	} else{
@@ -321,7 +322,7 @@ inline void GetTetherParameter::getCatenaryPoints(geometry_msgs::Vector3 p1_, ge
 	}
 	
 	if (d_ < 1.0)
-		num_point_catenary = ceil(10.0); //d_ * 10.0
+		num_point_catenary = ceil( (double)num_point_per_unit_length * 1.0);
 	else
 		num_point_catenary = ceil( (double)num_point_per_unit_length * d_);
 

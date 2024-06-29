@@ -42,11 +42,12 @@ public:
     double getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Vector3 p_, int pose_, string msg_);
     bool CheckStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<double> ct_);
     // bool CheckStatusCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_);
-    bool CheckStatusTetherCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_, vector<float> length_);
+    bool CheckStatusTetherCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_, vector<float> length_, bool use_catenary_as_tether_);
     bool CheckFreeCollisionPoint(geometry_msgs::Vector3 p_, string mode_, int pose_);
     geometry_msgs::Vector3 getReelNode(const geometry_msgs::Vector3 p_, const geometry_msgs::Quaternion q_);
     double getYawFromQuaternion(double x_, double y_, double z_, double w_);
     bool computeStraight(const geometry_msgs::Vector3 &p_reel_, const geometry_msgs::Vector3 &p_final_, std::vector<geometry_msgs::Vector3> &points_catenary_);
+    bool CheckFreeCollisionTether(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, tether_parameters p_, float l_, int pos_);
 
 	bisectionCatenary bc;
     NearNeighbor nn_obs;
