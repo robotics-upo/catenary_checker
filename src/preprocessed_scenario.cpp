@@ -1,37 +1,44 @@
 #include <catenary_checker/preprocessed_scenario.hpp>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <filesystem>
+#include <pcl_conversions/pcl_conversions.h>
+
 
 using namespace pcl;
 using namespace std;
 
-PreprocessedScenario::PreprocessedScenario(Point2D min, Point2D max,
-                                           int n_theta, float plane_dist,
-                                           int dbscan_min_points, float dbscan_epsilon) {
-  _min = min;
-  _max = max;
-  _n_theta = n_theta;
-  _plane_dist = plane_dist;
-  _db_min_points = dbscan_min_points;
-  _db_epsilon = dbscan_epsilon;
-}
+PreprocessedScenario::PreprocessedScenario(const std::string &filename) {
+  ros::NodeHandle nh, pnh("~");
 
-PreprocessedScenario::PreprocessedScenario(ros::NodeHandle &pnh) {
-  pnh.param("min_x", _min.x, 0.0f);
-  pnh.param("min_y", _min.y, 0.0f);
-  pnh.param("max_x", _max.x, 10.0f);
-  pnh.param("max_y", _max.y, 10.0f);
-  pnh.param("max_z", _max_z, 10.0f);
-  pnh.param("n_theta", _n_theta, 10);
-  pnh.param("plane_dist", _plane_dist, 0.2f);
+  _pub = nh.advertise<sensor_msgs::PointCloud2>("slices", 1, true);
+  _pub_marker = nh.advertise<visualization_msgs::MarkerArray>("scenarios", 2, true);
+  _sub = nh.subscribe("point_cloud", 1, &PreprocessedScenario::PC_Callback, this);
 
-  pnh.param("db_min_points", _db_min_points, 20);
-  pnh.param("db_epsilon", _db_epsilon, 0.05f);
+  _filename = filename;
 
-  ROS_INFO("Started Preprocessed Scenario from ROS. ");
-  ROS_INFO("min = %s \t max = %s", _min.toString().c_str(),_max.toString().c_str());
-  ROS_INFO("n_theta = %d\tplane_dist = %f", _n_theta, _plane_dist);
+
+  if (!loadScenario(filename)) {
+    pnh.param("min_x", _min.x, 0.0f);
+    pnh.param("min_y", _min.y, 0.0f);
+    pnh.param("max_x", _max.x, 10.0f);
+    pnh.param("max_y", _max.y, 10.0f);
+    pnh.param("max_z", _max_z, 10.0f);
+    pnh.param("n_theta", _n_theta, 10);
+    pnh.param("plane_dist", _plane_dist, 0.2f);
+
+    pnh.param("db_min_points", _db_min_points, 20);
+    pnh.param("db_epsilon", _db_epsilon, 0.05f);
+
+    ROS_INFO("Started Preprocessed Scenario from ROS. ");
+    ROS_INFO("min = %s \t max = %s", _min.toString().c_str(),_max.toString().c_str());
+    ROS_INFO("n_theta = %d\tplane_dist = %f", _n_theta, _plane_dist);
+  } else {
+    ROS_INFO("PreprocessedScenario::Got the scenarios from file %s. Publishing.", filename.c_str());
+    sleep(2);
+    publishScenarios();
+  }
 }
 
 void PreprocessedScenario::precompute(const PointCloud<PointXYZ> &pc) {
@@ -87,7 +94,7 @@ vector<TwoPoints> PreprocessedScenario::getProblemsTheta(double theta) const {
     S.y = _max.y;
     E.y = _min.y;
   }
-  double gamma = atan2(delta_x, delta_y); // Note that we want the complementar (hence x,y)
+  double gamma = atan2(delta_x, delta_y); // We want the complementary angle (hence x,y)
   int n_planes = round(diag * cos(gamma - fabs(theta)) / _plane_dist);
   double inc_c = _plane_dist;
   if (!signbit(theta) || theta == 0.0) {
@@ -118,26 +125,61 @@ vector<TwoPoints> PreprocessedScenario::getProblemsTheta(double theta) const {
   return ret;
 }
 
-float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B
-                                          , double max_length) const 
+float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,
+                                          double max_length) const
 {
   double inc_x = B.x - A.x;
   double inc_y = B.y - A.y;
   double yaw = atan(inc_y/inc_x);
 
+  float ret_val = -1.0;
+
   // Get the theta
-  int i = (yaw + M_PI * 0.5) / (_n_theta + 1);
+  int i = round((yaw + M_PI * 0.5) / (_n_theta + 1));
 
   // Then get the plane
   // TODO: Complete! (get the scenario and call the parabol method with that scenario)
-  return -1.0;
+  if (i >= _n_theta || i < 0) {
+    ROS_ERROR("PreprocessedScenario::checkCatenary --> yaw not in [-PI/2, PI/2]");
+  }
+
+  const auto &scenes = _scenarios[i];
+  if (scenes.size() > 0) {
+    const Scenario &s_ = scenes[0];
+    float min_dist = fabs(s_.plane.getSignedDistance(A));
+    int i = 0;
+    int j = 0;
+    for (const auto &s:scenes) {
+      auto curr_dist = s.plane.getSignedDistance(A);
+      if (curr_dist < min_dist) {
+        j = i;
+        curr_dist = min_dist;
+      }
+      i++;
+    }
+
+
+    const Scenario &scen = scenes[j];
+    auto pa = scen.to2D(A);
+    auto pb = scen.to2D(B);
+
+    Parable parable;
+    if (parable.approximateParable(scen, pa, pb)) {
+      ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parable.");
+      ret_val = parable.getLength(pa.x, pb.x);
+    } else {
+      ROS_INFO("PreprocessedScenario::checkCatenary --> could NOT get the parable.");
+    }
+  }
+
+  return ret_val;
 }
 
 namespace fs = std::filesystem;
 
 // Function that exports scenarios --> I think that it would be nice to pack it into several files, not just one, an then compress it!
 // TODO: End and test!
-bool PreprocessedScenario::exportScenarios(const std::string &name) const {
+bool PreprocessedScenario::exportScenario() const {
   bool ret_val = true;
 
   // Ensure that we have a proper scenario
@@ -149,16 +191,21 @@ bool PreprocessedScenario::exportScenarios(const std::string &name) const {
   fs::path original_path = (fs::current_path());
   fs::current_path(fs::temp_directory_path());
 
+  string name = getFilename(_filename);
 
-  if (fs::create_directory(name)) {
+  if (fs::is_directory(name)) {
+    fs::remove_all(name);
+  }
+  if (fs::create_directories(name)) {
     fs::current_path(name);
-    int i = 0;
+     int i = 0;
     // Export the metadata
     ofstream metadata(string(name + ".yaml").c_str());
     YAML::Emitter e;
     e << YAML::BeginMap;
     e << YAML::Key << "min" << YAML::Value << _min;
     e << YAML::Key << "max" << YAML::Value << _max;
+    e << YAML::Key << "max_z" << YAML::Value << _max_z;
     e << YAML::Key << "n_theta" << YAML::Value << _n_theta;
     e << YAML::Key << "plane_dist" << YAML::Value << _plane_dist;
     e << YAML::Key << "db_min_points" << YAML::Value << _db_min_points;
@@ -182,14 +229,147 @@ bool PreprocessedScenario::exportScenarios(const std::string &name) const {
           e << x;
           ofs << e.c_str()<<endl;
         }
-        fs::current_path(".."); 
+        fs::current_path("..");  
       }
     } catch(ios_base::failure &e) {
-      cerr << "Could not create: " << name << "\t Failure:" << e.what() << endl;
+      cerr << "Could not create: " << _filename << "\t Failure:" << e.what() << endl;
     }
   }
+  fs::current_path(fs::temp_directory_path());
+
+
+  ostringstream oss;
+  oss << "tar czf " << _filename << " " << name;
+  ROS_INFO("Executing: %s ", oss.str().c_str());
+
+  if (system(oss.str().c_str()) == 0) {
+    ROS_INFO("File %s created successfully", _filename.c_str());
+  }
+
   fs::current_path(original_path);
 
+  return ret_val;
+}
+
+bool PreprocessedScenario::loadScenario(const std::string &file) {
+  _scenarios.clear();
+
+  bool ret_val = true;
+
+  fs::path original_path = fs::current_path();
+  fs::current_path(fs::temp_directory_path());
+
+  ostringstream oss;
+  oss << "tar xf " << file;
+  cout << "Executing command: \"" << oss.str() << "\"" << endl;
+
+  if (system(oss.str().c_str()) == 0) {
+    ROS_INFO("File %s decompressed OK. ", file.c_str());
+  } else {
+    ROS_INFO("Could not decompress %s. Calculating scenarios.", file.c_str());
+    return false;
+  }
+
+  string f = getFilename(file); // gets the filename without .tar.gz and without /
+  ROS_INFO("Filename: %s", f.c_str());
+
+  fs::current_path(f);
+
+  if (getMetadata(f+".yaml")) {
+    for (int i = 0; i < _n_theta; i++) {
+      vector<Scenario> curr_vec;
+      fs::current_path(std::to_string(i));
+
+      
+      for (int j = 0;fs::is_regular_file(std::to_string(j)); j++) {
+        Scenario s;
+        if (s.loadScenario(std::to_string(j))) {
+          curr_vec.push_back(s);
+        }
+      }
+      ROS_INFO("Loaded angle %d. Number of scenarios %d", i, static_cast<int>(curr_vec.size()));
+      _scenarios.push_back(curr_vec);
+      fs::current_path("..");
+    }
+    ROS_INFO("Loaded scenario. Number of angles: %d", _n_theta);
+  } else {
+    ret_val = false;
+  }
+
+  fs::current_path(original_path);
 
   return ret_val;
+}
+
+bool PreprocessedScenario::getMetadata(const std::string &f) {
+  bool ret_val = true;
+
+  try {
+    ifstream ifs(f.c_str());
+
+    YAML::Node y = YAML::Load(ifs);
+
+    _min = Point2D(y["min"]);
+    _max = Point2D(y["max"]);
+    _max_z = y["max_z"].as<float>();
+    _plane_dist = y["plane_dist"].as<float>();
+    _n_theta = y["n_theta"].as<int>();
+    _db_min_points = y["db_min_points"].as<int>();
+    _db_epsilon = y["db_epsilon"].as<float>();
+  } catch (exception &e) {
+    cerr << "PreprocessedScenario::getMetadata --> exception when loading metadata.";
+    cerr << "Content: " << e.what() << endl;
+    ret_val = false;
+  }
+
+  return ret_val;
+}
+
+string PreprocessedScenario::getFilename(const string &f) const {
+  string ret;
+
+  auto start_ = f.rfind('/');
+  auto end_ = f.rfind(".tar.gz");
+
+  if (start_ == std::string::npos) {
+    start_ = 0;
+  } else {
+    start_++;
+  }
+
+  if (end_ == std::string::npos) {
+    end_ = f.size();
+  }
+
+  return f.substr(start_, end_ - start_);
+}
+
+void PreprocessedScenario::PC_Callback(const sensor_msgs::PointCloud2::ConstPtr &pc) {
+  if (_scenarios.size() > 0) {
+    return; // ALready computed
+  }
+  pcl::PointCloud<pcl::PointXYZ> pcl_pc;
+
+  pcl::fromROSMsg(*pc, pcl_pc);
+  ROS_INFO("Received PointCloud. Starting preprocessing. Height, Width: %d, %d", pc->height, pc->width);
+  precompute(pcl_pc);
+
+  ROS_INFO("Exporting scenario. Filename %s", _filename.c_str());
+  exportScenario();
+}
+
+void PreprocessedScenario::publishScenarios() {
+  if (_scenarios.size() > 0) {
+    ROS_INFO("Publishing first scenarios.");
+
+    int i = 0;
+    int total = _scenarios[0].size();
+    for (auto &x:_scenarios[0]) {
+      if (x.getTotalPoints() > 200) {
+        float intensity = 0.5f + 0.5f/(static_cast<float>(i) / static_cast<float>(total));
+        _pub.publish(x.toPC("map", i, intensity));
+        _pub_marker.publish(x.toMarkerArray("map", i++));
+      }
+    }
+  }
 }

@@ -4,22 +4,12 @@
 #include <catenary_checker/obstacle_2d.hpp>
 #include <catenary_checker/catenary_checker.hpp>
 #include <ros/ros.h>
+#include <iostream>
 
 class PreprocessedScenario {
 public:
-  PreprocessedScenario(Point2D min, Point2D max, int n_theta, float plane_dist = 0.2,
-                       int dbscan_min_points = 20, float dbscan_epsilon = 0.05);
-
-  // ! @brief Constructor that gets the parameters from ROS
-  PreprocessedScenario(ros::NodeHandle &pnh);
-
-  //! @brief Translates a Scenario given by a PC 3D to a matrix of 2D scenarios
-  //! @brief by slicing them in different directions
-  void precompute(const pcl::PointCloud<pcl::PointXYZ> &pc);
-
-  std::vector<TwoPoints> getProblemsTheta(double theta) const;
-
-  bool exportScenarios(const std::string &name) const;
+  //! @brief Constructor from file
+  PreprocessedScenario(const std::string &file);
 
   //! @brief Checks whether there exists a catenary between A and B with
   //! @brief a maximum length.
@@ -32,8 +22,38 @@ public:
                       const pcl::PointXYZ &B,
                       double max_length) const;
 
+  inline std::string getStats() const {
+    std::ostringstream oss;
+
+    oss << "Number of scenarios: " << _scenarios.size() << std::endl;
+    if (_scenarios.size() > 0) {
+      oss << "Number of obstacles of scenario " << _scenarios.size()/2 << std::endl;
+      oss << " is " << _scenarios[_scenarios.size() / 2].size() << std::endl;
+    }
+
+    return oss.str();
+  }
+
+protected:
+  //! @brief Translates a Scenario given by a PC 3D to a matrix of 2D scenarios
+  //! @brief by slicing them in different directions
+  void precompute(const pcl::PointCloud<pcl::PointXYZ> &pc);
+
+  std::vector<TwoPoints> getProblemsTheta(double theta) const;
+
+  bool exportScenario() const;
+
+  //! @brief Loads the precomputed scenarios from a tar gz file
+  //! @param file The global path to file
+  //! @retval true If success
+  bool loadScenario(const std::string &file);
+
+  //! @brief Gets the metadata from a YAML file
+  bool getMetadata(const std::string &f);
+
   std::vector<std::vector<Scenario> > _scenarios;
   std::vector<std::vector<TwoPoints> > _problems;
+  std::string _filename;
 
   Point2D _min, _max;
   int _n_theta;
@@ -43,4 +63,14 @@ public:
   // DBScan stuff
   int _db_min_points;
   float _db_epsilon;
+
+  std::string getFilename(const std::string &f) const;
+
+
+  // ROS Stuff
+  ros::Subscriber _sub;
+  ros::Publisher _pub, _pub_marker;
+
+  void PC_Callback(const sensor_msgs::PointCloud2::ConstPtr &pc);
+  void publishScenarios();
 };

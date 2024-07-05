@@ -29,8 +29,8 @@
   <arg name="use_dbscan_lines" default="true"/>
   <arg name="dbscan_min_points" default="5"/>
   <arg name="n_theta" default="6"/>
-  <arg name="n_scen" default="0"/>
-  <node name="test_ps" pkg="catenary_checker" type="test_preprocessed_scenario" output="screen" args="$(arg n_scen)" > <!-- launch-prefix="xterm -e gdb -ex run - -args" -->
+  <arg name="filename" default="$(find catenary_checker)/test/scenarios.tar.gz"/>
+  <node name="test_ps" pkg="catenary_checker" type="test_preprocessed_scenario" output="screen" args="$(arg filename)"># launch-prefix="xterm -e gdb --args" >
     <remap from="point_cloud" to="octomap_point_cloud_centers"/>
     <param name="plane_dist" value="$(arg plane_dist)"/>
     <param name="dbscan_min_points" value="$(arg dbscan_min_points)"/>

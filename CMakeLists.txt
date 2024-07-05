@@ -5,7 +5,7 @@ project(catenary_checker)
 add_compile_options(-std=c++17 -fPIC -fopenmp)
 add_link_options(-fopenmp)
 
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -39,7 +39,7 @@ include_directories( include/
 )
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
-
+ 
 set(EXTERNAL_INCLUDE_DIRS ${PCL_INCLUDE_DIRS} )
 set(EXTERNAL_LIBS ${PCL_LIBRARIES} ${yaml-cpp_LIBRARIES})
 

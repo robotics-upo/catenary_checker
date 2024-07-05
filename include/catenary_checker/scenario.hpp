@@ -152,8 +152,6 @@ inline visualization_msgs::MarkerArray Scenario::toMarkerArray(const std::string
  return msg;
 }
 
-
-
 // Get scenario from file
 inline bool Scenario::loadScenario(const std::string &filename) {
   bool ret_val = true;
@@ -164,6 +162,10 @@ inline bool Scenario::loadScenario(const std::string &filename) {
     YAML::Node f = YAML::Load(ifs);
     origin = Point2D(f["origin"]);
     unit_vec = Point2D(f["unit_vec"]);
+    plane = PlaneParams(f["plane"]);
+
+    printf("Load Scenario: Origin = %s. \t Unit vec: %s\n", origin.toString().c_str(),
+             unit_vec.toString().c_str());
 
     for (const auto &x:f["obstacles"]) {
       Obstacle2D o(x);
@@ -183,6 +185,7 @@ inline YAML::Emitter &operator << (YAML::Emitter &out, const Scenario &s) {
   out << YAML::BeginMap;
   out << YAML::Key << "origin" << YAML::Value << s.origin;
   out << YAML::Key << "unit_vec" << YAML::Value << s.unit_vec;
+  out << YAML::Key << "plane" << YAML::Value << s.plane;
   out << YAML::Key << "obstacles" << YAML::Value;
   out << YAML::BeginSeq;
   for (const auto &o:s) {
