@@ -263,36 +263,23 @@ class CorrectionAutodiffParableFunctor {
 					}
 				}
 				int group_coll_, first_coll , last_coll , middle_coll;
-				T m1_, m2_, Cmax;
 				group_coll_ = first_coll = last_coll = middle_coll = -1;
-				if(v_transition_coll_.size() > 0){ // this vector only is fill when the are tether points far from collision (v_coll = 0), even though tether is in collision
+				if(v_transition_coll_.size() > 0){
 					group_coll_ = (v_transition_coll_.size()/2);
 					first_coll = v_transition_coll_[0];
 					last_coll = v_transition_coll_[v_transition_coll_.size()-1];
-					middle_coll = ceil((last_coll+first_coll)/2);
-					double count_;
-					for(int i = 0; i < np_; i++){ 
-						if (i >= first_coll && i <= last_coll && v_coll[i]== 0 )
-							count_++;
-					}
-					double max_cost_ = 200.0 + 20.0 * count_;
-					Cmax = T{max_cost_};
-					T min_cost1_ = T{1.0}/ v_dist[first_coll];
-					T min_cost2_ = T{1.0}/ v_dist[last_coll];
-					double diff1_ = double(middle_coll- first_coll);
-					double diff2_ = double(last_coll- middle_coll);
-						if (diff1_ ==0)
-							diff1_ = 1;
-						if (diff2_ ==0)
-							diff2_ = 1;
-					m1_ = ( (Cmax - min_cost1_)/ T{diff1_} );
-					m2_ = ( (min_cost2_ - Cmax)/ T{diff2_} );
+					middle_coll = ceil((last_coll-first_coll)/2);
 				}
 
 				T distance_, C, point_cost_, cost_;
 				T cost_state_parable = T{0.0};
 				for(int i = 0; i < np_; i++){ 
 					if (v_coll[i]== -1){
+					// 	C = T{10.0};
+					// 	distance_ = 100.0*(pUGV[3] - v_z_[i]);
+					// 	double y_offset = -1 + 1/min_dist_;
+					// 	cost_ = (exp(distance_) + T{y_offset});
+					// }
 						if (v_dist[i] > 0){
 							C = T{10.0};
 							distance_ = v_dist[i];
@@ -303,24 +290,33 @@ class CorrectionAutodiffParableFunctor {
 							distance_ = T{-3.0};
 							cost_ = T{10000.0};	
 						}
-					}else if (v_coll[i]== 1){
-						if (i >= first_coll && i <= middle_coll && v_transition_coll_.size() > 0){
-							C = T{20.0};
-							double diff_x_ = double(i - first_coll);
-							distance_ = T{diff_x_};
-							cost_ =  m1_ * T{diff_x_} + T{1.0}/ v_dist[first_coll];
-						}else if (i > middle_coll && i <= last_coll && v_transition_coll_.size() > 0){
-							C = T{20.0};
-							double diff_x_ = double(i - middle_coll);
-							distance_ = T{diff_x_};
-							cost_ =  m2_ * T{diff_x_} + Cmax;
-						}
-						else{
-							C = T{10.0};
-							distance_ = v_dist[i];
-							cost_ = T{1.0}/distance_;
-						}
+
+					} else if (v_coll[i]== 1){
+						C = T{10.0};
+						distance_ = v_dist[i];
+						cost_ = T{1.0}/distance_;
 					}
+					else if (v_coll[i]== 0 && i >= first_coll && i <= last_coll && v_transition_coll_.size()> 0){
+						C = T{1.0};
+						distance_ = T{-3.0};
+						cost_ = T{10000.0};	
+					}
+					// else if (i >= first_coll && i <= last_coll && v_transition_coll_.size()> 0){
+					// 	if (v_dist[i] < T{sb} && v_dist[i] > T{0.01}){
+					// 		C = T{10.0};
+					// 		distance_ = v_dist[i];
+					// 		cost_ = T{1.0}/distance_;
+					// 	}else{
+					// 		C = T{1.0};
+					// 		distance_ = T{-3.0};
+					// 		cost_ = T{2000.0};	
+					// 	}
+					// }
+					// else if (v_coll[i]== 0){
+					// 	C = T{1.0};
+					// 	distance_ = v_dist[i];
+					// 	cost_ = T{1.0}/distance_;			
+					// }
 					else{
 						C = T{1.0};
 						distance_ = v_dist[i];

@@ -47,10 +47,10 @@ void CatenaryCheckerManager::Init(Grid3d *grid_3D_, double d_obs_tether_, double
 
 	p_reel_ugv = p_reel_ugv_;
 
-	if (use_parabola)
-        ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using PARABOLA METHOD");
+	if (use_catenary_as_tether_)
+        ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using CATENARY APROXIMATION");
     else
-        ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using NUMERICAL METHOD from Ceres Solver");
+        ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using TETHER APROXIMATION");
 
 	if (use_distance_function_)
         ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using DISTANCE FUNCTION");
@@ -280,7 +280,7 @@ double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_,
 	return dist;
 }
 
-bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<double> ct_)
+bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<float> ct_)
 {
 	bool ret_;
 
@@ -417,13 +417,13 @@ bool CatenaryCheckerManager::CheckStatusTetherCollision(vector<geometry_msgs::Ve
 	geometry_msgs::Vector3 p_reel_; 
 	std::vector<geometry_msgs::Vector3> points_tether_;
     double len_cat_, dist_;
-	int first_coll_, last_coll_, count_total_tether_coll_;
+	int first_coll_, last_coll_;
 	count_ugv_coll = count_uav_coll = count_tether_coll = count_total_tether_coll_ = 0;
 
     std::cout << std::endl << "	CatenaryCheckerManager started: analizing collision status for the marsupial agents" << std::endl; 
 	
 	for (size_t i= 0 ; i <  v1_.size(); i++){
-
+		// printf("%.5f %.5f %.5f %.5f %.5f %.5f %.3f %.3f %.3f\n", v1_[i].x, v1_[i].y, v1_[i].z, v2_[i].x, v2_[i].y, v2_[i].z, v3_[i].a, v3_[i].b,v3_[i].c);
         dist_ = getPointDistanceObstaclesMap(false, v1_[i],i,"UGV");
         if (dist_ < distance_obstacle_ugv * 0.45){
 			count_ugv_coll++;

@@ -1,5 +1,5 @@
-#ifndef __CORRECTION_PARABLE_PARAMETERS_HPP__
-#define __CORRECTION_PARABLE_PARAMETERS_HPP__
+#ifndef __CORRECTION_CATENARY_PARAMETERS_HPP__
+#define __CORRECTION_CATENARY_PARAMETERS_HPP__
 
 #include "ceres/ceres.h"
 #include "glog/logging.h"
@@ -16,51 +16,55 @@ using ceres::Solve;
 using ceres::LossFunction;
 using ceres::AutoDiffCostFunction;
 
-struct paramBlockPos{
+struct paramsBlockPos{
 	double parameter[4];
 };
 
-struct paramBlockTether{
+struct paramsBlockTether{
 	double parameter[4];
 };
 
-class CorrectionAutodiffParableLengthFunctor {
+class CorrectionAutodiffCatenaryLengthFunctor {
 
 public:
-    CorrectionAutodiffParableLengthFunctor(){}
+    CorrectionAutodiffCatenaryLengthFunctor(){}
 
-	struct ParableLengthFunctor 
+	struct CatenaryLengthFunctor 
 	{
-	ParableLengthFunctor(double weight_factor, double max_L_)
+	CatenaryLengthFunctor(double weight_factor, double max_L_)
 					: wf(weight_factor), max_L(max_L_)
 		{}
 
 		template <typename T>
-		bool operator()(const T* const pUGV, const T* const pUAV, const T* const param, T* residual) const 
+		bool operator()(const T* const pUGV, const T* const pUAV, const T* const params, T* residual) const 
 		{
-			T ugv_reel[4] = {pUGV[0], pUGV[1], pUGV[2], pUGV[3]}; // Set first parable point on the reel position
-			T dist = T{1.001} * sqrt(pow(pUAV[1]-ugv_reel[1],2)+pow(pUAV[2]-ugv_reel[2],2)+pow(pUAV[3]-ugv_reel[3],2)); 
-			T maxL = T{max_L};
-		
-			// Compute parable L : log(q + ((q + 2*p*x)^2 + 1)^(1/2) + 2*p*x)/(4*p) + ((q + 2*p*x)*((q + 2*p*x)^2 + 1)^(1/2))/(4*p) , x = xA and xB
-			T X = T{0.0}; // X is 0.0 because is considered that the parable beginning in the ugv reel
-			T val = T{2.0}*param[1]*X+param[2]; // This is a common term for the L equation
-			T La = (log( param[2] + sqrt((val*val) + T{1.0}) + T{2.0}*param[1]*X)/(T{4.0}*param[1]) + ((val)*sqrt((val*val) + T{1.0}))/(T{4.0}*param[1]));
+			T ugv_reel[4] = {pUGV[0], pUGV[1], pUGV[2], pUGV[3]}; // Set first catenary point on the reel position
 			
-			X = {sqrt(pow(pUAV[1]-ugv_reel[1],2)+pow(pUAV[2]-ugv_reel[2],2))};
-			val = T{2.0}*param[1]*X+param[2];
-			T Lb = (log( param[2] + sqrt((val*val) + T{1.0}) + T{2.0}*param[1]*X)/(T{4.0}*param[1]) + ((val)*sqrt((val*val) + T{1.0}))/(T{4.0}*param[1]));
-			T L = Lb - La;
+			T Xa = T{0.0};
+			T Ya = T{0.0};
+			T Xb = sqrt(pow(pUAV[1]-ugv_reel[1],2)+pow(pUAV[2]-ugv_reel[2],2)); 
+			T Yb = pUAV[3] - pUGV[3];
+			T maxL = T{max_L};
+			
+			/* Map:
+			params[1] = Xo 
+			params[2] = Yo 
+			params[3] = a 
+			params[4] = length (Not used length because it is not optimized)
+			*/
+			T length = params[3] * sinh((Xb - params[1])/params[3]) - params[3] * sinh((Xa - params[1])/params[3]);
+			
+			T dist = T{1.01} * sqrt(pow(pUAV[1]-ugv_reel[1],2)+pow(pUAV[2]-ugv_reel[2],2)+pow(pUAV[3]-ugv_reel[3],2)); 
 
 			T diff_;
-			if (L < dist )
-				diff_ = (dist - L);
-			else if (L > maxL)
-				diff_ = (L - maxL);
+			if (length < dist )
+				diff_ = (dist - maxL);
+			else if (length > maxL)
+				diff_ = (length - maxL);
 			else
 				diff_ = T{0.0};
 
-			residual[0] = wf * 100.0 * (exp(diff_)-1.0) ;
+			residual[0] = wf * (exp(diff_)-1.0) ;
 					
 			return true;
 		}
@@ -70,15 +74,15 @@ private:
 
 };
 
-class CorrectionDistanceFunctionObstacles : public ceres::SizedCostFunction<1, 3> 
+class CorrectionCatDistanceFunctionObstacles : public ceres::SizedCostFunction<1, 3> 
 {
  public:
 
-	CorrectionDistanceFunctionObstacles(Grid3d* grid_): g_3D(grid_)
+	CorrectionCatDistanceFunctionObstacles(Grid3d* grid_): g_3D(grid_)
     {
     }
 
-    virtual ~CorrectionDistanceFunctionObstacles(void) 
+    virtual ~CorrectionCatDistanceFunctionObstacles(void) 
     {
     }
 	
@@ -127,15 +131,15 @@ class CorrectionDistanceFunctionObstacles : public ceres::SizedCostFunction<1, 3
 	Grid3d *g_3D;
 };
 
-class CorrectionNumPointParabola : public ceres::SizedCostFunction<1, 1> 
+class CorrectionNumPointCatenary : public ceres::SizedCostFunction<1, 1> 
 {
  public:
 
-    CorrectionNumPointParabola(void)
+    CorrectionNumPointCatenary(void)
     {
     }
 
-    virtual ~CorrectionNumPointParabola(void) 
+    virtual ~CorrectionNumPointCatenary(void) 
     {
     }
 
@@ -155,32 +159,37 @@ class CorrectionNumPointParabola : public ceres::SizedCostFunction<1, 1>
 
 };
 
-class CorrectionAutodiffParableFunctor {
+class CorrectionAutodiffCatenaryFunctor {
 
 	public:
-    CorrectionAutodiffParableFunctor(){}
+    CorrectionAutodiffCatenaryFunctor(){}
 
-		struct ParableFunctor 
+		struct CatenaryFunctor 
 		{
-			ParableFunctor(double weight_factor_, Grid3d* grid_3D_, double sb_)
-			: wf(weight_factor_), g_3D(grid_3D_), sb(sb_),_parableCostFunctor(new CorrectionDistanceFunctionObstacles(g_3D)), _numPointFunctor(new CorrectionNumPointParabola())
+			CatenaryFunctor(double weight_factor_, Grid3d* grid_3D_, double sb_)
+			: wf(weight_factor_), g_3D(grid_3D_), sb(sb_),_catenaryCostFunctor(new CorrectionCatDistanceFunctionObstacles(g_3D)), _numPointFunctor(new CorrectionNumPointCatenary())
 			{
 			}
 
 			template <typename T>
-			bool operator()(const T* const pUGV, const T* const pUAV, const T* const param, T* residual) const 
+			bool operator()(const T* const pUGV, const T* const pUAV, const T* const params, T* residual) const 
 			{
-				T ugv_reel[4] = {pUGV[0], pUGV[1], pUGV[2], pUGV[3]}; // Set first parable point on the reel position
+				T ugv_reel[4] = {pUGV[0], pUGV[1], pUGV[2], pUGV[3]}; // Set first catenary point on the reel position
 				
 				// Here is compute the Parable Parameters 
 				double min_val_ = 0.01;
-				double min_dist_ = 0.005;
 				T d_[1];
 				T np_, u_x , u_y;
 				bool x_const, y_const;
 				x_const = y_const = false;
 				std::vector<int> v_coll;
 
+				/* Map:
+				params[1] = Xo 
+				params[2] = Yo 
+				params[3] = a 
+				params[4] = length (Not used length because it is not optimized)
+				*/
 				T delta_x = (pUAV[1] - ugv_reel[1]);
 				T delta_y = (pUAV[2] - ugv_reel[2]);
 				T delta_z = (pUAV[3] - ugv_reel[3]);
@@ -211,9 +220,9 @@ class CorrectionAutodiffParableFunctor {
 				first_coll_ = last_coll_ = prev_coll_ = -2;
 				for(int i = 0; i < np_; i++, x_ += dist_/ np_ ){  
 					if (!(dist_ < min_val_)){ // To check difference position between UGV and UAV only in z-axe, so parable it is not computed
-						point[0] = ugv_reel[1] + u_x * x_;
-						point[1] = ugv_reel[2] + u_y * x_;
-						point[2] = param[1] * x_* x_ + param[2] * x_ + param[3];
+					point[0] = ugv_reel[1] + u_x * x_;
+					point[1] = ugv_reel[2] + u_y * x_;
+					point[2] = params[3] * cosh((x_ - params[1])/params[3]) +( params[2]-params[3]);
 					}
 					else{ 	// In case that UGV and UAV are not in the same point the plane X-Y
 						T _step = d_[0] / np_;
@@ -221,19 +230,19 @@ class CorrectionAutodiffParableFunctor {
 						point[1] = ugv_reel[2];
 						point[2] = ugv_reel[3]+ _step* (double)i;    	
 					}
-        			_parableCostFunctor(point, &dist_to_obst_);
+        			_catenaryCostFunctor(point, &dist_to_obst_);
 					// Data save for aware of the tether status
 					v_dist.push_back(dist_to_obst_);
 					v_x_.push_back(point[0]);
 					v_y_.push_back(point[1]);
 					v_z_.push_back(point[2]);
-					// Clasification of collision with floor or other obstacles
-					if(dist_to_obst_ < T(0.0) || pUGV[3] >= point[2])
+					// Tether point collision clasification with floor or other obstacles
+					if(dist_to_obst_ < T(0.0) || point[2] < pUGV[3]+T{sb}) // floor collision
 						v_coll.push_back(-1);
-					else if (dist_to_obst_ < T(sb))
+					else if (dist_to_obst_ < T{sb}) // other obstacles collision
 						v_coll.push_back(1);
 					else
-						v_coll.push_back(0);
+						v_coll.push_back(0);  // not collision
 
 					// Algorithm to check intervals points in collision
 					if(v_coll[i] == 1 && prev_coll_ == 0){
@@ -250,7 +259,7 @@ class CorrectionAutodiffParableFunctor {
 						prev_coll_ = -1;
 						first_coll_ = last_coll_ = -2;
 					}
-					if (first_coll_ != -2 && last_coll_ != -2){
+					if (first_coll_ != -2 && last_coll_ != -2){ // Points in transition that are detected as free collision in a tether collision position are identify 
 						v_transition_coll_.push_back(first_coll_);
 						v_transition_coll_.push_back(last_coll_);
 						first_coll_ = last_coll_ = -2;
@@ -326,11 +335,11 @@ class CorrectionAutodiffParableFunctor {
 						distance_ = v_dist[i];
 						cost_ = T{1.0}/distance_;			
 					}
-
 					point_cost_ = cost_*C;
 					cost_state_parable = cost_state_parable + point_cost_; // To get point parable cost
 				}
 
+				double num_coll_ = 0.0;
 				cost_state_parable = cost_state_parable/np_;
 
 				residual[0] = wf * cost_state_parable;
@@ -338,37 +347,41 @@ class CorrectionAutodiffParableFunctor {
 			}
 			double wf, sb;
 			Grid3d *g_3D;
-	    	ceres::CostFunctionToFunctor<1, 3> _parableCostFunctor;
+	    	ceres::CostFunctionToFunctor<1, 3> _catenaryCostFunctor;
 	    	ceres::CostFunctionToFunctor<1, 1> _numPointFunctor;
 		};
 	private:
 };
 
 
-class CorrectionAutodiffParableParametersFunctor {
+class CorrectionAutodiffCatenaryParametersFunctor {
 
 public:
-    CorrectionAutodiffParableParametersFunctor(){}
+    CorrectionAutodiffCatenaryParametersFunctor(){}
 
-	struct ParableParametersFunctor 
+	struct CatenaryParametersFunctor 
 	{
-	ParableParametersFunctor(double weight_factor): wf(weight_factor)
+	CatenaryParametersFunctor(double weight_factor): wf(weight_factor)
 		{}
 
 		template <typename T>
-		bool operator()(const T* const pUGV, const T* const pUAV, const T* const param, T* residual) const 
+		bool operator()(const T* const pUGV, const T* const pUAV, const T* const params, T* residual) const 
 		{
-			T ugv_reel[4] = {pUGV[0], pUGV[1], pUGV[2], pUGV[3]}; // Set first parable point on the reel position
+			T ugv_reel[4] = {pUGV[0], pUGV[1], pUGV[2], pUGV[3]}; // Set first catenary point on the reel position
 		
 			T Xa = T{0.0};
+			T Ya = ugv_reel[3];
 			T Xb = sqrt(pow(pUAV[1]-ugv_reel[1],2)+pow(pUAV[2]-ugv_reel[2],2)); 
+			T Yb = pUAV[3];
+			T r1, r2, r3;
+	
+			r1 = params[3]*cosh((Xa - params[1])/params[3]) + (params[2]-params[3]) - Ya;//Eq. point A(UGV): residual[0] = a cosh(-Xo/a) + Yo
+			r2 = params[3]*cosh((Xb - params[1])/params[3]) + (params[2]-params[3]) - Yb;//Eq. point B(UAV): residual[1] = a cosh(Xb-Xo/a) + Yo - Yb
 
-			T pow_a = (param[1]*Xa*Xa + param[2]*Xa + param[3] - ugv_reel[3]);// residual = p*xa² + q*xa + r - ya
-			T pow_b = (param[1]*Xb*Xb + param[2]*Xb + param[3] - pUAV[3]    );// residual = p*xb² + q*xb + r - yb
-		
+			residual[0] = wf* ((r1));
+			residual[1] = wf* ((r2));
 
-			residual[0] = (wf * 100.0 )* ((pow_a));
-			residual[1] = (wf * 100.0 )* ((pow_b));
+
 
 			return true;
 		}
@@ -380,12 +393,12 @@ private:
 };
 
 
-class CorrectionParabolaParametersSolver
+class CorrectionCatenaryParametersSolver
 {
   public:
 
-    CorrectionParabolaParametersSolver(Grid3d* g_3D_, double d_tether_obs_, double l_tether_max_, int i, geometry_msgs::Vector3 plr_);
-    ~CorrectionParabolaParametersSolver(void);
+    CorrectionCatenaryParametersSolver(Grid3d* g_3D_, double d_tether_obs_, double l_tether_max_, int i, geometry_msgs::Vector3 plr_);
+    ~CorrectionCatenaryParametersSolver(void);
 
     bool solve(double w_1_, double w_2_, double w_3_);
     void loadInitialStatus(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, double pa_, double pb_, double pc_);
@@ -397,8 +410,8 @@ class CorrectionParabolaParametersSolver
     geometry_msgs::Vector3 p_ugv, p_uav, p_local_reel;
     Grid3d *grid_3D, *grid_3D_obst, *grid_3D_trav;
 
-    paramBlockPos statesPosUGV, statesPosUAV;
-	paramBlockTether statesTetherParams;
+    paramsBlockPos statesPosUGV, statesPosUAV;
+	paramsBlockTether statesTetherParams;
 
   private:
 

@@ -40,7 +40,7 @@ public:
     bool NumericalSolutionCatenary(const geometry_msgs::Vector3 &p_reel_, const geometry_msgs::Vector3 &p_final_, std::vector<geometry_msgs::Vector3> &points_catenary_);
     double getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Vector3 p_);
     double getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Vector3 p_, int pose_, string msg_);
-    bool CheckStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<double> ct_);
+    bool CheckStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<float> ct_);
     // bool CheckStatusCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_);
     bool CheckStatusTetherCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_, vector<float> length_, bool use_catenary_as_tether_);
     bool CheckFreeCollisionPoint(geometry_msgs::Vector3 p_, string mode_, int pose_);
@@ -65,7 +65,7 @@ public:
     double min_dist_obs_cat, length_cat_final; // to fill q_init
     double use_distance_function, catenary_state; 
     double param_cat_x0, param_cat_y0, param_cat_a ;
-	int count_ugv_coll, count_uav_coll, count_tether_coll;
+	int count_ugv_coll, count_uav_coll, count_tether_coll, count_total_tether_coll_;
 
 
     Grid3d *grid_3D;
