@@ -51,11 +51,16 @@ private:
 	std::string m_globalFrameId;
 	float m_sensorDev, m_gridSlice;
 	double m_publishPointCloudRate, m_publishGridSliceRate;
-	
+
+public:
 	// Octomap parameters
 	float m_maxX, m_maxY, m_maxZ;
 	double min_X, min_Y, min_Z, max_X, max_Y, max_Z;
+
+private:
 	float m_resolution, m_oneDivRes;
+
+
 	octomap::OcTree *m_octomap;
 	
 	// 3D probabilistic grid cell
@@ -304,6 +309,8 @@ public:
 	inline double getPointDist(double x, double y, double z) const
 	{
 		// printf("getPointDist: point2grid(%f, %f, %f)=%i\n",x,y,z,point2grid(x, y, z));
+    if (!isIntoMap(x,y,z))
+      return 0.0;
 		return m_grid[point2grid(x, y, z)].dist;
 	}
 
@@ -315,8 +322,7 @@ public:
 	TrilinearParams getPointDistInterpolation(double x, double y, double z)
 	{
 		TrilinearParams r;
-		if(x > min_X && y > min_Y && z > min_Z && x < max_X && y < max_Y && z < max_Z){
-			// printf("getPointDistInterpolation: point2grid(x, y, z)=%i\n",point2grid(x, y, z));
+		if(isIntoMap(x,y,z)){
 			r = m_triGrid[point2grid(x, y, z)];
 		}
 		return r;
@@ -529,19 +535,21 @@ protected:
 		double minX, minY, minZ, maxX, maxY, maxZ, res;
 		// m_octomap->getMetricMin(minX, minY, minZ);
 		// m_octomap->getMetricMax(maxX, maxY, maxZ);
-		maxX = ws_x_max ; // Next lines were added because once were fixed tje point cloud os the different stage the octomap size changed
+		maxX = ws_x_max ; // Next lines were added because once were fixed the point cloud os the different stage the octomap size changed
 		minX = ws_x_min ; 
 		maxY = ws_y_max ; 
 		minY = ws_y_min ; 
 		maxZ = ws_z_max ;
 		minZ = ws_z_min ;
 
-		min_X = round(minX); min_Y = round(minY); min_Z = round(minZ); 
+		min_X = floor(minX); min_Y = floor(minY); min_Z = floor(minZ); 
 		max_X = round(maxX); max_Y = round(maxY); max_Z = round(maxZ);
 		res = m_octomap->getResolution();
-		m_maxX = (float)(maxX-minX);
-		m_maxY = (float)(maxY-minY);
-		m_maxZ = (float)(maxZ-minZ);
+
+    // David: beware of typo!! before it was minX
+		m_maxX = max_X - min_X;
+		m_maxY = max_Y - min_Y;
+		m_maxZ = max_Z - min_Z;
 		m_resolution = (float)res;
 		m_oneDivRes = 1.0/m_resolution;
 		std::cout << "\tm_oneDivRes: " << m_oneDivRes << std::endl;
@@ -756,7 +764,9 @@ protected:
 	
 	inline int point2grid(const float &x, const float &y, const float &z) const
 	{
-		int value_ = (round((x-min_X)*m_oneDivRes)) + round((y-min_Y)*m_oneDivRes)*m_gridStepY + round((z-min_Z)*m_oneDivRes)*m_gridStepZ;
+		int value_ = std::min<int>(round((x-min_X)*m_oneDivRes), m_gridSizeX - 1) +
+      std::min<int>(round((y-min_Y)*m_oneDivRes), m_gridSizeY - 1) * m_gridStepY +
+      std::min<int>(round((z-min_Z)*m_oneDivRes), m_gridSizeZ - 1) * m_gridStepZ;
 		// printf("x= %f , y= %f , z= %f / min_X= %f , min_Y= %f , min_Z= %f \n",x, y, z, min_X, min_Y, min_Z);
 		// printf("for X: %f",round((x-min_X)*m_oneDivRes));
 		// printf(" , for Y: %f ",round((y-min_Y)*m_oneDivRes)*m_gridStepY);
