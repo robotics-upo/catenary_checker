@@ -24,8 +24,10 @@ public:
 
   bool getParable(const Point2D &p1, const Point2D &p2, const Point2D &p3);
 
-  bool approximateParable(const Scenario &objects, Point2D &A,
-			  Point2D &B, float min_y = 0.0);
+  //! @brief Uses the algorithm specified in our paper to get a valid
+  //! @brief parable given a vector of 2D objects in a plane from A to B.
+  bool approximateParable(const Scenario &objects, const Point2D &A,
+                          const Point2D &B, float min_y = 0.0);
 
   float getLength(float &x1, float &x2, float delta_t = 0.01) const;
 
@@ -37,6 +39,12 @@ public:
   {
     return a._a == b._a && a._b == b._b && a._c == b._c;
   }
+
+  inline void reset() {_a = _b = _c = 0.0f;}
+
+private:
+  bool recursiveApproximateParable(const Scenario &objects, const Point2D &A,
+                                   const Point2D &B, float min_y = 0.0);
 };
 
 #endif

@@ -40,17 +40,24 @@ bool Parable::getParable(const Point2D &p1, const Point2D &p2, const Point2D &p3
     return true;
 }
 
-bool Parable::approximateParable(const Scenario &objects, Point2D &A,
-				 Point2D &B, float min_y) 
+bool Parable::approximateParable(const Scenario &objects, const Point2D &A,
+                                 const Point2D &B, float min_y) {
+  // First get the straight line
+  _a = 0.0f;
+  _b = (A.y - B.y)/(A.x - B.x);
+  _c = A.y - _b * A.x;
+
+  // Now the algorithm can start
+  return recursiveApproximateParable(objects, A, B, min_y);
+}
+
+
+bool Parable::recursiveApproximateParable(const Scenario &objects, const Point2D &A,
+                                          const Point2D &B, float min_y) 
 {
   Obstacle2D artificial_obs;
   Scenario nonIntersection;
   Parable back(*this);
-
-  if (_a == 0.0 && _b == 0.0 && _c == 0.0) {
-    _b = (A.y - B.y)/(A.x - B.x);
-    _c = A.y - _b * A.x;
-  }
 
   std::function<float(float)> f = std::bind(&Parable::apply, this, std::placeholders::_1);
   int flag_ = 0;
@@ -142,6 +149,12 @@ std::string Parable::toString() const {
 
 std::vector<Point2D> Parable::getPoints(float &x1, float &x2, float delta_t) const {
   std::vector<Point2D> ret_val;
+
+  if (x1 < x2) {
+    float aux = x1;
+    x1 = x2;
+    x2 = aux;
+  }
   // std::cout << "x1 = " << x1 << " , x2 = " << x2 << std::endl;
   for (float x = x1; x <= x2; x+=delta_t) {
     Point2D p(x, apply(x));
