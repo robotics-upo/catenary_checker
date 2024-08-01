@@ -8,7 +8,6 @@ using namespace std;
 
 PreprocessedScenario *ps = NULL;
 ros::Publisher pub, pub_marker;
-void pc_callback(const sensor_msgs::PointCloud2::ConstPtr &pc);
 
 using namespace std;
 using namespace std::chrono;
@@ -16,6 +15,7 @@ using namespace std::chrono;
 int main(int argc, char **argv) {
   // Init ROS
   ros::init(argc,argv, "test_preprocessed_scenario");
+
 
   // Test the scenario preprocessing
   std::string file = "scenarios.tar.gz";
@@ -28,16 +28,21 @@ int main(int argc, char **argv) {
   duration<float, std::milli> duration = end - st;
   ROS_INFO("Got scenarios. Expended time: %f s", duration.count() * milliseconds::period::num / milliseconds::period::den);
   ROS_INFO("Scenarios statistics: %s", ps->getStats().c_str() );
-  
 
-  ros::Rate loop_rate(1);
+  // Feature: show different scenarios present in the environment
+
+  ros::Rate loop_rate(0.2);
+  int cont = 0;
   while(ros::ok()) {
     ros::spinOnce();
     loop_rate.sleep();
+    if (cont >= ps->size()) {
+      cont = 0;
+    }
+    ps->publishScenarios(cont++);
   }
 
   delete ps;
   ps = NULL;
 }
-
 
