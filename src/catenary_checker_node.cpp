@@ -18,8 +18,8 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   dbscan_theta = nh->param<float>("dbscan_theta", 0.1);
   use_dbscan_lines = nh->param<bool>("use_dbscan_lines", false);
 
-  // Discretizing the plane (one UGV point fixed)
-  n_planes = nh->param<int>("n_planes", -1);
+  precomputed_file = nh->param<std::string>("precomputed_file",
+                                            static_cast<std::string>(""));
 
   ROS_INFO("Catenary checker node. Global frame: %s. Base frame: %s", base_frame.c_str(), global_frame.c_str());
   ROS_INFO("Plane dist: %f. Publish pc, marker: %d, %d ", plane_dist, publish_pc, publish_marker);
@@ -27,7 +27,6 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   if (use_dbscan_lines) {
     ROS_INFO("Using DBScan Lines. Gamma: %f. Theta: %f", dbscan_gamma, dbscan_theta);
   }
-  ROS_INFO("Number of preprocessing planes (<0 means none): %d", n_planes);
 
   if (publish_pc) {
     pc_publisher = nh->advertise<sensor_msgs::PointCloud2>("plane_pc", 2, true);
@@ -57,9 +56,13 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
                        static_cast<float>(pf_.z));
 
 
-  if (n_planes > 0) {
+  // If there is a filename --> we use precomputation for planes
+  if (precomputed_file != "") {
     return precomputedCheckCatenary(robot, target, pts_c_);
   }
+
+  // If not, we compute the obstacles in the plane
+  // and then check for Parabola
   geometry_msgs::Point pts_; // To save Catenary point
 
   DBSCAN *dbscan = NULL;
@@ -163,15 +166,13 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
       std::cout << "Parabola Calculada" << std::endl;
     }
 
-    //    /********************* To obligate pause method and check Planning result *********************/
+    //    /********************* To pause method and check Planning result *********************/
 		    // std::string y_ ;
 		    // std::cout << " Press key to continue: " << std::endl;
 		    // std::cin >> y_ ;
 		//     /*************************************************************************************************/
 
     // std::cout << "pc_catenary.size()= " << pc_catenary.size() << " , pts_.size()=" << pts_c_.size() <<" , num_pts_cat_= " << num_pts_cat_ << " , quot= " << quot << std::endl;
-
-
 
   delete dbscan;
 
@@ -182,25 +183,25 @@ bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
                                                const pcl::PointXYZ &pf_,
                                                std::vector<geometry_msgs::Point> &pts_c_)
 {
-  if (n_planes < 1) {
-    ROS_INFO("catenaryChecker precomputedCheckCatenary Error: n_planes not positive");
-    return false;
-  }
-
-  if (discretized_planes.size() < n_planes) {
+  if (ps == NULL) {
     struct timespec start_planes, finish_planes;
-    clock_gettime(CLOCK_REALTIME, &start_planes);
-
     ROS_INFO("Precomputing planes:");
-    pcl::PointCloud<pcl::PointXYZ> pcl_pc;
-    pcl::PCLPointCloud2 pcl_pc2;
+    clock_gettime(CLOCK_REALTIME, &start_planes);
+    ps.reset(new PreprocessedScenario(precomputed_file));
 
-    pcl_conversions::toPCL(*pc,pcl_pc2);
-    pcl::fromPCLPointCloud2(pcl_pc2, pcl_pc); // TODO: Avoid conversions!!
-  
-    discretized_planes = preprocessObstacle2D(pi_, pcl_pc, n_planes, plane_dist,
-                                              dbscan_min_points, dbscan_epsilon);
-    ROS_INFO("Number of precomputed planes: %d", static_cast<int>(discretized_planes.size()));
+    if (ps->size() == 0) {
+      ROS_INFO("File %s not found. Precomputing.", precomputed_file.c_str());
+      ps->_min.x = grid_3D->min_X; 
+      ps->_min.y = grid_3D->min_Y;
+      ps->_min.x = grid_3D->max_X;
+      ps->_max.y = grid_3D->max_Y;   
+                                  
+      ps->PC_Callback(pc);
+    } else {
+      ROS_INFO("Obtaining the precomputed scenario from file.");
+    }
+
+    ROS_INFO("Number of precomputed directions: %d", static_cast<int>(ps->size()));
     clock_gettime(CLOCK_REALTIME, &finish_planes);
     auto sec_planes = finish_planes.tv_sec - start_planes.tv_sec;
     auto msec_planes = finish_planes.tv_nsec - start_planes.tv_nsec;
@@ -208,32 +209,13 @@ bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
     std::cout << "Precomputed time: " << precomputing_time << std::endl << std::endl;
   }
 
-  float angle = atanf((pf_.y - pi_.y)/(pf_.x - pi_.x));
-  float mult = 1.0f;
-  if (angle < 0) {
-    angle += M_PI;
-    mult = -1.0;
-  }
-  int i = round(angle / M_PI * n_planes);
-  if (i >= discretized_planes.size()) {
-    i = i % discretized_planes.size();
-  }
-
-  auto aux = pi_; // Aux point to get the vertical plane properly
-  aux.x += (pf_.x - pi_.x) * mult;
-  aux.y += (pf_.y - pi_.y) * mult;
-
-  auto plane = getVerticalPlane(pi_, aux); 
-  Point2D A(pi_.y * plane.a - pi_.x * plane.b, pi_.z);
-  Point2D B(pf_.y * plane.a - pf_.x * plane.b, pf_.z);
-  Parable parable;
-  get_catenary = parable.approximateParable(discretized_planes.at(i), A, B);
+  get_catenary = ps->checkCatenary(pi_, pf_) > -0.5f;
 
   if (!get_catenary)
     return false;
 
   pcl::PointCloud<pcl::PointXYZ> pc_catenary;
-  length_cat = getParablePoints(parable, pi_, pf_, pc_catenary);
+  length_cat = getParablePoints(ps->_parable, pi_, pf_, pc_catenary);
 
   geometry_msgs::Point pts_; // To save Catenary point
   pts_c_.clear();
@@ -396,7 +378,9 @@ double catenaryChecker::getPointDistanceFullMap(bool use_dist_func_, geometry_ms
 	return dist;
 }
 
-void catenaryChecker::getDataForDistanceinformation(Grid3d *grid3D_, const sensor_msgs::PointCloud2::ConstPtr& msg, bool use_distance_function_)
+void catenaryChecker::getDataForDistanceinformation(Grid3d *grid3D_,
+                                                    const sensor_msgs::PointCloud2::ConstPtr& msg,
+                                                    bool use_distance_function_)
 {
 	grid_3D = grid3D_;
   nn_obs.setInput(*msg);

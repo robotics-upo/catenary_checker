@@ -15,6 +15,7 @@
 #include <catenary_checker/parable.hpp>
 #include <catenary_checker/grid3d.hpp>
 #include "catenary_checker/near_neighbor.hpp"
+#include <catenary_checker/preprocessed_scenario.hpp>
 
 #define PRINTF_YELLOW "\x1B[33m"
 #define PRINTF_GREEN "\x1B[32m"
@@ -24,7 +25,8 @@ class catenaryChecker{
 public:
 
   catenaryChecker(ros::NodeHandlePtr nh);
-  visualization_msgs::Marker pointsToMarker(const std::vector<Point> &points, const std::string frame_id, int n_lines = -1);
+  visualization_msgs::Marker pointsToMarker(const std::vector<Point> &points,
+                                            const std::string frame_id, int n_lines = -1);
   void getPointCloud(const sensor_msgs::PointCloud2ConstPtr &pc_msg);
   bool analyticalCheckCatenary(const geometry_msgs::Point &pi_,
                                const geometry_msgs::Point &pf_,
@@ -34,7 +36,9 @@ public:
                                 const pcl::PointXYZ &pf_,
                                 std::vector<geometry_msgs::Point> &pts_c_);
   double getPointDistanceFullMap(bool use_dist_func_, geometry_msgs::Point p_);
-  void getDataForDistanceinformation(Grid3d *grid3D_, const sensor_msgs::PointCloud2::ConstPtr& msg, bool use_distance_function_);
+  void getDataForDistanceinformation(Grid3d *grid3D_,
+                                     const sensor_msgs::PointCloud2::ConstPtr& msg,
+                                     bool use_distance_function_);
   std_msgs::ColorRGBA getColor(int num);
   std_msgs::ColorRGBA getGray(int num);
 
@@ -63,9 +67,8 @@ public:
   float precomputing_time = -1.0;
 
   // Discretization of 2D planes
-  std::vector<Scenario> discretized_planes;
-  int n_planes = -1;
-  pcl::PointXYZ fixed_point;
+  std::string precomputed_file = "";
+  std::unique_ptr<PreprocessedScenario> ps;
 
 protected:
 
