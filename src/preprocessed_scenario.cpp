@@ -37,7 +37,6 @@ PreprocessedScenario::PreprocessedScenario(const std::string &filename) {
   } else {
     ROS_INFO("PreprocessedScenario::Got the scenarios from file %s. Publishing.", filename.c_str());
     sleep(2);
-    publishScenarios();
   }
 }
 
@@ -125,8 +124,7 @@ vector<TwoPoints> PreprocessedScenario::getProblemsTheta(double theta) const {
   return ret;
 }
 
-float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,
-                                          double max_length) const
+float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B)
 {
   double inc_x = B.x - A.x;
   double inc_y = B.y - A.y;
@@ -136,12 +134,9 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
 
   // Get the theta
   int i = round((yaw + M_PI * 0.5) / (_n_theta + 1));
+  i = i % _n_theta;
 
   // Then get the plane
-  // TODO: Complete! (get the scenario and call the parabol method with that scenario)
-  if (i >= _n_theta || i < 0) {
-    ROS_ERROR("PreprocessedScenario::checkCatenary --> yaw not in [-PI/2, PI/2]");
-  }
 
   const auto &scenes = _scenarios[i];
   if (scenes.size() > 0) {
@@ -160,13 +155,15 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
 
 
     const Scenario &scen = scenes[j];
-    auto pa = scen.to2D(A);
-    auto pb = scen.to2D(B);
+    _last_plane = scen.plane;
+    _pa = scen.to2D(A);
+    _pb = scen.to2D(B);
+    _parable.reset();
 
-    Parable parable;
-    if (parable.approximateParable(scen, pa, pb)) {
-      ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parable.");
-      ret_val = parable.getLength(pa.x, pb.x);
+    if (_parable.approximateParable(scen, _pa, _pb)) {
+      ret_val = _parable.getLength(_pa.x, _pb.x);
+      ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parable. Length = %f", ret_val);
+
     } else {
       ROS_INFO("PreprocessedScenario::checkCatenary --> could NOT get the parable.");
     }
@@ -358,13 +355,13 @@ void PreprocessedScenario::PC_Callback(const sensor_msgs::PointCloud2::ConstPtr 
   exportScenario();
 }
 
-void PreprocessedScenario::publishScenarios() {
-  if (_scenarios.size() > 0) {
-    ROS_INFO("Publishing first scenarios.");
+void PreprocessedScenario::publishScenarios(unsigned int scen) {
+  if (_scenarios.size() > scen) {
+    ROS_INFO("Publishing scenario set %u.", scen);
 
     int i = 0;
-    int total = _scenarios[0].size();
-    for (auto &x:_scenarios[0]) {
+    int total = _scenarios[scen].size();
+    for (auto &x:_scenarios[scen]) {
       if (x.getTotalPoints() > 200) {
         float intensity = 0.5f + 0.5f/(static_cast<float>(i) / static_cast<float>(total));
         _pub.publish(x.toPC("map", i, intensity));
