@@ -12,6 +12,8 @@
 #include <visualization_msgs/MarkerArray.h>
 #include "2d_projection.hpp"
 
+inline std_msgs::ColorRGBA getColor(int num);
+
 class Scenario:public std::vector<Obstacle2D> {
 public:
   PlaneParams plane; // Plane in which the obstacle was projected to
@@ -112,8 +114,7 @@ inline visualization_msgs::MarkerArray Scenario::toMarkerArray(const std::string
  marker.pose.orientation.z = 0;
  marker.pose.position.x = origin.x;
  marker.pose.position.y = origin.y;
- marker.color.a = 1.0f;
- marker.color.b = 1.0f;
+ marker.color = getColor(seq);
  msg.markers.push_back(marker);
 
  // Then the arrow
@@ -179,8 +180,6 @@ inline bool Scenario::loadScenario(const std::string &filename) {
   return ret_val;
 }
 
-
-
 inline YAML::Emitter &operator << (YAML::Emitter &out, const Scenario &s) {
   out << YAML::BeginMap;
   out << YAML::Key << "origin" << YAML::Value << s.origin;
@@ -196,3 +195,75 @@ inline YAML::Emitter &operator << (YAML::Emitter &out, const Scenario &s) {
   return out;
 }
 
+inline std_msgs::ColorRGBA getColor(int num) {
+  
+  // Different colors for planes
+  const int n_colors = 10;
+  int i = num % n_colors;
+  std_msgs::ColorRGBA color;
+
+  color.a = 1.0;
+  switch (i) {
+  case 0:
+    color.b = 1.0;
+    break;
+
+  case 1:
+    color.g = 1.0;
+    break;
+
+  case 2:
+    color.r = 1.0;
+    break;
+
+  case 3:
+    color.r = 1.0;
+    color.b = 1.0;
+    break;
+
+  case 4:
+    color.g = 1.0;
+    color.b = 1.0;
+    break;
+
+  case 5:
+    color.g = 1.0;
+    color.r = 1.0;
+    break;
+
+  case 6:
+    color.g = 1.0;
+    color.b = 0.5;
+    color.r = 0.5;
+    break;
+
+  case 7:
+    color.r = 1.0;
+    color.b = 0.5;
+    color.g = 0.5;
+    break;
+  case 8:
+    color.b = 1.0;
+    color.g = 0.5;
+    color.r = 0.5;
+    break;
+
+  case 9:
+    color.g = 1.0;
+    color.b = 1.0;
+    color.r = 0.5;
+    break;
+  }
+
+  i = num % (n_colors*2);
+  if (i >= n_colors) {
+    color.g *= 0.5;
+    color.b *= 0.5;
+    color.r *= 0.5;
+  }
+
+  if (num < 0)
+    color.r = color.b = color.g = 1.0;
+
+  return color;
+}
