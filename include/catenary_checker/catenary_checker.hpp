@@ -3,8 +3,8 @@
 #include <dbscan_line/dbscan_lines.h>
 #include "catenary_checker/obstacle_2d.hpp"
 #include "catenary_checker/2d_projection.hpp"
-#include "catenary_checker/parable.hpp"
 #include "catenary_checker/scenario.hpp"
+#include "parabola.hpp"
 
 #ifndef __CATENARY_CHECKER_LIB__
 #define __CATENARY_CHECKER_LIB__
@@ -15,6 +15,7 @@ typedef std::pair<Point2D, Point2D> TwoPoints;
 //! @param A First point
 //! @param B Second point
 //! @param scenario The 2D scenario
+//! @return The length of the catenary, or -1 if not found
 float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenario &scenario);
 
 //! @brief Checks for the existence of a Catenary between two 3D points in a PC
@@ -27,14 +28,14 @@ float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenar
 //! @return The length of the catenary, or -1 if not found
 float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon);
 
-//! @brief Gets the 3D points of a parable
-//! @param parable The parable to get the points
-//! @param A First point of the parable
-//! @param B End point of the parable
-//! @param par_points Output: The 3D points of the parable
+//! @brief Gets the 3D points of a parabola
+//! @param parabola The parabola to get the points
+//! @param A First point of the parabola
+//! @param B End point of the parabola
+//! @param par_points Output: The 3D points of the parabola
 //! @param delta_t: spacing in the 2D x coordinate
-//! @return The parable length
-float getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B, pcl::PointCloud<pcl::PointXYZ> &par_points, float delta_t=0.05);
+//! @return The parabola length
+float getParabolaPoints(Parabola &parabola, const pcl::PointXYZ &A, const pcl::PointXYZ &B, pcl::PointCloud<pcl::PointXYZ> &par_points, float delta_t=0.05);
 
 //! @brief Deprecated: Makes a preprocess of several planes in a given (x,y) position (UGV fixed)
 //! @param A First point (fixed)

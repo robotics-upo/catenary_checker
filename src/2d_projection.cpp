@@ -1,5 +1,4 @@
 #include "catenary_checker/2d_projection.hpp"
-#include "catenary_checker/parable.hpp"
 #include <chrono>
 
 pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cloud_in,

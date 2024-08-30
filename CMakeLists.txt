@@ -24,6 +24,8 @@ find_package(Qt5 REQUIRED COMPONENTS
   )
 
 find_package(Qt5Charts REQUIRED)
+find_package(Ceres REQUIRED)
+
 
 find_package(PCL 1.8 REQUIRED)
 find_package(PCL REQUIRED)
@@ -36,12 +38,17 @@ include_directories( include/
   ${Qt5Widgets_INCLUDE_DIRS}
   ${Qt5Charts_INCLUDE_DIRS}
   ${yaml-cpp_INCLUDE_DIRS}
+  ${CERES_INCLUDE_DIRS}
 )
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
  
 set(EXTERNAL_INCLUDE_DIRS ${PCL_INCLUDE_DIRS} )
 set(EXTERNAL_LIBS ${PCL_LIBRARIES} ${yaml-cpp_LIBRARIES})
+
+if (BUILD_SHARED_LIBS)
+  remove_definitions(-DCERES_BUILDING_SHARED_LIBRARY)
+endif()
 
 
 ###################################
@@ -82,17 +89,24 @@ add_library(${PROJECT_NAME}
    src/catenary_checker.cpp 
    src/obstacle_2d.cpp 
    src/convex_hull.cpp
-   src/parable.cpp
+   src/parabola.cpp
    src/catenary_checker_manager.cpp
    src/bisection_catenary_3D.cpp
    src/catenary_checker_node.cpp 
    src/catenary_checker_manager_node.cpp
    src/preprocessed_scenario.cpp
+   src/solve_parabola_parameter.cpp
+   src/solve_catenary_parameter.cpp
+   src/solve_parabola_correction_parameter.cpp
+   src/solve_catenary_correction_parameter.cpp
+  #  src/check_collision_path_planner.cpp
 )
 target_link_libraries(${PROJECT_NAME}
    ${EXTERNAL_LIBS}
    ${catkin_LIBRARIES}
    ${YAML_CPP_LIBRARIES}
+   Ceres::ceres
+   ${CERES_LIBRARIES}
 )
 
 ## Add cmake target dependencies of the library
@@ -139,6 +153,8 @@ target_link_libraries(test_catenary_checker
    Qt5::Charts
    Qt5::Widgets
    ${EXTERNAL_LIBRARIES}   
+   Ceres::ceres
+   ${CERES_LIBRARIES} 
    )
 target_link_libraries(test_preprocessed_scenario
    ${PROJECT_NAME}

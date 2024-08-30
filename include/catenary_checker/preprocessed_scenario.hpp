@@ -36,9 +36,9 @@ public:
 
   size_t size(){return _scenarios.size();}
 
-  //! @brief Stores the last data of parable
-  Parable _parable;  
-  Point2D _pa, _pb; // X coordinates of each extreme point of the last parable
+  //! @brief Stores the last data of parabola
+  Parabola _parabola;  
+  Point2D _pa, _pb; // X coordinates of each extreme point of the last parabola
   PlaneParams _last_plane;
 
 protected:

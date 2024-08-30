@@ -6,14 +6,14 @@
 #include <QSplineSeries>
 #include "catenary_checker/scenario.hpp"
 
-// Stores a parable of the form: y = ax² + bx + c
-class Parable {
+// Stores a parabola of the form: y = ax² + bx + c
+class Parabola {
 public:
-  Parable();
+  Parabola();
 
-  Parable(float a, float b, float c);
+  Parabola(float a, float b, float c);
 
-  Parable(const Point2D &p1, const Point2D &p2, const Point2D &p3);
+  Parabola(const Point2D &p1, const Point2D &p2, const Point2D &p3);
 
   std::string toString() const;
 
@@ -22,11 +22,11 @@ public:
 
   float apply(float x) const;
 
-  bool getParable(const Point2D &p1, const Point2D &p2, const Point2D &p3);
+  bool getParabola(const Point2D &p1, const Point2D &p2, const Point2D &p3);
 
   //! @brief Uses the algorithm specified in our paper to get a valid
   //! @brief parable given a vector of 2D objects in a plane from A to B.
-  bool approximateParable(const Scenario &objects, const Point2D &A,
+  bool approximateParabola(const Scenario &objects, const Point2D &A,
                           const Point2D &B, float min_y = 0.0);
 
   float getLength(float &x1, float &x2, float delta_t = 0.01) const;
@@ -35,7 +35,7 @@ public:
 
   float _a, _b, _c;
 
-  inline friend bool operator==(const Parable &a, const Parable &b)
+  inline friend bool operator==(const Parabola &a, const Parabola &b)
   {
     return a._a == b._a && a._b == b._b && a._c == b._c;
   }
@@ -43,8 +43,8 @@ public:
   inline void reset() {_a = _b = _c = 0.0f;}
 
 private:
-  bool recursiveApproximateParable(const Scenario &objects, const Point2D &A,
-                                   const Point2D &B, float min_y = 0.0);
+  bool recursiveApproximateParabola(const Scenario &objects, const Point2D &A,
+                                    const Point2D &B, float min_y = 0.0);
 };
 
 #endif

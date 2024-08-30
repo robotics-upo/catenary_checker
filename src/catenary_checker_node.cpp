@@ -136,24 +136,33 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
       Scenario scenario = getObstacles(dbscan, robot, target); 
       // ROS_INFO("scenario: %lu \n",scenario.size());
       
-      // Get the initial parable (line between A and B)
-      std::cout << "Compute getVerticalPlane" << std::endl;
+      // Get the initial parabola (line between A and B)
+std::cout << "Compute getVerticalPlane" << std::endl;
       auto plane = getVerticalPlane(robot,target); 
       Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
       Point2D B(target.y * plane.a - target.x * plane.b, target.z);
-      std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
-      Parable parable;
-      get_catenary = parable.approximateParable(scenario, A, B);
+std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
+      Parabola parabola;
+      get_catenary = parabola.approximateParabola(scenario, A, B);
 
       if (!get_catenary)
         return false;
 
-      // ROS_INFO("Got parable: %s", parable.toString().c_str()); 
+      // ROS_INFO("Got parabola: %s", parabola.toString().c_str()); 
       pcl::PointCloud<pcl::PointXYZ> pc_catenary;
-      getParablePoints(parable,robot,target, pc_catenary);
+      length_cat = getParabolaPoints(parabola, robot, target, pc_catenary);
+
       // std::cout << "catenaryChecker::getPointCloud: pc_catenary.size()=" << pc_catenary.size() << std::endl;
       
-      length_cat = parable.getLength(A.x, B.x);
+      // if (robot.x - target.x > 0.1)
+      // else 
+      //   length_cat = parabola.getLength(robot.y, target.y);
+    
+      // int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
+      // if (pc_catenary.size() < num_pts_cat_)
+      //   num_pts_cat_ = pc_catenary.size();
+      // int quot = round((int)pc_catenary.size() / num_pts_cat_);
+      // std::cout << "catenaryChecker::getPointCloud -else- length_cat= " << length_cat << std::endl;
 
       for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
         // if (i%quot == 0){
@@ -215,7 +224,7 @@ bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
     return false;
 
   pcl::PointCloud<pcl::PointXYZ> pc_catenary;
-  length_cat = getParablePoints(ps->_parable, pi_, pf_, pc_catenary);
+  length_cat = getParabolaPoints(ps->_parabola, pi_, pf_, pc_catenary);
 
   geometry_msgs::Point pts_; // To save Catenary point
   pts_c_.clear();

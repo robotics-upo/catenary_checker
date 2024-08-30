@@ -1,33 +1,33 @@
 #include "catenary_checker/catenary_checker.hpp"
-#include "catenary_checker/parable.hpp"
+#include "catenary_checker/parabola.hpp"
 #include <chrono>
 
 using namespace pcl;
 
-float getParablePoints(Parable &parable, const pcl::PointXYZ &A, const pcl::PointXYZ &B,
-                       pcl::PointCloud<pcl::PointXYZ> &p, float delta_t) {
+float getParabolaPoints(Parabola &parabola, const pcl::PointXYZ &A, const pcl::PointXYZ &B, 
+                      pcl::PointCloud<pcl::PointXYZ> &p, float delta_t) {
   // Project to 2D the init and goal points
   auto plane = getVerticalPlane(A, B);
   Point2D A_(A.y * plane.a - A.x * plane.b, A.z);
   Point2D B_(B.y * plane.a - B.x * plane.b, B.z);
 
-  auto parable2d_points = parable.getPoints(A_.x, B_.x, delta_t);
-  pcl::PointCloud<pcl::PointXY> parable2d;
+  auto parabola2d_points = parabola.getPoints(A_.x, B_.x, delta_t);
+  pcl::PointCloud<pcl::PointXY> parabola2d;
   pcl::PointXY pcl_point;
   float length = 0.0f;
-  if (parable2d_points.size() > 0) {
-    for (size_t i = 1; i < parable2d_points.size(); i++) {
-      auto p = parable2d_points[i];
-      auto q = parable2d_points[i-1];
+  if (parabola2d_points.size() > 0) {
+    for (size_t i = 1; i < parabola2d_points.size(); i++) {
+      auto p = parabola2d_points[i];
+      auto q = parabola2d_points[i-1];
       pcl_point.x = p.x;
       pcl_point.y = p.y;
-      parable2d.push_back(pcl_point);
+      parabola2d.push_back(pcl_point);
       length += sqrtf(powf(p.x - q.x, 2.0) + powf(p.y - q.y, 2.0));
     }
   }
 
-  // Simon: This is an example to get the 3D parable:
-  p = reproject3D(parable2d, A, B);
+  // Simon: This is an example to get the 3D parabola:
+  p = reproject3D(parabola2d, A, B);
 
   return length;
 }
@@ -40,14 +40,17 @@ float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenar
   Point2D A_(A.y * plane.a - A.x * plane.b, A.z);
   Point2D B_(B.y * plane.a - B.x * plane.b, B.z);
 
-  // Get the parable
-  Parable parable;
-  if (parable.approximateParable(scenario, A_, B_)) {
-    ret_val = parable.getLength(A_.x, B_.x);
+  // Get the parabola
+  Parabola parabola;
+  if (parabola.approximateParabola(scenario, A_, B_)) {
+    ret_val = parabola.getLength(A_.x, B_.x);
+    
     // Simon if you want the 3D points you can use:
-    //auto x = getParablePoints(parable, A, B);
+    //auto x = getParabolaPoints(parabola, A, B);
+    
   }
 
+  // Return the longitude of the parabola
   return ret_val;
 }
 

@@ -158,14 +158,14 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
     _last_plane = scen.plane;
     _pa = scen.to2D(A);
     _pb = scen.to2D(B);
-    _parable.reset();
+    _parabola.reset();
 
-    if (_parable.approximateParable(scen, _pa, _pb)) {
-      ret_val = _parable.getLength(_pa.x, _pb.x);
-      ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parable. Length = %f", ret_val);
+    if (_parabola.approximateParabola(scen, _pa, _pb)) {
+      ret_val = _parabola.getLength(_pa.x, _pb.x);
+      ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parabola. Length = %f", ret_val);
 
     } else {
-      ROS_INFO("PreprocessedScenario::checkCatenary --> could NOT get the parable.");
+      ROS_INFO("PreprocessedScenario::checkCatenary --> could NOT get the parabola.");
     }
   }
 

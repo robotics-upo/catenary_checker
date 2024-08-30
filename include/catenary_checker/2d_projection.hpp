@@ -2,7 +2,7 @@
 #include <pcl/point_types.h>
 #include <dbscan_line/dbscan_lines.h>
 #include "catenary_checker/obstacle_2d.hpp"
-#include "parable.hpp"
+#include "parabola.hpp"
 #include "yaml-cpp/yaml.h"
 
 #ifndef __2D_PROYECTION_LIB__

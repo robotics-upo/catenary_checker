@@ -1,7 +1,7 @@
 #include "catenary_checker/catenary_checker.hpp"
 #include "catenary_checker/obstacle_2d.hpp"
-#include "catenary_checker/parable.hpp"
 #include "catenary_checker/preprocessed_scenario.hpp"
+#include "catenary_checker/parabola.hpp"
 #include <string>
 
 #include <QtWidgets/QApplication>
@@ -21,8 +21,8 @@ using namespace std;
 // Add the Qt namespaces for god sake!!
 QT_CHARTS_USE_NAMESPACE
 
-QChartView *represent_problem(const vector<Obstacle2D> &scenario, const Point2D &A,
-			     const Point2D &B, const Parable &parabol);
+QChartView *represent_problem(const std::vector<Obstacle2D> &scenario, const Point2D &A,
+			     const Point2D &B, const Parabola &parabol);
 
 QChartView *represent_lines(const vector <TwoPoints> problems);
 
@@ -72,20 +72,20 @@ int main(int argc, char **argv) {
 
 
   // Test the algorithm for getting a parable from an scenario
-  Parable parable;
+  Parabola parabola;
   // Put the origin (p1) and target (p2) coordinates
   p1.x = 1.5; p1.y = 2;
   p2.x = 8;   p2.y = 8;
-  if (parable.approximateParable(scenario, p1, p2)) {
-    std::cout << "Parable OK. Parable params: " <<  parable.toString() << std::endl;
+  if (parabola.approximateParabola(scenario, p1, p2)) {
+    std::cout << "Parabola OK. Parabola params: " <<  parabola.toString() << std::endl;
   } else {
-    std::cout << "Parable failed miserably!\n";
+    std::cout << "Parabola failed miserably!\n";
   }
 
   if (s.size() == 0) {
     s = scenario;
   }
-  auto chart_view = represent_problem(s, p1, p2, parable);
+  auto chart_view = represent_problem(scenario, p1, p2, parabola);
 
   QMainWindow window;
   window.setCentralWidget(chart_view);
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 
 
 QChartView *represent_problem(const std::vector<Obstacle2D> &scenario, const Point2D &A,
-			     const Point2D &B, const Parable &parabol) {
+			     const Point2D &B, const Parabola &parabol) {
   QChartView *ret = new QChartView();
 
   QChart *chart = new QChart();
@@ -123,8 +123,8 @@ QChartView *represent_problem(const std::vector<Obstacle2D> &scenario, const Poi
   a_serie->append(B.x, B.y);
   chart->addSeries(a_serie);
 
-  // Get the parable spline
-  chart->addSeries(parabol.toSeries("parable", A.x, B.x));
+  // Get the parabola spline
+  chart->addSeries(parabol.toSeries("parabola", A.x, B.x));
 
   chart->setTitle("Collision-Free Catenary");
   chart->createDefaultAxes();
