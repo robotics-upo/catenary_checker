@@ -526,3 +526,15 @@ void bisectionCatenary::clearMarkers(visualization_msgs::MarkerArray _marker, in
     }
     c_m_pub_.publish(_marker);
 }
+
+void bisectionCatenary::readDataForCollisionAnalisys(Grid3d* g_3D_ , double bound_obst_, octomap::OcTree* octotree_full_,
+                                                    pcl::KdTreeFLANN <pcl::PointXYZ> trav_kdT_, pcl::PointCloud <pcl::PointXYZ>::Ptr trav_pc_)
+{
+   grid_3D = g_3D_; 
+   received_grid = true;
+   bound_obst = bound_obst_;
+   octotree_full = octotree_full_;
+   kdt_trav = trav_kdT_; 
+   pc_trav = trav_pc_; 
+}
+
