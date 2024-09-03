@@ -45,6 +45,7 @@ void CatenaryCheckerManager::init(Grid3d *grid_3D_, double d_obs_tether_,
   just_line_of_sight = j_l_o_s_;
   use_both = use_both_;
   use_distance_function = use_distance_function_;
+  grid_3D = grid_3D_;
 
   if (use_both) {
     ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using both methods");

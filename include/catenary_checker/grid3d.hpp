@@ -261,7 +261,8 @@ public:
 				// Save grid on file
 				if(saveGrid(path))
 					std::cout << "Grid map successfully saved on " << path << std::endl;
-			}			
+			}	
+			computeTrilinearInterpolation();		
 		}
 
 		if(m_publishPc)
@@ -353,6 +354,11 @@ if (index < 0 || index >= m_gridSize) {
 	TrilinearParams getPointDistInterpolation(double x, double y, double z)
 	{
 		TrilinearParams r;
+
+		if (m_triGrid == NULL) {
+			computeTrilinearInterpolation();
+		}
+
 		if(isIntoMap(x,y,z)){
 			r = m_triGrid[point2grid(x, y, z)];
 		}

@@ -397,17 +397,17 @@ class CorrectionCatenaryParametersSolver
 {
   public:
 
-    CorrectionCatenaryParametersSolver(Grid3d* g_3D_, double d_tether_obs_, double l_tether_max_, int i, geometry_msgs::Vector3 plr_);
+    CorrectionCatenaryParametersSolver(Grid3d* g_3D_, double d_tether_obs_, double l_tether_max_, int i, geometry_msgs::Point plr_);
     ~CorrectionCatenaryParametersSolver(void);
 
     bool solve(double w_1_, double w_2_, double w_3_);
-    void loadInitialStatus(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, double pa_, double pb_, double pc_);
+    void loadInitialStatus(geometry_msgs::Point p1_, geometry_msgs::Point p2_, double pa_, double pb_, double pc_);
     void getParabolaParameters(double &_p, double &_q, double &_r);
   
     int max_num_iterations, status;
     double p, q, r; 
     double distance_tether_obstacle, length_tether_max;
-    geometry_msgs::Vector3 p_ugv, p_uav, p_local_reel;
+    geometry_msgs::Point p_ugv, p_uav, p_local_reel;
     Grid3d *grid_3D, *grid_3D_obst, *grid_3D_trav;
 
     paramsBlockPos statesPosUGV, statesPosUAV;
