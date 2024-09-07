@@ -126,6 +126,8 @@ target_link_libraries(${PROJECT_NAME}
 # add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp )
 add_executable(test_catenary_checker src/test_catenary_checker.cpp)
 # add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
+add_executable(test_ensuring_collision_free_catenary src/test_ensuring_collision_free_catenary.cpp)
+target_link_libraries(test_ensuring_collision_free_catenary ${catkin_LIBRARIES} ceres)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
