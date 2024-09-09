@@ -3,12 +3,14 @@ import statistics
 
 # Lista de archivos a procesar
 files = [
-    "error_summary_byLength_Length_15m.txt",
-    "error_summary_byFitting_Length_15m.txt",
-    "error_summary_byFitting_Length_20m.txt",
-    "error_summary_byLength_Length_20m.txt",
-    "error_summary_byFitting_Length_25m.txt",
-    "error_summary_byLength_Length_25m.txt"
+    os.path.expanduser("~/Documents/error_summary_byLength_Length_15m.txt"),
+    os.path.expanduser("~/Documents/error_summary_byFitting_Length_15m.txt"),
+    os.path.expanduser("~/Documents/error_summary_byLength_Length_20m.txt"),
+    os.path.expanduser("~/Documents/error_summary_byFitting_Length_20m.txt"),
+    os.path.expanduser("~/Documents/error_summary_byLength_Length_30m.txt"),
+    os.path.expanduser("~/Documents/error_summary_byFitting_Length_30m.txt")
+    # os.path.expanduser("~/error_summary_byLength.txt"),
+    # os.path.expanduser("~/error_summary_byFitting.txt")
 ]
 
 def process_file(file_name):

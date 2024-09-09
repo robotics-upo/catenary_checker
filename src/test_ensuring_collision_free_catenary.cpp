@@ -137,23 +137,15 @@ class ParabolaParameters
         template <typename T>
         bool operator()(const T* P_, T* R_) const 
         {
-            T val, La, Lb, X;
+            T val, La, Lb;
             R_[0] = T{100.0}*(P_[0] * xA * xA + P_[1]*xA + P_[2] - yA);
             R_[1] = T{100.0}*(P_[0] * xB * xB + P_[1]*xB + P_[2] - yB);
-            X = T{0.0}; // X is 0.0 because is considered that the parable beginning in the ugv reel
-            // val = T{2.0}*P_[0]*X+P_[1]; // This is a common term for the L equation
-            // La = (log( P_[1] + sqrt((val*val) + T{1.0}) + T{2.0}*P_[0]*X)/(T{4.0}*P_[0]) + ((val)*sqrt((val*val) + T{1.0}))/(T{4.0}*P_[0]));
-            // X = T{sqrt((xA-xB)*(xA-xB)+(yA-yB)*(yA-yB))};
-            // val = T{2.0}*P_[0]*X+P_[1];
-            // Lb = (log( P_[1] + sqrt((val*val) + T{1.0}) + T{2.0}*P_[0]*X)/(T{4.0}*P_[0]) + ((val)*sqrt((val*val) + T{1.0}))/(T{4.0}*P_[0]));
-
-            val = sqrt((T{2.0}*P_[0]*xA) * (T{2.0}*P_[0]*xA) + (T{4.0}*P_[0]*P_[1]*xA) + (P_[1]*P_[1] ) + T{1.0});
+            val = sqrt((T{2.0}*P_[0]*xA) * (T{2.0}*P_[0]*xA) + (T{4.0}*P_[0]*P_[1]*xA) + (P_[1]*P_[1] ) + T{1.0}); // Evaluate in Xa
             La = log(val + (T{2.0}*xA*P_[1]*P_[1] + P_[0]*P_[1])/(P_[0]))/(T{4.0}*(P_[0])) + (xA/T{2.0} + P_[1]/(T{4.0}*(P_[0])))*val;
-            val = sqrt((T{2.0}*P_[0]*xB) * (T{2.0}*P_[0]*xB) + (T{4.0}*P_[0]*P_[1]*xB) + (P_[1]*P_[1] ) + T{1.0});
+            val = sqrt((T{2.0}*P_[0]*xB) * (T{2.0}*P_[0]*xB) + (T{4.0}*P_[0]*P_[1]*xB) + (P_[1]*P_[1] ) + T{1.0}); // Evaluate in Xb
             Lb = log(val + (T{2.0}*xB*P_[1]*P_[1] + P_[0]*P_[1])/(P_[0]))/(T{4.0}*(P_[0])) + (xB/T{2.0} + P_[1]/(T{4.0}*(P_[0])))*val;
 
 			T len = Lb - La;
-            // R_[2] = exp((len - T{L})*(len - T{L}));
             R_[2] = T{20.0}*(len - L);
             // std::cout << "      Length : L = " << L << " , len = " << len << std::endl;   
             // std::cout << "      P : [0] = " << P_[0] << " , [1] = " << P_[1] << " , [2] = " << P_[2] << std::endl;   
@@ -291,7 +283,8 @@ class ComputePointsUsingPamameters{
                 cat_.x = par_.x = step * i;
                 cat_.y = c3_ * cosh((cat_.x - c1_)/c3_) + ( c2_);
                 par_.y = p1_ * par_.x * par_.x + p2_ * par_.x + p3_;
-                double error = fabs( cat_.y - par_.y);
+                // double error = fabs( cat_.y - par_.y);
+                double error = ( cat_.y - par_.y);
                 wd.writeInFile(L_, cat_.x, cat_.y, par_.y, error);
             }
             wd.closeFile();
@@ -330,7 +323,7 @@ class ByFitting {
             double error_ = 0.01;
             double L0, L1, Lm;
             L0 = D_;
-            L1 = 15.0;
+            L1 = 20.0;
             int count = 0;
             while (true) {
                 if (count == 0)
@@ -407,7 +400,7 @@ int main(int argc, char* argv[]) {
             std::random_device rd;   // Random Origen
             std::mt19937 gen(rd());  // Mersenne Twister: generador de números pseudoaleatorios
             // Definir la distribución de números entre D y 2.0*D (max L 20 mts)
-            double length_max = 15.0;
+            double length_max = 20.0;
             double min_L = D;
             double max_L = 2.0*D;
             if (max_L > length_max)
