@@ -1,4 +1,3 @@
-#include <iostream>
 #include <cmath>
 #include <random> 
 
@@ -7,7 +6,6 @@
 #include "glog/logging.h"
 #include <iostream>
 #include <fstream>
-#include <iostream>
 
 // Workspace
 using ceres::CostFunction;
@@ -149,7 +147,7 @@ class ParabolaParameters
             R_[2] = T{20.0}*(len - L);
             // std::cout << "      Length : L = " << L << " , len = " << len << std::endl;   
             // std::cout << "      P : [0] = " << P_[0] << " , [1] = " << P_[1] << " , [2] = " << P_[2] << std::endl;   
-            // std::cout << "      R : [0] = " << R_[0] << " , [1] = " << R_[1] << " , [2] = " << R_[2] << std::endl;   
+            std::cout << "      R : [0] = " << R_[0] << " , [1] = " << R_[1] << " , [2] = " << R_[2] << std::endl;   
             return true;
         }
 
@@ -216,6 +214,10 @@ class FindParameters{
                 double Lb = cat[2]*tanh((_xB - cat[0])/cat[2])*sqrt(sinh((_xB - cat[0])/cat[2])*sinh((_xB - cat[0])/cat[2]) + 1.0);
                 double Lfinal = Lb - La;
                 std::cout <<"          Lfinal = " << Lfinal << " , Lesperado = "<< _l << std::endl;
+                double Xm = (_xA + _xB)/2.0;
+                double Y_ = cat[2] * cosh((Xm - cat[0])/cat[2]) + ( cat[1]);
+
+                std::cout <<"          Y = " << Y_ << std::endl;
                 // if(summary1.message == "Initial residual and Jacobian evaluation failed.")
                 //     printf("\t\t <<<< Failed in status");
                 // Some debug information
@@ -254,7 +256,10 @@ class FindParameters{
                 double Lfinal = (Lb - La) ;
                 std::cout << "          Params Par: [0] = " << par[0]  << " , [1] = " << par[1] << " , [2] = " << par[2] << std::endl; 
                 std::cout << "          Lfinal = " << Lfinal << " , Lesperado = "<< _l << std::endl;
+                double Xm = (_xA + _xB)/2.0;
+                double Y_ =  par[0] * Xm * Xm + par[1] * Xm + par[2];
 
+                std::cout <<"          Y = " << Y_ << std::endl;
                 // if(summary2.message == "Initial residual and Jacobian evaluation failed.")
                 //     printf("\t\t <<<< Failed in status");
                 // Some debug information
@@ -323,7 +328,7 @@ class ByFitting {
             double error_ = 0.01;
             double L0, L1, Lm;
             L0 = D_;
-            L1 = 20.0;
+            L1 = 30.0;
             int count = 0;
             while (true) {
                 if (count == 0)
@@ -331,13 +336,11 @@ class ByFitting {
                 else
                     Lm = (L0 + L1)/2.0;
                 fp.solve(A_.x, A_.y, B_.x, B_.y, Lm, 2); // solve() in  mode = 2: only compute Catenary
-                // std::cout << "          fp.param_x0 = " << fp.param_x0  << " , fp.param_y0 =" << fp.param_y0 <<  " , fp.param_a =" << fp.param_a << std::endl;   
 
                 if (fabs(L1-L0)<= error_){
                     break;
                 }
                 double d_ = getMaxDistanceAxis(A_, B_, Lm, fp.param_x0, fp.param_y0, fp.param_a, fp.param_p, fp.param_q, fp.param_r);
-                // std::cout << "          L0 = " << L0  << " , L1 =" << L1 <<  " , Lm =" << Lm << std::endl;   
                 if (d_ < 0.0 )
                     L0 = Lm;
                 else
@@ -374,22 +377,13 @@ class ByFitting {
 
 int main(int argc, char* argv[]) {
 
-    bool flag = true; // byLength flag = true  ; byFitting flag = false    ,  value by defect is true (byLength)
-    if (argc > 1) {
-        std::string arg = argv[1];
-        if (arg == "byFitting") {
-            flag = false;  // Changing mode byFitting  if argument is "byFitting"
-        }
-    }
-
-    double x1, y1, x2, y2, L, D, random_number;
+    double x1, y1, x2, y2, D, random_number;
     x1 = 0; y1 = 1;
-    x2 = 3 ; y2 = 2;
-    L = 4.5;
+    x2 = 12 ; y2 = 2;
     int count = 1;
     std::cout << std::endl << "**** Ready for computing." << std::endl;
     
-    for(int i = 0; i < 4; i ++){
+    for(int i = 0; i < 1; i ++){
         for(int j = 0 ; j < 4 ; j++){ //Counting number of different UAV position in Y axe
             Point A(x1, y1);
             Point B(x2, y2);
@@ -399,8 +393,8 @@ int main(int argc, char* argv[]) {
             // Generate Random Number for Length
             std::random_device rd;   // Random Origen
             std::mt19937 gen(rd());  // Mersenne Twister: generador de números pseudoaleatorios
-            // Definir la distribución de números entre D y 2.0*D (max L 20 mts)
-            double length_max = 20.0;
+            // Distribution number between D and 2.0*D (max_L : 15 or 20 or 30 mts)
+            double length_max = 30.0;
             double min_L = D;
             double max_L = 2.0*D;
             if (max_L > length_max)
@@ -408,7 +402,7 @@ int main(int argc, char* argv[]) {
             std::uniform_real_distribution<> distrib(min_L, max_L);
 
             double aux_ = 0.0;
-            for(int k=0; k < 5 ; k++){ // Count number of different tether Length
+            for(int k=0; k < 1 ; k++){ // Count number of different tether Length
                 do{
                     random_number = distrib(gen);
                     random_number = round(random_number * 10.0) / 10.0;
@@ -416,19 +410,15 @@ int main(int argc, char* argv[]) {
                 }while(random_number == aux_);        
 
                 aux_ = random_number;
-                
                 std::cout <<  "L=["<< random_number <<"] , D=["<< D <<"]" << std::endl;
-
-                // if (flag){
-                    std::cout <<  " USING byLength Method" << std::endl;
-                    ByLength bL(A,B,random_number,D); // (Point A, Point B, Random L)
-                    ComputePointsUsingPamameters cpbl(A, B, random_number, bL.param_x0, bL.param_y0, bL.param_a, bL.param_p, bL.param_q, bL.param_r,"byLength");
-                // }
-                // else{
-                    std::cout <<  " USING byFitting Method" << std::endl;
-                    ByFitting bF(A,B,random_number,D);
-                    ComputePointsUsingPamameters cpbf(A, B, random_number, bF.param_x0, bF.param_y0, bF.param_a, bF.param_p, bF.param_q, bF.param_r,"byFitting");
-                // }    
+                
+                std::cout <<  " USING byLength Method" << std::endl;
+                ByLength bL(A,B,random_number,D); // (Point A, Point B, Random L)
+                ComputePointsUsingPamameters cpbl(A, B, random_number, bL.param_x0, bL.param_y0, bL.param_a, bL.param_p, bL.param_q, bL.param_r,"byLength");
+                
+                std::cout <<  " USING byFitting Method" << std::endl;
+                ByFitting bF(A,B,random_number,D);
+                ComputePointsUsingPamameters cpbf(A, B, random_number, bF.param_x0, bF.param_y0, bF.param_a, bF.param_p, bF.param_q, bF.param_r,"byFitting");
             }
             y2 = y2 + 2.0;
             count++;

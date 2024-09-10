@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(catenary_checker)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++14)
+add_compile_options(-std=c++14 -fPIC)
 
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -93,6 +93,7 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
+   src/catenary.cpp
    src/catenary_checker.cpp 
    src/obstacle_2d.cpp 
    src/convex_hull.cpp
@@ -128,6 +129,8 @@ add_executable(test_catenary_checker src/test_catenary_checker.cpp)
 # add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
 add_executable(test_ensuring_collision_free_catenary src/test_ensuring_collision_free_catenary.cpp)
 target_link_libraries(test_ensuring_collision_free_catenary ${catkin_LIBRARIES} ceres)
+add_executable(test_catenary_fit src/test_catenary_fit.cpp)
+target_link_libraries(test_catenary_fit ${PROJECT_NAME} dbscan_line ${catkin_LIBRARIES} ceres Qt5::Charts Qt5::Widgets)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
