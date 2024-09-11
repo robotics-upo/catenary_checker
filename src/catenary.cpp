@@ -8,6 +8,8 @@
 #include "ceres/ceres.h"
 #include "glog/logging.h"
 
+
+
 // Workspace
 using ceres::CostFunction;
 using ceres::SizedCostFunction;
@@ -136,6 +138,59 @@ bool Catenary::approximateByLength(Point2D &A, Point2D &B, double length) {
     return true;
 }
 
+bool Catenary::approximateByFitting(Point2D &A, Point2D &B, double L_, const Parabola &parabola, const double &length_max_allowed_, const QApplication &a) {
+
+  double error_ = 0.01;
+  double L0, L1, Lm;
+  L0 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y));
+  L1 = length_max_allowed_;
+  int count = 0;
+  while (true) {
+    if (count == 0) 
+      Lm= L_;
+    else
+      Lm = (L0 + L1)/2.0;
+    approximateByLength(A, B, Lm); // solve() in  mode = 2: only compute Catenary
+    if (fabs(L1-L0)<= error_){
+        break;
+    }
+    double d_ = getMaxDistanceAxis(A, B, parabola._a , parabola._b , parabola._c);
+    if (d_ < 0.0 )
+        L0 = Lm;
+    else
+        L1 = Lm;
+    count++;
+
+    double L1 = getLengthApprox(A.x, B.x);
+    double L2 = getLength(A.x, B.x);
+    std::cout << " inside approximateByFitting:  Catenary desire: " << L_<< " , length_approx: " <<  L1 << " , length: " <<  L2 <<std::endl;
+ 
+    auto chart_view = represent_problem(A, B, parabola, L_);
+    
+    // QApplication a(argc, argv);
+
+    QMainWindow window;
+    window.setCentralWidget(chart_view);
+    window.resize(800,600);
+    window.show();
+    a.processEvents();
+    a.exec();
+  }
+  
+  return true;
+}
+
+double Catenary::getMaxDistanceAxis(Point2D &A, Point2D &B, 
+                          const double &p1_, const double &p2_, const double &p3_, double delta_t){ 
+    double max_d_error = 0.0;
+    for(double x = A.x + delta_t; x <= B.x; x += delta_t){
+        double cat_y = apply(x);
+        double par_y = p1_ * x * x + p2_ * x + p3_;
+        max_d_error =  par_y - cat_y;
+    }
+    return max_d_error;
+}
+
 /// Using Qt Charts for representation
 using namespace QtCharts;
 
@@ -152,4 +207,43 @@ QSplineSeries *Catenary::toSeries(const std::string &name,
   return ret;
 }
 
+// BORRAR LUEGO
+QChartView *Catenary::represent_problem(const Point2D &A,
+			     const Point2D &B, const Parabola &parabol, const double &l ) {
+  QChartView *ret = new QChartView();
 
+  QChart *chart = new QChart();
+
+  QColor colours[10] = {QColor("cyan"), QColor("magenta"), QColor("red"),
+                      QColor("darkRed"), QColor("darkCyan"), QColor("darkMagenta"),
+                      QColor("green"), QColor("darkGreen"), QColor("yellow"),
+                      QColor("blue")};  
+  int i = 0;
+
+  QScatterSeries *a_serie = new QScatterSeries();
+  a_serie->setName("A");
+  a_serie->setMarkerShape(QScatterSeries::MarkerShapeCircle);
+  a_serie->setMarkerSize(30.0);
+  a_serie->append(A.x, A.y);
+  a_serie->append(B.x, B.y);
+  chart->addSeries(a_serie);
+
+  // Get the parabola spline and customize its color
+  QLineSeries *parabola_series = parabol.toSeries("parabola", A.x, B.x);
+  parabola_series->setColor(colours[2 % 10]);  // Set the color for the parabola
+  chart->addSeries(parabola_series);
+
+  // Get the catenary spline and customize its color
+  QLineSeries *catenary_series = toSeries("catenary", A.x, B.x);
+  catenary_series->setColor(colours[9 % 10]);  // Set the color for the catenary
+  chart->addSeries(catenary_series);
+
+  chart->setTitle(QString::fromStdString("Parabola v/s Catenary  length: "));
+  chart->createDefaultAxes();
+  chart->setDropShadowEnabled(false);
+
+  ret->setChart(chart);
+  ret->setRenderHint(QPainter::Antialiasing);
+  
+  return ret;
+}

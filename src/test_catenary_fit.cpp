@@ -33,30 +33,52 @@ void saveDataInFile(const Point2D &A, const Point2D &B, double l_par_approx_, do
 
 std::ifstream ifile;
 std::ofstream ofs;
-std::string file_;
+std::string file_, arg_str;
+bool by_fitting = false;
+bool by_length = false;
 
 int main(int argc, char **argv) {
+    if (argc > 1) {
+        std::string arg = argv[1];
+        if (arg == "byLength") {
+            by_length = true;  // Changing mode byLength  if argument is "byLength"
+            arg_str ="byLength";
+        }
+        else if(arg == "byFitting") {
+            by_fitting = true;  // Changing mode byFitting  if argument is "byFitting"
+            arg_str ="byFitting";
+        }else{
+            by_fitting  = by_length = false;
+            std::cout << std::endl <<  "\t IMPORTANTE : Please write a correct Method as argument to run the program. The options are: byLength ,or, byFitting" << std::endl <<  std::endl;
+        return 1;
+        }
+    }else{
+        by_fitting  = by_length = false;
+        std::cout <<  std::endl << "\t IMPORTANTE : Please write a Method as argument to run the program. The options are: byLength , or, byFitting" << std::endl << std::endl;
+        return 1;
+    }
+
   QApplication a(argc, argv);
-  std::vector<Obstacle2D> scenario;
   QMainWindow window;
   window.resize(800,600);
 
   Point2D p1, p2, p3;
   int n_iter = 100;
   int count = 1;
+  double max_length_allow = 35.0;
   while (count < n_iter+1){
     std::cout << "["<< count << "/"<< n_iter <<"] ITERATION" << std::endl;
 
     p1.x = 0;   p1.y = 1.0; // Init point
     //   p2.x = 9.2; p2.y = 4.7; // Final point
-    p2.x = genRandomValue(2.0, 30.0); // Final point, X pose
+    p2.x = genRandomValue(2.0, 40.0); // Final point, X pose
     p2.y = genRandomValue(2.0, 10.0); // Final point, Y pose
     p3 = getThirdPoint(p1, p2); // Third parable random point
 
     Parabola parabola(p1, p2, p3);
     double length_par_approx = parabola.getLengthApprox(p1.x, p2.x);
     double length_par = parabola.getLength(p1.x, p2.x);
-    if (length_par_approx > 30.0)
+    if (length_par_approx > max_length_allow)
         continue;
     // Put the origin (p1) and target (p2) coordinates
     std::cout << "P1: " <<  p1.toString() << "\t";
@@ -67,23 +89,37 @@ int main(int argc, char **argv) {
     std::cout << "Parabola length_approx: " <<  length_par_approx << " , length: " <<  length_par <<std::endl;
 
     Catenary cat;
-    std::cout << "Aproximation byLength " << std::endl;
-    cat.approximateByLength(p1, p2, length_par_approx);
-    double length_cat = cat.getLength(p1.x, p2.x);
-    double length_cat_approx = cat.getLengthApprox(p1.x, p2.x);
-    std::cout << "Catenary length_approx: " <<  length_cat_approx << " , length_approx: " <<  length_cat <<std::endl;
+    double length_cat, length_cat_approx;
+    /*----------- By Length Method Stuff -----------*/
+    if(by_length == true){
+        std::cout << "*** Aproximating Catenary byLength: ***" << std::endl;
+        cat.approximateByLength(p1, p2, length_par_approx);
+        length_cat = cat.getLength(p1.x, p2.x);
+        length_cat_approx = cat.getLengthApprox(p1.x, p2.x);
+        std::cout << "Catenary length_approx: " <<  length_cat_approx << " , length: " <<  length_cat <<std::endl;
+    }
 
+    /*----------- By Fitting Method Stuff -----------*/
+    if(by_fitting == true){
+        std::cout << "*** Aproximating Catenary byFitting: ***" << std::endl;
+        cat.approximateByFitting(p1, p2, length_par, parabola, max_length_allow, a);
+        length_cat = cat.getLength(p1.x, p2.x);
+        length_cat_approx = cat.getLengthApprox(p1.x, p2.x);
+        std::cout << "Catenary length_approx: " <<  length_cat_approx << " , length: " <<  length_cat <<std::endl;
+    }
+
+    /*----------- Compute Errors and Save data for Analysis -----------*/
     double e_sum, e_max, e_min, e_avg;
     computeCurvesError(p1, p2, parabola, cat, e_sum, e_max, e_min, e_avg);
-    saveDataInFile(p1, p2, length_par, length_par_approx, length_cat, length_cat_approx, e_sum, e_max, e_min, e_avg, "byLength");
+    saveDataInFile(p1, p2, length_par, length_par_approx, length_cat, length_cat_approx, e_sum, e_max, e_min, e_avg, arg_str);
 
     auto chart_view = represent_problem(p1, p2, cat, parabola,length_par_approx);
 
+    /*----------- Plot Graph -----------*/
     window.setCentralWidget(chart_view);
     window.show();
 
-    // Process the events to ensure the plot is shown
-    a.processEvents();
+    a.processEvents(); // Process the events to ensure the plot is shown
     a.exec();
     count++;
   }

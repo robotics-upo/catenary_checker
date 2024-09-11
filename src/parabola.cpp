@@ -185,7 +185,6 @@ float Parabola::getLength(float &x1, float &x2) const {
     return (Lb - La);
 }
 
-
 /// Using Qt Charts for representation
 using namespace QtCharts;
 
@@ -200,9 +199,6 @@ QSplineSeries *Parabola::toSeries(const std::string &name,
   }
   
   return ret;
-
-
-
 }
 
 
