@@ -139,8 +139,8 @@ def plot_both_error_vs_length(file_input1, file_input2, file_input3):
     # Plot for byFitting (in red)
     plt.plot(sorted_lengths_bp, sorted_errors_bp, marker='*', linestyle='-', color='magenta', label=' byPoints Method', linewidth=0.8)
     # Etiquetas y título
-    plt.xlabel('Length')
-    plt.ylabel('Average Error')
+    plt.xlabel('Length [m]')
+    plt.ylabel('Average Error [m]')
     plt.title('Average Error vs Length')
     plt.grid(True)
     plt.legend()
@@ -158,8 +158,8 @@ def plot_both_error_vs_length(file_input1, file_input2, file_input3):
     # Plot for byFitting (in red)
     plt.plot(sorted_lengths_bp, sorted_errors_max_bp, marker='*', linestyle='-', color='magenta', label=' byPoints Method', linewidth=0.8)
     # Etiquetas y título
-    plt.xlabel('Length')
-    plt.ylabel('Max Error')
+    plt.xlabel('Length [m]')
+    plt.ylabel('Max Error [m]')
     plt.title('Max Error vs Length')
     plt.grid(True)
     plt.legend()
@@ -177,8 +177,8 @@ def plot_both_error_vs_length(file_input1, file_input2, file_input3):
     # Plot for byFitting (in red)
     plt.plot(sorted_lengths_bp, sorted_errors_over_l_bp, marker='*', linestyle='-', color='magenta', label=' byPoints Method', linewidth=0.8)
     # Etiquetas y título
-    plt.xlabel('Length')
-    plt.ylabel('Error over Length')
+    plt.xlabel('Length [m]')
+    plt.ylabel('Error over Length [m]')
     plt.title('Error over Length vs Length')
     plt.grid(True)
     plt.legend()
