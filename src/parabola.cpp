@@ -158,11 +158,11 @@ std::vector<Point2D> Parabola::getPoints(float &x1, float &x2, float delta_t) co
   return ret_val;
 }
  
-float Parabola::getLength(float &x1, float &x2, float delta_t) const {
+float Parabola::getLengthApprox(float &x1, float &x2, float delta_t) const {
   // We have to integrate: integral(x1,x2) of: sqrt(1+df/dx^2)dx
   // sqrt(1+(2ax+b)^2) = sqrt(1+4a²x²+b²+4abx)dx
-  // This integral has no easy primitive --> can be approximated
-  float ret_val = 0.0f;
+  // This integral has no primitive --> should be approximated
+  float ret_val=0.0f;
 
   float a_2_4 = _a * _a * 4.0f;
   float b_2_plus_1 = 1.0f + _b * _b;
@@ -173,12 +173,17 @@ float Parabola::getLength(float &x1, float &x2, float delta_t) const {
     x1 = x2;
     x2 = aux;
   }
+  ret_val *= delta_t;
 
-  for (float x = x1; x <= x2; x += delta_t) {
-    ret_val += std::sqrt(b_2_plus_1 + a_2_4 * x * x + a_b_4 * x);
-  }
+  return ret_val;
+}
 
-  return ret_val * delta_t;
+float Parabola::getLength(float &x1, float &x2) const {
+    float val = 2.0*_a*x1+_b; // This is a common term for the L equation
+		float La = (log( _b + sqrt((val*val) + 1.0) + 2.0*_a*x1)/(4.0*_a) + ((val)*sqrt((val*val) + 1.0))/(4.0*_a));
+		val = 2.0*_a*x2+_b;
+		float Lb = (log( _b + sqrt((val*val) + 1.0) + 2.0*_a*x2)/(4.0*_a) + ((val)*sqrt((val*val) + 1.0))/(4.0*_a));
+    return (Lb - La);
 }
 
 /// Using Qt Charts for representation
