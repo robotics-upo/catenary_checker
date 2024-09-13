@@ -43,6 +43,8 @@ public:
 
   bool approximateByFitting(Point2D &A, Point2D &B, double L_, const Parabola &parabola, const double &length_max_allowed_ , const QApplication &a);
 
+  bool approximateByPoints(Point2D &A, Point2D &B, Point2D &C, Point2D &D, Point2D &E);
+
   double getMaxDistanceAxis(Point2D &A, Point2D &B, 
                           const double &p1_, const double &p2_, const double &p3_, double delta_t= 0.01);
 

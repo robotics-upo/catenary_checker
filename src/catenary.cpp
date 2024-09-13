@@ -52,6 +52,40 @@ class CatenaryParameters
         double xA, yA, xB, yB, L;
 };
 
+
+class CatenaryParametersbyPoints
+{
+    public:
+        CatenaryParametersbyPoints(const Point2D &A, const Point2D &B, const Point2D &C, const Point2D &D, const Point2D &E)
+        {
+            // Hunging point pA(xA,yA) and pB(xB,yB)
+            xA = A.x;   yA = A.y;
+            xB = B.x;   yB = B.y;
+            xC = C.x;   yC = C.y; 
+            xD = D.x;   yD = D.y; 
+            xE = E.x;   yE = E.y;  
+        }
+
+        ~CatenaryParametersbyPoints(void) 
+        {}
+
+        template <typename T>
+        bool operator()(const T* P_, T* R_) const 
+        {   
+            R_[0] = T{100.0}*(P_[2] * cosh((xA - P_[0])/P_[2]) + P_[1]  - yA);
+            R_[1] = T{50.00}*(P_[2] * cosh((xB - P_[0])/P_[2]) + P_[1]  - yB);
+            R_[2] = T{50.00}*(P_[2] * cosh((xC - P_[0])/P_[2]) + P_[1]  - yC);
+            R_[3] = T{50.00}*(P_[2] * cosh((xD - P_[0])/P_[2]) + P_[1]  - yD);
+            R_[4] = T{100.0}*(P_[2] * cosh((xE - P_[0])/P_[2]) + P_[1]  - yE);
+            // std::cout << "          Length : L = " << L << " , len = " << len << std::endl;   
+            return true;
+        }
+
+    private:
+        // Point to be evaluated
+        double xA, yA, xB, yB, xC, yC, xD, yD, xE, yE;
+};
+
 Catenary::Catenary() { _x0 = _y0 = _a = 0.0f; }
 
 Catenary::Catenary(double x0, double y0, double a) {
@@ -129,8 +163,39 @@ bool Catenary::approximateByLength(Point2D &A, Point2D &B, double length) {
     Solver::Options options;
     options.minimizer_progress_to_stdout = false;
     options.max_num_iterations = max_num_iterations;
-    Solver::Summary summary1;
-    Solve(options, &problem_catenary, &summary1);
+    Solver::Summary summary;
+    Solve(options, &problem_catenary, &summary);
+
+    _x0 = cat[0]; _y0 = cat[1]; _a = cat[2];
+    
+    return true;
+}
+
+bool Catenary::approximateByPoints(Point2D &A, Point2D &B, Point2D &C, Point2D &D, Point2D &E) {
+    double cat[3];
+    int max_num_iterations = 5000;
+
+    cat[0] = 0.5; // x0 
+    cat[1] = -1.0; // y0
+    cat[2] = 1.5; // a      
+                
+    // Build the problem.
+    Problem problem_catenary;
+    // Set up a cost funtion per point into the cloud
+    CostFunction* cf_catenary = new ceres::AutoDiffCostFunction<CatenaryParametersbyPoints, 5, 3>( new CatenaryParametersbyPoints(A, B, C, D, E) );
+    problem_catenary.AddResidualBlock(cf_catenary, NULL, cat);
+    problem_catenary.SetParameterLowerBound(cat, 0, 0.0);
+    problem_catenary.SetParameterLowerBound(cat, 2, 0.1);
+    // Run the solver!
+    Solver::Options options;
+    options.minimizer_progress_to_stdout = false;
+    options.max_num_iterations = max_num_iterations;
+    Solver::Summary summary;
+    Solve(options, &problem_catenary, &summary);
+    // if(summary.message == "Initial residual and Jacobian evaluation failed.")
+    //   printf("\t\t <<<< Failed in status");
+    // // Some debug information
+    // std::cout << summary.BriefReport() << "\n";
 
     _x0 = cat[0]; _y0 = cat[1]; _a = cat[2];
     
@@ -139,8 +204,8 @@ bool Catenary::approximateByLength(Point2D &A, Point2D &B, double length) {
 
 bool Catenary::approximateByFitting(Point2D &A, Point2D &B, double L_, const Parabola &parabola, const double &length_max_allowed_, const QApplication &a) {
 
-  double error_ = 0.01;
-  double L0, L1, Lm;
+  double error_ = 0.1;
+  double L0, L1, Lm, d_;
   L0 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y));
   L1 = length_max_allowed_;
   int count = 0;
@@ -150,30 +215,32 @@ bool Catenary::approximateByFitting(Point2D &A, Point2D &B, double L_, const Par
     else
       Lm = (L0 + L1)/2.0;
     approximateByLength(A, B, Lm); // solve() in  mode = 2: only compute Catenary
-    if (fabs(L1-L0)<= error_){
+    // if (fabs(L1-L0)<= error_){
+    //     break;
+    // }
+    d_ = getMaxDistanceAxis(A, B, parabola._a , parabola._b , parabola._c);
+    if (fabs(d_)<= error_ || fabs(L1-L0)<= error_/2.0){
+        // std::cout << "\t\t d_error: " << d_ << " , L_diff:" << fabs(L1-L0)<< std::endl;
+        // std::cout << "\t\t break" << std::endl;
         break;
     }
-    double d_ = getMaxDistanceAxis(A, B, parabola._a , parabola._b , parabola._c);
     if (d_ < 0.0 )
         L0 = Lm;
     else
         L1 = Lm;
     count++;
 
-    double L1 = getLengthApprox(A.x, B.x);
-    double L2 = getLength(A.x, B.x);
-    std::cout << " inside approximateByFitting:  Catenary desire: " << L_<< " , length_approx: " <<  L1 << " , length: " <<  L2 <<std::endl;
+    // double L1 = getLengthApprox(A.x, B.x);
+    // double L2 = getLength(A.x, B.x);
+    // std::cout << "\t Inside approximateByFitting:  Catenary desire: " << L_<< " , length_approx: " <<  L1 << " , length: " <<  L2 << " , Lm = " << Lm << " , L0 = " << L0 << " , L1=" << L1 << " , diff_L=" << fabs(L1-L0) <<" , d=" << d_ << std::endl;
  
-    auto chart_view = represent_problem(A, B, parabola, L_);
-    
-    // QApplication a(argc, argv);
-
-    QMainWindow window;
-    window.setCentralWidget(chart_view);
-    window.resize(800,600);
-    window.show();
-    a.processEvents();
-    a.exec();
+    // auto chart_view = represent_problem(A, B, parabola, L_);
+    // QMainWindow window;
+    // window.setCentralWidget(chart_view);
+    // window.resize(800,600);
+    // window.show();
+    // a.processEvents();
+    // a.exec();
   }
   
   return true;
@@ -185,7 +252,8 @@ double Catenary::getMaxDistanceAxis(Point2D &A, Point2D &B,
     for(double x = A.x + delta_t; x <= B.x; x += delta_t){
         double cat_y = apply(x);
         double par_y = p1_ * x * x + p2_ * x + p3_;
-        max_d_error =  par_y - cat_y;
+        if (fabs(max_d_error) <  fabs(par_y - cat_y))
+          max_d_error =  par_y - cat_y;
     }
     return max_d_error;
 }
@@ -206,7 +274,7 @@ QSplineSeries *Catenary::toSeries(const std::string &name,
   return ret;
 }
 
-// BORRAR LUEGO
+//////////////////////////////////////////// BORRAR LUEGO
 QChartView *Catenary::represent_problem(const Point2D &A,
 			     const Point2D &B, const Parabola &parabol, const double &l ) {
   QChartView *ret = new QChartView();
@@ -237,7 +305,7 @@ QChartView *Catenary::represent_problem(const Point2D &A,
   catenary_series->setColor(colours[9 % 10]);  // Set the color for the catenary
   chart->addSeries(catenary_series);
 
-  chart->setTitle(QString::fromStdString("Parabola v/s Catenary  length: "));
+  chart->setTitle(QString::fromStdString("Debugging byFitting Method Catenary vs Parabola"));
   chart->createDefaultAxes();
   chart->setDropShadowEnabled(false);
 
