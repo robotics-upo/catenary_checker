@@ -45,11 +45,10 @@ public:
 
   bool approximateByPoints(Point2D &A, Point2D &B, Point2D &C, Point2D &D, Point2D &E);
 
-  double getMaxDistanceAxis(Point2D &A, Point2D &B, 
-                          const double &p1_, const double &p2_, const double &p3_, double delta_t= 0.01);
+  double getMaxDistanceAxis(Point2D &A, Point2D &B, const Parabola &p, double delta_t= 0.01);
 
-                          QChartView *represent_problem(const Point2D &A,
-			     const Point2D &B, const Parabola &parabol, const double &l ) ;
+  QChartView *represent_problem(const Point2D &A, const Point2D &B,
+                                const Parabola &parabol, const double &l ) ;
 
   std::vector<Point2D> getPoints(double &x1, double &x2, double delta_t = 0.01) const;
 

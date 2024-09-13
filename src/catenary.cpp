@@ -218,7 +218,7 @@ bool Catenary::approximateByFitting(Point2D &A, Point2D &B, double L_, const Par
     // if (fabs(L1-L0)<= error_){
     //     break;
     // }
-    d_ = getMaxDistanceAxis(A, B, parabola._a , parabola._b , parabola._c);
+    d_ = getMaxDistanceAxis(A, B, parabola);
     if (fabs(d_)<= error_ || fabs(L1-L0)<= error_/2.0){
         // std::cout << "\t\t d_error: " << d_ << " , L_diff:" << fabs(L1-L0)<< std::endl;
         // std::cout << "\t\t break" << std::endl;
@@ -234,24 +234,16 @@ bool Catenary::approximateByFitting(Point2D &A, Point2D &B, double L_, const Par
     // double L2 = getLength(A.x, B.x);
     // std::cout << "\t Inside approximateByFitting:  Catenary desire: " << L_<< " , length_approx: " <<  L1 << " , length: " <<  L2 << " , Lm = " << Lm << " , L0 = " << L0 << " , L1=" << L1 << " , diff_L=" << fabs(L1-L0) <<" , d=" << d_ << std::endl;
  
-    // auto chart_view = represent_problem(A, B, parabola, L_);
-    // QMainWindow window;
-    // window.setCentralWidget(chart_view);
-    // window.resize(800,600);
-    // window.show();
-    // a.processEvents();
-    // a.exec();
   }
   
   return true;
 }
 
-double Catenary::getMaxDistanceAxis(Point2D &A, Point2D &B, 
-                          const double &p1_, const double &p2_, const double &p3_, double delta_t){ 
+double Catenary::getMaxDistanceAxis(Point2D &A, Point2D &B, const Parabola &p, double delta_t){ 
     double max_d_error = 0.0;
     for(double x = A.x + delta_t; x <= B.x; x += delta_t){
         double cat_y = apply(x);
-        double par_y = p1_ * x * x + p2_ * x + p3_;
+        double par_y = p.apply(x);
         if (fabs(max_d_error) <  fabs(par_y - cat_y))
           max_d_error =  par_y - cat_y;
     }

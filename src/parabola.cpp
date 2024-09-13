@@ -172,6 +172,11 @@ float Parabola::getLengthApprox(float &x1, float &x2, float delta_t) const {
     float aux = x1;
     x1 = x2;
     x2 = aux;
+
+  }
+
+  for (float x = x1; x <= x2; x += delta_t) {
+    ret_val += std::sqrt(b_2_plus_1 + a_2_4 * x * x + a_b_4 * x);
   }
   ret_val *= delta_t;
 
