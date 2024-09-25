@@ -118,9 +118,9 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
     auto t2 = high_resolution_clock::now();
     duration<float>fp_s = t2 - t1;
     float delta_t = fp_s.count();
-	sensor_msgs::PointCloud2ConstPtr msg;
-	cc->getPointCloud(msg);
-	cc->getDataForDistanceinformation(grid_3D, msg, use_distance_function);
+    //	sensor_msgs::PointCloud2ConstPtr msg;
+    //	cc->getPointCloud(msg);
+    //cc->getDataForDistanceinformation(grid_3D, msg, use_distance_function);
 	execution_times_parabola.push_back(delta_t);
 	results_parabola.push_back(length_cat_final);
   }
