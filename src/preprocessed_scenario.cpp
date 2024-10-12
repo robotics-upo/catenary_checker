@@ -54,8 +54,12 @@ void PreprocessedScenario::precompute(const PointCloud<PointXYZ> &pc) {
     vector<Scenario> planes;    
     vector<TwoPoints> ps = getProblemsTheta(angle);
 
+    ROS_INFO("Theta %d of %d", i, n_theta);
+
     // For each problem get the obstacles associated
+    int cont = 0;
     for (auto &x:ps) {
+      printf("Plane %d of %lu\r", ++cont, ps.size());
       PointXYZ A(x.first.x, x.first.y, _max_z);
       PointXYZ B(x.second.x, x.second.y, _max_z);
       auto scene = PC2Obstacles(A,
