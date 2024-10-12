@@ -12,8 +12,11 @@
   <arg name="target_z" default="3.0"/>
 
   # Flight 1 map conf
-  <arg name="map" default="nix_ramp.bt" />
-  <arg name="map_path" default="$(find catenary_checker)/test/$(arg map)"/>
+  <arg name="map" default="stage_1" />
+  <!-- <arg name="map_path" default="$(find catenary_checker)/test/$(arg map)"/> -->
+  <arg name="map_path" default="$(find marsupial_optimizer)/maps/$(arg map).bt"/>
+
+
 
   # Launch Octomap
   <arg name="resolution" default="0.05"/>
@@ -29,8 +32,9 @@
   <arg name="use_dbscan_lines" default="true"/>
   <arg name="dbscan_min_points" default="5"/>
   <arg name="n_theta" default="6"/>
-  <arg name="filename" default="$(find catenary_checker)/test/scenarios.tar.gz"/>
+  <arg name="filename" default="$(find marsupial_optimizer)/maps/$(arg map).tar.gz"/>
   <node name="test_ps" pkg="catenary_checker" type="test_preprocessed_scenario" output="screen" args="$(arg filename)"># launch-prefix="xterm -e gdb --args" >
+    <rosparam command="load" file="$(find marsupial_optimizer)/cfg/$(arg map)_ws.yaml"/>
     <remap from="point_cloud" to="octomap_point_cloud_centers"/>
     <param name="plane_dist" value="$(arg plane_dist)"/>
     <param name="dbscan_min_points" value="$(arg dbscan_min_points)"/>
@@ -39,6 +43,7 @@
     <param name="dbscan_theta" value="$(arg dbscan_theta)"/>
     <param name="use_dbscan_lines" value="$(arg use_dbscan_lines)"/>
     <remap from="points2" to="/octomap_point_cloud_centers"/>
+
   </node>
 
   <node name="rviz" type="rviz" pkg="rviz" args="-d $(find catenary_checker)/viz/catenary_checker.rviz"/>

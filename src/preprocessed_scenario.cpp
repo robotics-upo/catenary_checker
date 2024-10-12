@@ -20,13 +20,13 @@ PreprocessedScenario::PreprocessedScenario(const std::string &filename) {
 
 
   if (!loadScenario(filename)) {
-    pnh.param("min_x", _min.x, 0.0f);
-    pnh.param("min_y", _min.y, 0.0f);
-    pnh.param("max_x", _max.x, 10.0f);
-    pnh.param("max_y", _max.y, 10.0f);
-    pnh.param("max_z", _max_z, 10.0f);
-    pnh.param("n_theta", _n_theta, 10);
-    pnh.param("plane_dist", _plane_dist, 0.2f);
+    pnh.param("ws_x_min", _min.x, 0.0f);
+    pnh.param("ws_y_min", _min.y, 0.0f);
+    pnh.param("ws_x_max", _max.x, 10.0f);
+    pnh.param("ws_y_max", _max.y, 10.0f);
+    pnh.param("ws_z_max", _max_z, 10.0f);
+    pnh.param("n_theta", _n_theta, 60);
+    pnh.param("plane_dist", _plane_dist, 0.1f);
 
     pnh.param("db_min_points", _db_min_points, 20);
     pnh.param("db_epsilon", _db_epsilon, 0.05f);
@@ -162,10 +162,10 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
 
     if (_parabola.approximateParabola(scen, _pa, _pb)) {
       ret_val = _parabola.getLength(_pa.x, _pb.x);
-      ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parabola. Length = %f", ret_val);
+      // ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parabola. Length = %f", ret_val);
 
     } else {
-      ROS_INFO("PreprocessedScenario::checkCatenary --> could NOT get the parabola.");
+      // ROS_INFO("PreprocessedScenario::checkCatenary --> could NOT get the parabola.");
     }
   }
 
