@@ -54,7 +54,7 @@ void PreprocessedScenario::precompute(const PointCloud<PointXYZ> &pc) {
     vector<Scenario> planes;    
     vector<TwoPoints> ps = getProblemsTheta(angle);
 
-    ROS_INFO("Theta %d of %d", i, n_theta);
+    ROS_INFO("Theta %d of %d", i, _n_theta);
 
     // For each problem get the obstacles associated
     int cont = 0;
