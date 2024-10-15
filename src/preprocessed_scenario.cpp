@@ -132,6 +132,11 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
 {
   double inc_x = B.x - A.x;
   double inc_y = B.y - A.y;
+
+  if (fabs(inc_x) < 1e-4 && fabs(inc_y) < 1e-4) {
+    inc_x = 1.0; // Avoid degenerate cases (same 2D point )
+  }
+
   double yaw = atan(inc_y/inc_x);
 
   float ret_val = -1.0;
