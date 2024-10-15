@@ -20,6 +20,13 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
 
   precomputed_file = nh->param<std::string>("precomputed_file",
                                             static_cast<std::string>(""));
+                                            
+  bool use_parabola = false;
+  nh->param("use_parabola", use_parabola, (bool)false);
+
+  if (precomputed_file != "" && use_parabola) {
+    precomputePlanes();
+  } 
 
   ROS_INFO("Catenary checker node. Global frame: %s. Base frame: %s", base_frame.c_str(), global_frame.c_str());
   ROS_INFO("Plane dist: %f. Publish pc, marker: %d, %d ", plane_dist, publish_pc, publish_marker);
@@ -188,34 +195,41 @@ std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , 
   return get_catenary;
 }
 
+bool catenaryChecker::precomputePlanes() {
+  struct timespec start_planes, finish_planes;
+  ROS_INFO("Precomputing planes:");
+  clock_gettime(CLOCK_REALTIME, &start_planes);
+  ps.reset(new PreprocessedScenario(precomputed_file));
+
+  if (ps->size() == 0) {
+    ROS_INFO("File %s not found. Precomputing.", precomputed_file.c_str());
+    ps->_min.x = grid_3D->min_X; 
+    ps->_min.y = grid_3D->min_Y;
+    ps->_min.x = grid_3D->max_X;
+    ps->_max.y = grid_3D->max_Y;   
+    ps->_max.z = grid_3d->max_Z;
+                                
+    ps->PC_Callback(pc);
+  } else {
+    ROS_INFO("Obtaining the precomputed scenario from file.");
+  }
+
+  ROS_INFO("Number of precomputed directions: %d", static_cast<int>(ps->size()));
+  clock_gettime(CLOCK_REALTIME, &finish_planes);
+  auto sec_planes = finish_planes.tv_sec - start_planes.tv_sec;
+  auto msec_planes = finish_planes.tv_nsec - start_planes.tv_nsec;
+  precomputing_time = (msec_planes + sec_planes * 1000000000.0)/1000000000.0;
+  std::cout << "Precomputed time: " << precomputing_time << std::endl << std::endl;
+
+  return true;
+}
+
 bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
                                                const pcl::PointXYZ &pf_,
                                                std::vector<geometry_msgs::Point> &pts_c_)
 {
   if (ps == NULL) {
-    struct timespec start_planes, finish_planes;
-    ROS_INFO("Precomputing planes:");
-    clock_gettime(CLOCK_REALTIME, &start_planes);
-    ps.reset(new PreprocessedScenario(precomputed_file));
-
-    if (ps->size() == 0) {
-      ROS_INFO("File %s not found. Precomputing.", precomputed_file.c_str());
-      ps->_min.x = grid_3D->min_X; 
-      ps->_min.y = grid_3D->min_Y;
-      ps->_min.x = grid_3D->max_X;
-      ps->_max.y = grid_3D->max_Y;   
-                                  
-      ps->PC_Callback(pc);
-    } else {
-      ROS_INFO("Obtaining the precomputed scenario from file.");
-    }
-
-    ROS_INFO("Number of precomputed directions: %d", static_cast<int>(ps->size()));
-    clock_gettime(CLOCK_REALTIME, &finish_planes);
-    auto sec_planes = finish_planes.tv_sec - start_planes.tv_sec;
-    auto msec_planes = finish_planes.tv_nsec - start_planes.tv_nsec;
-    precomputing_time = (msec_planes + sec_planes * 1000000000.0)/1000000000.0;
-    std::cout << "Precomputed time: " << precomputing_time << std::endl << std::endl;
+    precomputePlanes();
   }
 
   get_catenary = ps->checkCatenary(pi_, pf_) > -0.5f;

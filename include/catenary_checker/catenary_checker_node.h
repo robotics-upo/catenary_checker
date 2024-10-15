@@ -39,6 +39,9 @@ public:
   void getDataForDistanceinformation(Grid3d *grid3D_,
                                      const sensor_msgs::PointCloud2::ConstPtr& msg,
                                      bool use_distance_function_);
+
+  bool precomputePlanes();
+
   std_msgs::ColorRGBA getColor(int num);
   std_msgs::ColorRGBA getGray(int num);
 
