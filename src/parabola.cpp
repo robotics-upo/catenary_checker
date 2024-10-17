@@ -193,7 +193,7 @@ float Parabola::getLength(float x1, float x2) const {
 		float La = (log( _b + sqrt((val*val) + 1.0) + 2.0*_a*x1)/(4.0*_a) + ((val)*sqrt((val*val) + 1.0))/(4.0*_a));
 		val = 2.0*_a*x2+_b;
 		float Lb = (log( _b + sqrt((val*val) + 1.0) + 2.0*_a*x2)/(4.0*_a) + ((val)*sqrt((val*val) + 1.0))/(4.0*_a));
-    return (Lb - La);
+    return fabs(Lb - La);
 }
 
 /// Using Qt Charts for representation
