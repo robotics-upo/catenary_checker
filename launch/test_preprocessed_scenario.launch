@@ -43,6 +43,8 @@
     <param name="dbscan_theta" value="$(arg dbscan_theta)"/>
     <param name="use_dbscan_lines" value="$(arg use_dbscan_lines)"/>
     <remap from="points2" to="/octomap_point_cloud_centers"/>
+    <param name="n_theta" value="$(arg n_theta)"/>
+    <param name="plane_dist" value="$(arg plane_dist)"/>
 
   </node>
 
