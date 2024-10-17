@@ -41,6 +41,16 @@ public:
   }
 
   inline bool loadScenario(const std::string &filename);
+
+  inline std::string toString() const {
+    std::string s;
+
+    for (const auto x:*this) {
+      s.append(x.toString());
+    }
+
+    return s;
+  }
 };
 
 inline sensor_msgs::PointCloud2 Scenario::toPC(const std::string &frame_id,
@@ -165,8 +175,8 @@ inline bool Scenario::loadScenario(const std::string &filename) {
     unit_vec = Point2D(f["unit_vec"]);
     plane = PlaneParams(f["plane"]);
 
-    printf("Load Scenario: Origin = %s. \t Unit vec: %s\n", origin.toString().c_str(),
-             unit_vec.toString().c_str());
+    //printf("Load Scenario: Origin = %s. \t Unit vec: %s\n", origin.toString().c_str(),
+    //         unit_vec.toString().c_str());
 
     for (const auto &x:f["obstacles"]) {
       Obstacle2D o(x);
