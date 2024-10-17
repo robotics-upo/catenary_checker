@@ -62,7 +62,7 @@ inline YAML::Emitter& operator << (YAML::Emitter &out, const PlaneParams &p) {
 
 pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cloud_in,
 					const pcl::PointXYZ &p1, const pcl::PointXYZ &p2,
-					const float max_dist);
+					const float max_dist, const float min_z = 0.1);
 
 PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
 

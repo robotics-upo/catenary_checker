@@ -3,7 +3,7 @@
 
 pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cloud_in,
 					const pcl::PointXYZ &p1,
-					const pcl::PointXYZ &p2, const float max_dist)
+					const pcl::PointXYZ &p2, const float max_dist, const float min_z)
 {
   // std::cout << "project2D sizes: cloud_in:[" << cloud_in.size()  << "] , p1:[" << p1.x << " " << p1.y << " " << p1.z <<"] , p2:[" << p2.x << " " << p2.y << " " << p2.z <<  "] , max_dist:[" << max_dist << std::endl;
 
@@ -29,7 +29,7 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
     const pcl::PointXYZ &p = cloud_in[i];
     float dist = plane.getSignedDistance(p);
         
-    if (fabsf(dist) < max_dist) {
+    if (fabsf(dist) < max_dist && p.z > min_z) {
             
       // Get the point of the plane
       pcl::PointXYZ p_plane(p.x - plane.a * dist, p.y - plane.b * dist, p.z);
