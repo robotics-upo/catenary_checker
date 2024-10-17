@@ -207,7 +207,7 @@ bool catenaryChecker::precomputePlanes() {
     ps->_min.y = grid_3D->min_Y;
     ps->_min.x = grid_3D->max_X;
     ps->_max.y = grid_3D->max_Y;   
-    ps->_max.z = grid_3d->max_Z;
+    ps->_max_z = grid_3D->max_Z;
                                 
     ps->PC_Callback(pc);
   } else {
