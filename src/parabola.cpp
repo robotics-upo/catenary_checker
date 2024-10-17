@@ -184,6 +184,11 @@ float Parabola::getLengthApprox(float &x1, float &x2, float delta_t) const {
 }
 
 float Parabola::getLength(float &x1, float &x2) const {
+    if (fabs(x1-x2) < 1e-4)
+      return fabs(x1-x2);
+    if (fabs(_a) < 1e-4) {
+      return sqrt((x1-x2)*(x1-x2)*(1 + _b * _b));
+    } 
     float val = 2.0*_a*x1+_b; // This is a common term for the L equation
 		float La = (log( _b + sqrt((val*val) + 1.0) + 2.0*_a*x1)/(4.0*_a) + ((val)*sqrt((val*val) + 1.0))/(4.0*_a));
 		val = 2.0*_a*x2+_b;
