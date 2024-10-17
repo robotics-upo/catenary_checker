@@ -32,22 +32,32 @@ int main(int argc, char **argv) {
     // Feature: show different scenarios present in the environment
 
     ros::Rate loop_rate(0.2);
-    // int cont = 0;
+    int cont = 0;
     pcl::PointXYZ A, B;
-    while(ros::ok()) {
-      cout << "Please enter A: ";
-      cin >> A.x >> A.y >> A.z;
-      cout << "Please enter B: ";
-      cin >> B.x >> B.y >> B.z;
-      std::vector<geometry_msgs::Point> p;
-      if (ps->checkCatenary(A, B, p, true)) {
-        cout << "There exists a catenary" << endl;
-      } else {
-        cout << "Could not find catenary" << endl;
-      }
-      sleep(1);
-      ros::spinOnce();
 
+    if (argc < 3) {
+      while(ros::ok()) {
+        ros::spinOnce();
+        loop_rate.sleep();
+        ps->publishScenarios(cont++);
+      
+      }
+    } else {
+      while(ros::ok()) {
+        cout << "Please enter A: ";
+        cin >> A.x >> A.y >> A.z;
+        cout << "Please enter B: ";
+        cin >> B.x >> B.y >> B.z;
+        std::vector<geometry_msgs::Point> p;
+        if (ps->checkCatenary(A, B, p, true)) {
+          cout << "There exists a catenary" << endl;
+        } else {
+          cout << "Could not find catenary" << endl;
+        }
+        sleep(1);
+        ros::spinOnce();
+
+      }
     }
   } else {
     ps = new PreprocessedScenario();
