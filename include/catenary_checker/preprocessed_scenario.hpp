@@ -20,7 +20,7 @@ public:
   //! @retval -1.0 No valid catenary
   //! @return The length of the collision-free catenary. T
   //! @note The x coordinates of the 2D points and the last plane are stored in the class
-  float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, bool debug = false);
+  float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, std::vector<geometry_msgs::Point> &pts_c_, bool debug = false);
 
   inline std::string getStats() const {
     std::ostringstream oss;
