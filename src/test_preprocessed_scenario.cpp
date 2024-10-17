@@ -39,7 +39,8 @@ int main(int argc, char **argv) {
       cin >> A.x >> A.y >> A.z;
       cout << "Please enter B: ";
       cin >> B.x >> B.y >> B.z;
-      if (ps->checkCatenary(A, B, true)) {
+      std::vector<geometry_msgs::Point> p;
+      if (ps->checkCatenary(A, B, p, true)) {
         cout << "There exists a catenary" << endl;
       } else {
         cout << "Could not find catenary" << endl;
