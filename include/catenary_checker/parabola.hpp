@@ -29,11 +29,11 @@ public:
   bool approximateParabola(const Scenario &objects, const Point2D &A,
                           const Point2D &B, float min_y = 0.0);
 
-  float getLength(float &x1, float &x2) const;
+  float getLength(float x1, float x2) const;
 
-  float getLengthApprox(float &x1, float &x2, float delta_t = 0.01) const;
+  float getLengthApprox(float x1, float x2, float delta_t = 0.01) const;
 
-  std::vector<Point2D> getPoints(float &x1, float &x2, float delta_t = 0.01) const;
+  std::vector<Point2D> getPoints(float x1, float x2, float delta_t = 0.01) const;
 
   float _a, _b, _c;
 
