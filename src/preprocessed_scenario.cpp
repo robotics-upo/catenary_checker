@@ -149,7 +149,7 @@ vector<TwoPoints> PreprocessedScenario::getProblemsTheta(double theta) const {
   return ret;
 }
 
-float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, bool debug)
+float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,  std::vector<geometry_msgs::Point> &pts_c_, bool debug)
 {
   double inc_x = B.x - A.x;
   double inc_y = B.y - A.y;
@@ -188,6 +188,10 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
     _last_plane = scen.plane;
     _pa = scen.to2D(A);
     _pb = scen.to2D(B);
+    if (fabs(_pa.x - _pb.x) < 1e-3) {
+      ROS_ERROR("PreprocessedScenario::checkCatenary: Warning. Points too close. _pa: %s. pb: %s. yaw = %f, n = %d",
+                _pa.toString().c_str(), _pb.toString().c_str(), yaw, n);
+    }
     _parabola.reset();
     if (debug) {
       float intensity = 1.0f;
@@ -200,9 +204,26 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
     }
 
     if (_parabola.approximateParabola(scen, _pa, _pb)) {
+      auto points_2d = _parabola.getPoints(_pa.x, _pb.x, 0.1);
+
+      pts_c_.clear();
+      pcl::PointXYZ p;
+      geometry_msgs::Point gp;
+      for (auto &x: points_2d) {
+        
+        p = scen.to3D(x);
+        gp.x = p.x; gp.y = p.y; gp.z = p.z;
+
+        if (debug) {
+          ROS_INFO("Adding parabola point. %f %f %f", p.x, p.y, p.z);
+        }
+
+        pts_c_.push_back(gp);
+      }
       ret_val = _parabola.getLength(_pa.x, _pb.x);
       if (debug) 
-        ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parabola %s. Length = %f", _parabola.toString().c_str(), ret_val);
+        ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parabola %s. Length = %f. Parabola points: %lu", 
+                 _parabola.toString().c_str(), ret_val, points_2d.size());
 
     } else {
       if (debug)
