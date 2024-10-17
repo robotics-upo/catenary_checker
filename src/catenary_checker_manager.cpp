@@ -100,7 +100,6 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
   if(just_line_of_sight){
     is_found = computeStraight(pi_, pf_ ,pts_c_);
   } else if (use_parabola || use_both) {
-    float a = cc->precomputing_time;
     auto t1 = high_resolution_clock::now();
     is_found = checkStraightCatenary(pi_, pf_, pts_c_, 0.1);
     if (!is_found) {
