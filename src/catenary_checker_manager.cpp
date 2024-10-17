@@ -101,15 +101,18 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
     is_found = computeStraight(pi_, pf_ ,pts_c_);
   } else if (use_parabola || use_both) {
     auto t1 = high_resolution_clock::now();
-    is_found = checkStraightCatenary(pi_, pf_, pts_c_, 0.1);
+    is_found = computeStraight(pi_, pf_, pts_c_);
     if (!is_found) {
       pts_c_.clear();
       is_found = cc->analyticalCheckCatenary(pi_, pf_, pts_c_);
       if(is_found)
-        {
-          min_dist_obs_cat = cc->min_dist_obs_cat;
-          length_cat_final = cc->length_cat;
-        } else {
+      {
+		if (pts_c_.size() == 0) {
+			ROS_INFO("AnalyticalCheckCatenary returned a zero value: %f %f %f \t %f %f %f", pi_.x, pi_.y, pi_.z, pf_.x, pf_.y, pf_.z);
+		}
+        min_dist_obs_cat = cc->min_dist_obs_cat;
+        length_cat_final = cc->length_cat;
+      } else {
         min_dist_obs_cat = -1.0;
         length_cat_final = -1.0;
       }
