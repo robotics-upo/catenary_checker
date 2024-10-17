@@ -9,6 +9,27 @@
 using namespace pcl;
 using namespace std;
 
+PreprocessedScenario::PreprocessedScenario() {
+  ros::NodeHandle nh, pnh("~");
+  
+  _pub_marker = nh.advertise<visualization_msgs::MarkerArray>("problems", 2, true);
+
+  pnh.param("ws_x_min", _min.x, 0.0f);
+  pnh.param("ws_y_min", _min.y, 0.0f);
+  pnh.param("ws_x_max", _max.x, 10.0f);
+  pnh.param("ws_y_max", _max.y, 10.0f);
+  pnh.param("ws_z_max", _max_z, 10.0f);
+  pnh.param("n_theta", _n_theta, 60);
+  pnh.param("plane_dist", _plane_dist, 0.1f);
+
+  pnh.param("db_min_points", _db_min_points, 20);
+  pnh.param("db_epsilon", _db_epsilon, 0.05f);
+
+  ROS_INFO("Started Preprocessed Scenario from ROS. ");
+  ROS_INFO("min = %s \t max = %s", _min.toString().c_str(),_max.toString().c_str());
+  ROS_INFO("n_theta = %d\tplane_dist = %f", _n_theta, _plane_dist);
+}
+
 PreprocessedScenario::PreprocessedScenario(const std::string &filename) {
   ros::NodeHandle nh, pnh("~");
 
@@ -128,7 +149,7 @@ vector<TwoPoints> PreprocessedScenario::getProblemsTheta(double theta) const {
   return ret;
 }
 
-float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B)
+float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, bool debug)
 {
   double inc_x = B.x - A.x;
   double inc_y = B.y - A.y;
@@ -138,26 +159,26 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
   }
 
   double yaw = atan(inc_y/inc_x);
-
   float ret_val = -1.0;
 
   // Get the theta
-  int i = round((yaw + M_PI * 0.5) / (_n_theta + 1));
-  i = i % _n_theta;
+  cout << " Number: " << (yaw + M_PI *0.5) / M_PI * (_n_theta + 1.0) << endl;
+  int n = round((yaw + M_PI * 0.5) / M_PI * (_n_theta));
+  n = n % _n_theta;
 
   // Then get the plane
+  const auto &scenes = _scenarios[n];
 
-  const auto &scenes = _scenarios[i];
   if (scenes.size() > 0) {
     const Scenario &s_ = scenes[0];
     float min_dist = fabs(s_.plane.getSignedDistance(A));
     int i = 0;
     int j = 0;
     for (const auto &s:scenes) {
-      auto curr_dist = s.plane.getSignedDistance(A);
+      auto curr_dist = fabs(s.plane.getSignedDistance(A));
       if (curr_dist < min_dist) {
         j = i;
-        curr_dist = min_dist;
+        min_dist = curr_dist;
       }
       i++;
     }
@@ -168,13 +189,24 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
     _pa = scen.to2D(A);
     _pb = scen.to2D(B);
     _parabola.reset();
+    if (debug) {
+      float intensity = 1.0f;
+      _pub.publish(scen.toPC("map", i, intensity));
+      _pub_marker.publish(scen.toMarkerArray("map", i++));
+
+      ROS_INFO("PreprocessedScenario::checkCatenary. N theta = %d, Yaw = %f. n = %d, j = %d. Scenario size: %lu", _n_theta, yaw, n, j, scen.size());
+      ROS_INFO("PreprocessedScenario::checkCatenary. Projected points: A = %s. B = %s", _pa.toString().c_str(), _pb.toString().c_str());
+      ROS_INFO("Scenario: %s", scen.toString().c_str());
+    }
 
     if (_parabola.approximateParabola(scen, _pa, _pb)) {
       ret_val = _parabola.getLength(_pa.x, _pb.x);
-      // ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parabola. Length = %f", ret_val);
+      if (debug) 
+        ROS_INFO("PreprocessedScenario::checkCatenary --> could get the parabola %s. Length = %f", _parabola.toString().c_str(), ret_val);
 
     } else {
-      // ROS_INFO("PreprocessedScenario::checkCatenary --> could NOT get the parabola.");
+      if (debug)
+        ROS_INFO("PreprocessedScenario::checkCatenary --> could NOT get the parabola.");
     }
   }
 
@@ -183,8 +215,7 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
 
 namespace fs = std::filesystem;
 
-// Function that exports scenarios --> I think that it would be nice to pack it into several files, not just one, an then compress it!
-// TODO: End and test!
+// Function that exports scenarios --> They are split into several files, one for each plane, not just one, and then compress it!
 bool PreprocessedScenario::exportScenario() const {
   bool ret_val = true;
 
@@ -371,11 +402,77 @@ void PreprocessedScenario::publishScenarios(unsigned int scen) {
     int i = 0;
     int total = _scenarios[scen].size();
     for (auto &x:_scenarios[scen]) {
-      if (x.getTotalPoints() > 200) {
-        float intensity = 0.5f + 0.5f/(static_cast<float>(i) / static_cast<float>(total));
-        _pub.publish(x.toPC("map", i, intensity));
-        _pub_marker.publish(x.toMarkerArray("map", i++));
-      }
+      float intensity = 0.5f + 0.5f/(static_cast<float>(i) / static_cast<float>(total));
+      _pub.publish(x.toPC("map", i, intensity));
+      _pub_marker.publish(x.toMarkerArray("map", i++));
     }
   }
 }
+
+visualization_msgs::MarkerArray problemsToMarkerArray(const std::vector<TwoPoints> v, std::string frame_id = "map", int skip = 9) {
+  visualization_msgs::MarkerArray msg;
+  visualization_msgs::Marker marker;
+
+  static int seq = 0;
+
+  //Modifier to describe what the fields are.
+  marker.header = std_msgs::Header();
+  marker.header.stamp = ros::Time::now();
+  marker.header.frame_id = frame_id;
+  marker.header.seq = 0;
+
+  marker.id = 0;
+  marker.ns = "problems";
+  marker.action = visualization_msgs::Marker::ADD;
+
+  // First the point in the origin
+  marker.type = visualization_msgs::Marker::LINE_LIST;
+  marker.scale.x = marker.scale.y = 1.0; 
+  marker.scale.z = 1.0;
+  marker.pose.orientation.z = 0;
+  marker.pose.position.x = 0;
+  marker.pose.position.y = 0;
+  marker.color = getColor(seq++);
+  msg.markers.push_back(marker);
+
+  geometry_msgs::Point g_p;
+  marker.pose.position.x = 0.0;
+  marker.pose.position.y = 0.0;
+
+  g_p.z = 1;
+  
+  // Add the lines
+  marker.points.resize(v.size() * 2);
+  int i = 0;
+  int n = 0;
+  for (const TwoPoints &o:v) {
+
+    if (n++ < skip) 
+      continue;
+
+    n = 0;
+    g_p.x = o.first.x;
+    g_p.y = o.first.y;
+    
+    marker.points[i++] = g_p;
+    g_p.x = o.second.x;
+    g_p.y = o.second.y;
+    marker.points[i++] = g_p;
+  }
+  msg.markers.push_back(marker);
+
+  return msg;
+}
+
+
+void PreprocessedScenario::publishProblems(unsigned int scen) {
+  scen = scen % _n_theta;
+  float theta = M_PI / static_cast<float>(_n_theta + 1) * scen - M_PI * 0.5;
+  
+  ROS_INFO("Publishing scenario set %u.", scen);
+
+  auto problems = getProblemsTheta(theta);
+
+  _pub_marker.publish(problemsToMarkerArray(problems));
+}
+

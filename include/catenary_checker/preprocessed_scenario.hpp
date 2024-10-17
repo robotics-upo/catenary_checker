@@ -8,6 +8,8 @@
 
 class PreprocessedScenario {
 public:
+  //! @brief Constructor for tests
+  PreprocessedScenario();
   //! @brief Constructor from file
   PreprocessedScenario(const std::string &file);
 
@@ -18,7 +20,7 @@ public:
   //! @retval -1.0 No valid catenary
   //! @return The length of the collision-free catenary. T
   //! @note The x coordinates of the 2D points and the last plane are stored in the class
-  float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B);
+  float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, bool debug = false);
 
   inline std::string getStats() const {
     std::ostringstream oss;
@@ -33,6 +35,9 @@ public:
   }
 
   void publishScenarios(unsigned int scen);
+
+  void publishProblems(unsigned int scen);
+
 
   size_t size(){return _scenarios.size();}
 
