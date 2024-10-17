@@ -4,10 +4,11 @@
 #include <fstream>
 #include <filesystem>
 #include <pcl_conversions/pcl_conversions.h>
-
+#include <chrono>
 
 using namespace pcl;
 using namespace std;
+using namespace std::chrono;
 
 PreprocessedScenario::PreprocessedScenario() {
   ros::NodeHandle nh, pnh("~");
@@ -19,8 +20,8 @@ PreprocessedScenario::PreprocessedScenario() {
   pnh.param("ws_x_max", _max.x, 10.0f);
   pnh.param("ws_y_max", _max.y, 10.0f);
   pnh.param("ws_z_max", _max_z, 10.0f);
-  pnh.param("n_theta", _n_theta, 60);
-  pnh.param("plane_dist", _plane_dist, 0.1f);
+  pnh.param("n_theta", _n_theta, 30);
+  pnh.param("plane_dist", _plane_dist, 0.2f);
 
   pnh.param("db_min_points", _db_min_points, 20);
   pnh.param("db_epsilon", _db_epsilon, 0.05f);
@@ -63,6 +64,8 @@ PreprocessedScenario::PreprocessedScenario(const std::string &filename) {
 
 void PreprocessedScenario::precompute(const PointCloud<PointXYZ> &pc) {
   // We have to sample only Pi (one plane goes to a direction and its opposite)
+  auto st = chrono::system_clock::now();
+  
   const float increment = M_PI / static_cast<float>(_n_theta + 1);
 
   _scenarios.clear();
@@ -94,6 +97,10 @@ void PreprocessedScenario::precompute(const PointCloud<PointXYZ> &pc) {
     _scenarios.push_back(planes);
     _problems.push_back(ps);
   }
+  auto end = chrono::system_clock::now();
+  duration<float, std::milli> duration = end - st;
+  ROS_INFO("Precomputed scenarios. Expended time: %f s", duration.count() * milliseconds::period::num / milliseconds::period::den);
+  ROS_INFO("Scenarios statistics: %s", getStats().c_str() );
 }
 
 //! @brief Gets the problems to sample the workspace with vertical planes in the theta direction
