@@ -87,8 +87,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 5.170000076293945
-        Min Value: -0.38999998569488525
+        Max Value: 9.274999618530273
+        Min Value: 0.02500000037252903
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -203,6 +203,14 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /problems
+      Name: MarkerArray
+      Namespaces:
+        problems: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -231,7 +239,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 23.1593017578125
+      Distance: 42.5411376953125
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -247,9 +255,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9647958278656006
+      Pitch: 1.274796962738037
       Target Frame: <Fixed Frame>
-      Yaw: 0.8882036209106445
+      Yaw: 4.483206748962402
     Saved: ~
 Window Geometry:
   Displays:
@@ -268,4 +276,4 @@ Window Geometry:
     collapsed: false
   Width: 1920
   X: 72
-  Y: 67
+  Y: 34
