@@ -74,7 +74,7 @@ void PreprocessedScenario::precompute(const PointCloud<PointXYZ> &pc) {
   float angle = -M_PI * 0.5;
   // First we sample the angle
 
-
+  auto pc_filtered = filterHeight(pc, 0.2);
   
   for (int i = 0; i < _n_theta; i++, angle += increment) {
     vector<std::shared_ptr<Scenario> > planes;    
@@ -85,14 +85,14 @@ void PreprocessedScenario::precompute(const PointCloud<PointXYZ> &pc) {
 
     // For each problem get the obstacles associated
     int cont = 0;
-    #pragma omp parallel for num_threads(24) shared(pc, planes, ps, cont) 
+    #pragma omp parallel for num_threads(24) shared(pc_filtered, planes, ps, cont) 
     for (cont = 0; cont < ps.size(); cont++) {
       auto &x = ps[cont];
       PointXYZ A(x.first.x, x.first.y, _max_z);
       PointXYZ B(x.second.x, x.second.y, _max_z);
       auto scene = PC2Obstacles(A,
                                 B,
-                                pc,
+                                pc_filtered,
                                 _plane_dist,
                                 _db_min_points,
                                 _db_epsilon);
@@ -175,7 +175,6 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
   float ret_val = -1.0;
 
   // Get the theta
-  cout << " Number: " << (yaw + M_PI *0.5) / M_PI * (_n_theta + 1.0) << endl;
   int n = round((yaw + M_PI * 0.5) / M_PI * (_n_theta));
   n = n % _n_theta;
 
@@ -351,12 +350,22 @@ bool PreprocessedScenario::loadScenario(const std::string &file) {
       vector<std::shared_ptr<Scenario> >  curr_vec;
       fs::current_path(std::to_string(i));
       
-      for (int j = 0;fs::is_regular_file(std::to_string(j)); j++) {
+      // Get number of scenarios
+      int n_scen = 0;
+      for (;fs::is_regular_file(std::to_string(n_scen)); n_scen++) {
+
+      }
+      curr_vec.resize(n_scen);
+
+      int j = 0;
+      #pragma omp parallel for num_threads(24) shared(curr_vec) 
+      for (j = 0; j < n_scen; j++) {
         std::shared_ptr<Scenario> s(new Scenario);
         if (s->loadScenario(std::to_string(j))) {
-          curr_vec.push_back(s);
+          curr_vec[j] = s;
         }
       }
+      #pragma omp barrier
       ROS_INFO("Loaded angle %d. Number of scenarios %d", i, static_cast<int>(curr_vec.size()));
       _scenarios.push_back(curr_vec);
       fs::current_path("..");
@@ -509,3 +518,15 @@ void PreprocessedScenario::publishProblems(unsigned int scen) {
   _pub_marker.publish(problemsToMarkerArray(problems));
 }
 
+PointCloud<PointXYZ> PreprocessedScenario::filterHeight(const PointCloud<PointXYZ> &pc, const float min_height) {
+  PointCloud<PointXYZ> ret;
+  ret.reserve(pc.size());
+  for (const auto &x:pc) {
+    if (x.z > min_height) {
+      ret.push_back(x);
+    }
+
+  }
+
+  return ret;
+}

@@ -64,6 +64,9 @@ protected:
   //! @brief Gets the metadata from a YAML file
   bool getMetadata(const std::string &f);
 
+  pcl::PointCloud<pcl::PointXYZ> filterHeight(const pcl::PointCloud<pcl::PointXYZ> &pc,
+                                              const float min_height);
+
   std::vector< std::vector< std::shared_ptr <Scenario> > > _scenarios;
   std::vector<std::vector<TwoPoints> > _problems;
   std::string _filename;
