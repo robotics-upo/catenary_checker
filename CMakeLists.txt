@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 3.0.2)
 project(catenary_checker)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++17 -fPIC -fopenmp)
-add_link_options(-fopenmp)
+#add_compile_options(-fopenmp)
+add_compile_options(-std=c++17 -fPIC -O3 -march=native -mtune=native -mavx -mavx2 -mfma -fopenmp-simd)
+add_link_options(-fopenmp-simd)
 
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -30,6 +31,14 @@ find_package(Ceres REQUIRED)
 find_package(PCL 1.8 REQUIRED)
 find_package(PCL REQUIRED)
 find_package(yaml-cpp REQUIRED)
+
+# OpenMP library
+find_package(OpenMP REQUIRED)
+if(OPENMP_FOUND)
+  message(STATUS "OPENMP FOUND")
+  set(OpenMP_FLAGS ${OpenMP_CXX_FLAGS})  # or if you use C: ${OpenMP_C_FLAGS}
+  set(OpenMP_LIBS gomp)
+endif()
 
 include_directories( include/
   ${catkin_INCLUDE_DIRS}
@@ -102,12 +111,14 @@ add_library(${PROJECT_NAME}
    src/solve_catenary_correction_parameter.cpp
   #  src/check_collision_path_planner.cpp
 )
+target_compile_options(${PROJECT_NAME} PRIVATE ${OpenMP_FLAGS})
 target_link_libraries(${PROJECT_NAME}
    ${EXTERNAL_LIBS}
    ${catkin_LIBRARIES}
    ${YAML_CPP_LIBRARIES}
    Ceres::ceres
    ${CERES_LIBRARIES}
+   ${OpenMP_LIBS}
 )
 
 ## Add cmake target dependencies of the library

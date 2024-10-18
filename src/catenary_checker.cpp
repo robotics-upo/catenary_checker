@@ -57,12 +57,12 @@ float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenar
 float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon) 
 {
   // Project the points to 2D
-  auto scenario = PC2Obstacles(A, B, pc, plane_dist, dbscan_min_points, dbscan_epsilon);
+  std::shared_ptr<Scenario> scenario(PC2Obstacles(A, B, pc, plane_dist, dbscan_min_points, dbscan_epsilon));
 
-  return checkCatenary(A, B, scenario);
+  return checkCatenary(A, B, *scenario);
 }
 
-Scenario PC2Obstacles(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon) {
+std::shared_ptr<Scenario> PC2Obstacles(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon) {
   auto points_2d = project2D(pc, A, B, plane_dist);
 
   // Get the obstacles 2D clustered
@@ -114,27 +114,27 @@ DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
 }
 
 
-Scenario getObstacles(DBSCAN *dbscan, pcl::PointXYZ A, pcl::PointXYZ B) {
-  Scenario ret;
+std::shared_ptr<Scenario> getObstacles(DBSCAN *dbscan, pcl::PointXYZ A, pcl::PointXYZ B) {
+  auto ret = std::make_shared<Scenario>();
   int dbscan_min_points = dbscan->getMinimumClusterSize();
   for (int i = 1; i < dbscan->getNClusters(); i++) {
     auto cluster = dbscan->getCluster(i);
     // printf("Cluster %d. Size: %lu", i, cluster.size());
     if (cluster.size() > dbscan_min_points) {
       auto curr_obstacle = toObstacle(cluster);
-      ret.push_back(curr_obstacle);
+      ret->push_back(curr_obstacle);
     }
   }
-  ret.origin.x = A.x;
-  ret.origin.y = A.y;
+  ret->origin.x = A.x;
+  ret->origin.y = A.y;
 
   float dx = B.x - A.x;
   float dy = B.y - A.y;
   float dist = sqrt(dx*dx + dy*dy);
-  ret.unit_vec.x = dx / dist;
-  ret.unit_vec.y = dy / dist;
+  ret->unit_vec.x = dx / dist;
+  ret->unit_vec.y = dy / dist;
 
-  ret.plane = getVerticalPlane(A,B);
+  ret->plane = getVerticalPlane(A,B);
 
   return ret;
 }
@@ -170,7 +170,7 @@ std::vector<Scenario> preprocessObstacle2D(const pcl::PointXYZ &A, const pcl::Po
     B.y += sin(angle);
 
     auto scene = PC2Obstacles(A, B, pc, plane_dist, dbscan_min_points, dbscan_epsilon);
-    planes.push_back(scene);
+    planes.push_back(*scene);
   }
 
   return planes;

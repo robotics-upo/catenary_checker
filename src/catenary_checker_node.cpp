@@ -162,14 +162,14 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
       {
         std::cout << "Compute Obstacles using DBSCAN" << std::endl;
         //Tranlate to Obstacles 2D
-        Scenario scenario = getObstacles(dbscan, robot, target); 
+        std::shared_ptr<Scenario> scenario = getObstacles(dbscan, robot, target); 
     // std::cout << "Compute getVerticalPlane" << std::endl;
         auto plane = getVerticalPlane(robot,target); 
         Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
         Point2D B(target.y * plane.a - target.x * plane.b, target.z);
   // std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
         Parabola parabola;
-        ret_val = parabola.approximateParabola(scenario, A, B);
+        ret_val = parabola.approximateParabola(*scenario, A, B);
         if (ret_val) {
         // Represent parabola and get min distance to obstacles
             // ROS_INFO("Got parabola: %s", parabola.toString().c_str()); 

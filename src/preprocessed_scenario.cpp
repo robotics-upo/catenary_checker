@@ -74,16 +74,20 @@ void PreprocessedScenario::precompute(const PointCloud<PointXYZ> &pc) {
   float angle = -M_PI * 0.5;
   // First we sample the angle
 
+
+  
   for (int i = 0; i < _n_theta; i++, angle += increment) {
-    vector<Scenario> planes;    
+    vector<std::shared_ptr<Scenario> > planes;    
     vector<TwoPoints> ps = getProblemsTheta(angle);
 
+    planes.resize(ps.size());
     ROS_INFO("Theta %d of %d", i, _n_theta);
 
     // For each problem get the obstacles associated
     int cont = 0;
-    for (auto &x:ps) {
-      printf("Plane %d of %lu\r", ++cont, ps.size());
+    #pragma omp parallel for num_threads(24) shared(pc, planes, ps, cont) 
+    for (cont = 0; cont < ps.size(); cont++) {
+      auto &x = ps[cont];
       PointXYZ A(x.first.x, x.first.y, _max_z);
       PointXYZ B(x.second.x, x.second.y, _max_z);
       auto scene = PC2Obstacles(A,
@@ -92,11 +96,13 @@ void PreprocessedScenario::precompute(const PointCloud<PointXYZ> &pc) {
                                 _plane_dist,
                                 _db_min_points,
                                 _db_epsilon);
-      planes.push_back(scene);
+      planes[cont] = scene;
     }
+    #pragma omp barrier
     _scenarios.push_back(planes);
     _problems.push_back(ps);
   }
+  
   auto end = chrono::system_clock::now();
   duration<float, std::milli> duration = end - st;
   ROS_INFO("Precomputed scenarios. Expended time: %f s", duration.count() * milliseconds::period::num / milliseconds::period::den);
@@ -177,12 +183,12 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
   const auto &scenes = _scenarios[n];
 
   if (scenes.size() > 0) {
-    const Scenario &s_ = scenes[0];
+    const Scenario &s_ = *scenes[0];
     float min_dist = fabs(s_.plane.getSignedDistance(A));
     int i = 0;
     int j = 0;
     for (const auto &s:scenes) {
-      auto curr_dist = fabs(s.plane.getSignedDistance(A));
+      auto curr_dist = fabs(s->plane.getSignedDistance(A));
       if (curr_dist < min_dist) {
         j = i;
         min_dist = curr_dist;
@@ -191,7 +197,7 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
     }
 
 
-    const Scenario &scen = scenes[j];
+    const Scenario &scen = *scenes[j];
     _last_plane = scen.plane;
     _pa = scen.to2D(A);
     _pb = scen.to2D(B);
@@ -291,7 +297,7 @@ bool PreprocessedScenario::exportScenario() const {
           string curr_file = to_string(j++);
           ofstream ofs(curr_file);
           YAML::Emitter e;
-          e << x;
+          e << *x;
           ofs << e.c_str()<<endl;
         }
         fs::current_path("..");  
@@ -342,13 +348,12 @@ bool PreprocessedScenario::loadScenario(const std::string &file) {
 
   if (getMetadata(f+".yaml")) {
     for (int i = 0; i < _n_theta; i++) {
-      vector<Scenario> curr_vec;
+      vector<std::shared_ptr<Scenario> >  curr_vec;
       fs::current_path(std::to_string(i));
-
       
       for (int j = 0;fs::is_regular_file(std::to_string(j)); j++) {
-        Scenario s;
-        if (s.loadScenario(std::to_string(j))) {
+        std::shared_ptr<Scenario> s(new Scenario);
+        if (s->loadScenario(std::to_string(j))) {
           curr_vec.push_back(s);
         }
       }
@@ -431,8 +436,8 @@ void PreprocessedScenario::publishScenarios(unsigned int scen) {
     int total = _scenarios[scen].size();
     for (auto &x:_scenarios[scen]) {
       float intensity = 0.5f + 0.5f/(static_cast<float>(i) / static_cast<float>(total));
-      _pub.publish(x.toPC("map", i, intensity));
-      _pub_marker.publish(x.toMarkerArray("map", i++));
+      _pub.publish(x->toPC("map", i, intensity));
+      _pub_marker.publish(x->toMarkerArray("map", i++));
     }
   }
 }

@@ -5,6 +5,7 @@
 #include <catenary_checker/catenary_checker.hpp>
 #include <ros/ros.h>
 #include <iostream>
+#include <memory>
 
 class PreprocessedScenario {
 public:
@@ -63,7 +64,7 @@ protected:
   //! @brief Gets the metadata from a YAML file
   bool getMetadata(const std::string &f);
 
-  std::vector<std::vector<Scenario> > _scenarios;
+  std::vector< std::vector< std::shared_ptr <Scenario> > > _scenarios;
   std::vector<std::vector<TwoPoints> > _problems;
   std::string _filename;
 

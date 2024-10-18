@@ -47,14 +47,14 @@ float getParabolaPoints(Parabola &parabola, const pcl::PointXYZ &A, const pcl::P
 std::vector<Scenario> preprocessObstacle2D(const pcl::PointXYZ &A, const pcl::PointCloud<pcl::PointXYZ> &pc, int n_planes, float plane_dist, int dbscan_min_points, float dbscan_epsilon);
 
 // Clustering and 2D Obstacles related
-Scenario PC2Obstacles(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon);
+std::shared_ptr<Scenario> PC2Obstacles(const pcl::PointXYZ &A, const pcl::PointXYZ &B,const pcl::PointCloud<pcl::PointXYZ> &pc, float plane_dist, int dbscan_min_points, float dbscan_epsilon);
 
 DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &pc_2d, int minPts, float epsilon);
 
 DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts,
 			 float epsilon, float gamma, float theta);
 
-Scenario getObstacles(DBSCAN *dbscan, pcl::PointXYZ A, pcl::PointXYZ B);
+std::shared_ptr<Scenario> getObstacles(DBSCAN *dbscan, pcl::PointXYZ A, pcl::PointXYZ B);
 
 Obstacle2D toObstacle(const std::vector<Point> &obs);
 
