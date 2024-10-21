@@ -32,8 +32,10 @@
   <arg name="use_dbscan_lines" default="true"/>
   <arg name="dbscan_min_points" default="5"/>
   <arg name="n_theta" default="6"/>
+  <arg name="test_problems" default=""/>
+  <arg name="use_parabola" default="true"/>
   <arg name="filename" default="$(find marsupial_optimizer)/maps/$(arg map).tar.gz"/>
-  <node name="test_ps" pkg="catenary_checker" type="test_preprocessed_scenario" output="screen" args="$(arg filename)" > # launch-prefix="xterm -e gdb --args" >
+  <node name="test_ps" pkg="catenary_checker" type="test_preprocessed_scenario" output="screen" args="$(arg filename) $(arg test_problems)"  launch-prefix="xterm -e gdb --args" >
     <rosparam command="load" file="$(find marsupial_optimizer)/cfg/$(arg map)_ws.yaml"/>
     <remap from="point_cloud" to="octomap_point_cloud_centers"/>
     <param name="plane_dist" value="$(arg plane_dist)"/>
@@ -45,6 +47,7 @@
     <remap from="points2" to="/octomap_point_cloud_centers"/>
     <param name="n_theta" value="$(arg n_theta)"/>
     <param name="plane_dist" value="$(arg plane_dist)"/>
+    <param name="preprocessed_file" value=""/>
 
   </node>
 
