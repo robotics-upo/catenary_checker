@@ -5,14 +5,15 @@ using namespace std::chrono;
 
 CatenaryCheckerManager::CatenaryCheckerManager(std::string node_name_)
 {
-  nh.reset(new ros::NodeHandle("~"));
+    nh.reset(new ros::NodeHandle("~"));
 	std::string node_name = "catenaryChecker_" + node_name_;
 	std::cout << std::endl << "Starting clar CatenaryCheckManager from " << node_name << std::endl;
 
 	cc = new catenaryChecker(nh);
-    
-    point_cloud_sub_ = nh->subscribe<sensor_msgs::PointCloud2>("/octomap_point_cloud_centers", 1, &CatenaryCheckerManager::pointCloudCallback, this);
-    point_cloud_ugv_obs_sub_ = nh->subscribe<sensor_msgs::PointCloud2>("/region_growing_obstacles_pc_map", 1, &CatenaryCheckerManager::pointCloudObstaclesCallback, this);
+
+	point_cloud_sub_ = nh->subscribe<sensor_msgs::PointCloud2>("/octomap_point_cloud_centers", 1, &CatenaryCheckerManager::pointCloudCallback, this);
+	point_cloud_ugv_obs_sub_ = nh->subscribe<sensor_msgs::PointCloud2>("/region_growing_obstacles_pc_map", 1, &CatenaryCheckerManager::pointCloudObstaclesCallback, this);
+
 }
 
 void CatenaryCheckerManager::pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg)
@@ -47,6 +48,8 @@ void CatenaryCheckerManager::init(Grid3d *grid_3D_, double d_obs_tether_,
   use_distance_function = use_distance_function_;
   grid_3D = grid_3D_;
 
+  bc.setNumPointsPerUnitLength(20);
+
   if (use_both) {
     ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using both methods");
   } else if (use_parabola) {
@@ -66,37 +69,14 @@ void CatenaryCheckerManager::pointCloudObstaclesCallback(const sensor_msgs::Poin
     ROS_INFO(PRINTF_YELLOW "CatenaryCheckerManager::pointCloudObstaclesCallback: Received Point Cloud UGV Obstacles");
 }
 
-// bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
-// {
-//    bool is_founded;
-//    pts_c_.clear();
-//    	if(just_line_of_sight){
-// 		is_founded = computeStraight(pi_, pf_ ,pts_c_);
-// 	}else{ // Just to check a straigth line 
-// 		if (use_parabola){
-// 			if(is_founded = cc->analyticalCheckCatenary(pi_, pf_, pts_c_)){
-// 				min_dist_obs_cat = cc->min_dist_obs_cat;
-// 				length_cat_final = cc->length_cat;
-// 			}
-// 			else{
-// 				min_dist_obs_cat = -1.0;
-// 				length_cat_final = -1.0;
-// 			}
-// 		}
-// 		else
-// 			is_founded = NumericalSolutionCatenary(pi_, pf_ ,pts_c_);
-// 	}
-
-// 	return is_founded;
-// }
-
-
 bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
                                             const geometry_msgs::Point &pf_,
                                             std::vector<geometry_msgs::Point> &pts_c_)
 {
   bool is_found = false;
   pts_c_.clear();
+
+  problems.push_back(std::make_pair(pi_, pf_));
   if(just_line_of_sight){
     is_found = computeStraight(pi_, pf_ ,pts_c_);
   } else if (use_parabola || use_both) {
@@ -248,7 +228,7 @@ bool CatenaryCheckerManager::checkPoints(const std::vector<geometry_msgs::Point>
 
 bool CatenaryCheckerManager::computeStraight(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_)
 { 
-	bool founded_catenary = true;
+	bool found_catenary = true;
 	points_catenary_.clear();
 	double dist_init_final_ = 1.005 * sqrt(pow(p_reel_.x - p_final_.x,2) + pow(p_reel_.y - p_final_.y,2) + pow(p_reel_.z - p_final_.z,2));
 	length_cat_final = dist_init_final_;
@@ -274,7 +254,7 @@ bool CatenaryCheckerManager::computeStraight(const geometry_msgs::Point &p_reel_
 		double dist_cat_obs = getPointDistanceObstaclesMap(use_distance_function, p_);
 
 		if (dist_cat_obs < distance_tether_obstacle){
-			founded_catenary = false;
+			found_catenary = false;
 			length_cat_final = -1.0;
 			// std::cout << "CatenaryCheckerManager::computeStraight :	["<< i <<"] dist_collision = " << dist_cat_obs << " p_=["<<p_.x << "," << p_.y << "," << p_.z  <<"]" << std::endl;
 			break;
@@ -282,7 +262,7 @@ bool CatenaryCheckerManager::computeStraight(const geometry_msgs::Point &p_reel_
     }
 
 	// printf("GetParabolaParameter Straigth Tether: Founded tether \n");
-	return founded_catenary;
+	return found_catenary;
 }
 
 bool CatenaryCheckerManager::numericalSolutionCatenary(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_)
@@ -292,7 +272,7 @@ bool CatenaryCheckerManager::numericalSolutionCatenary(const geometry_msgs::Poin
                                  pow(p_reel_.z - p_final_.z,2));
 	double delta_ = 0.0;	//Initial Value
 	bool check_catenary = true;
-	bool founded_catenary = false;
+	bool found_catenary = false;
 	bool increase_catenary;
 	double length_catenary_;
 	int n_points_cat_dis_;
@@ -349,7 +329,7 @@ bool CatenaryCheckerManager::numericalSolutionCatenary(const geometry_msgs::Poin
 				point_cat.z = points_catenary_[i].z;
 			}
 			if (check_catenary && !increase_catenary){
-				founded_catenary = true;
+				found_catenary = true;
 				check_catenary = false;
 				length_cat_final = length_catenary_;
 			}
@@ -358,18 +338,18 @@ bool CatenaryCheckerManager::numericalSolutionCatenary(const geometry_msgs::Poin
 		}
 	}while (check_catenary);
 	
-	if (!founded_catenary ){//In case not feasible to find catenary
+	if (!found_catenary ){//In case not feasible to find catenary
 		length_cat_final = -3.0;	
 		min_dist_obs_cat = -1.0;
 		points_catenary_.clear();
 	}
-	catenary_state = founded_catenary;
+	catenary_state = found_catenary;
 
 	param_cat_x0 = bc.Xc;
 	param_cat_y0 = bc.Yc;
 	param_cat_a = bc.c_value;
 
-	return founded_catenary;
+	return found_catenary;
 }
 
 double CatenaryCheckerManager::getPointDistanceFullMap(bool use_dist_func_,
@@ -397,7 +377,6 @@ double CatenaryCheckerManager::getPointDistanceFullMap(bool use_dist_func_,
 
 	return dist;
 }
-
 
 double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Point p_)
 {
@@ -439,12 +418,18 @@ bool CatenaryCheckerManager::exportStats(const std::string &filename) const {
     if (!use_parabola || use_both) {
       ofs << execution_times_bisection[i] << "\t" << results_bisection[i] << "\t";
     }
+	const auto &p1 = problems[i].first;
+	const auto &p2 = problems[i].second;
+	
+	ofs << p1.x << "," << p1.y <<"," << p1.z << "\t";
+	ofs << p2.x << "," << p2.y <<"," << p2.z << "\t";
     ofs << "\n";
   }
   return true;
 }
 
 CatenaryCheckerManager::~CatenaryCheckerManager() {
+	exportStats("catenary_stats.txt");
 }
 double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Point p_, int pose_, string msg_)
 {

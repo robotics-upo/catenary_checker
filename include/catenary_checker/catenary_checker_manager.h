@@ -106,6 +106,7 @@ private:
   // For time execution stats
   std::vector<float> execution_times_parabola, execution_times_bisection;
   std::vector<float> results_parabola, results_bisection;
+  std::vector<std::pair<geometry_msgs::Point, geometry_msgs::Point> > problems;
   float planes_precomputing_time;
 };
 
