@@ -17,6 +17,7 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   dbscan_gamma = nh->param<float>("dbscan_gamma", 0.1);
   dbscan_theta = nh->param<float>("dbscan_theta", 0.1);
   use_dbscan_lines = nh->param<bool>("use_dbscan_lines", false);
+  
 
   precomputed_file = nh->param<std::string>("precomputed_file",
                                             static_cast<std::string>(""));
@@ -94,7 +95,10 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     // If not, we compute the obstacles in the plane
     // and then check for Parabola
     
-    
+    if (pc == NULL) { 
+      ROS_ERROR("Cloud not configured");
+      return false;
+    }
     DBSCAN *dbscan = NULL;
 
     pcl::PointCloud<pcl::PointXYZ> pcl_pc;
@@ -175,6 +179,7 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
             // ROS_INFO("Got parabola: %s", parabola.toString().c_str()); 
           pcl::PointCloud<pcl::PointXYZ> pc_catenary;
           length_cat = getParabolaPoints(parabola, robot, target, pc_catenary);
+          std::cout << "Parabola en 1 plano Calculada. Length cat = " << length_cat << std::endl;
 
           for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
             // if (i%quot == 0){
@@ -231,7 +236,10 @@ bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
     precomputePlanes();
   }
 
-  get_catenary = ps->checkCatenary(pi_, pf_, pts_c_) > -0.5f;
+  length_cat = ps->checkCatenary(pi_, pf_, pts_c_) *1.01;
+  length_cat_final = length_cat*1.01;
+  get_catenary = length_cat > -0.5f;
+  
 
   return get_catenary;
 
