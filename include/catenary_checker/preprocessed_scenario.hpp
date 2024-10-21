@@ -76,6 +76,8 @@ public:
   int _n_theta;
   float _plane_dist;
   float _max_z = 10.0f;
+  pcl::PointCloud<pcl::PointXYZ> _pcl_pc;
+  sensor_msgs::PointCloud2::ConstPtr _pc;
 
 protected:
 

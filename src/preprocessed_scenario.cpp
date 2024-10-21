@@ -185,17 +185,8 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
     const Scenario &s_ = *scenes[0];
     float min_dist = fabs(s_.plane.getSignedDistance(A));
     int i = 0;
-    int j = 0;
-    for (const auto &s:scenes) {
-      auto curr_dist = fabs(s->plane.getSignedDistance(A));
-      if (curr_dist < min_dist) {
-        j = i;
-        min_dist = curr_dist;
-      }
-      i++;
-    }
-
-
+    int j = min_dist + round(fabs(min_dist) / _plane_dist);
+    
     const Scenario &scen = *scenes[j];
     _last_plane = scen.plane;
     _pa = scen.to2D(A);
@@ -207,8 +198,8 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
     _parabola.reset();
     if (debug) {
       float intensity = 1.0f;
-      _pub.publish(scen.toPC("map", i, intensity));
-      _pub_marker.publish(scen.toMarkerArray("map", i++));
+      _pub.publish(scen.toPC("map", j, intensity));
+      _pub_marker.publish(scen.toMarkerArray("map", j));
 
       ROS_INFO("PreprocessedScenario::checkCatenary. N theta = %d, Yaw = %f. n = %d, j = %d. Scenario size: %lu", _n_theta, yaw, n, j, scen.size());
       ROS_INFO("PreprocessedScenario::checkCatenary. Projected points: A = %s. B = %s", _pa.toString().c_str(), _pb.toString().c_str());
@@ -424,14 +415,14 @@ string PreprocessedScenario::getFilename(const string &f) const {
 }
 
 void PreprocessedScenario::PC_Callback(const sensor_msgs::PointCloud2::ConstPtr &pc) {
+  ROS_INFO("Received PointCloud. Height, Width: %d, %d", pc->height, pc->width);
+  _pc = pc;  
   if (_scenarios.size() > 0) {
     return; // ALready computed
   }
-  pcl::PointCloud<pcl::PointXYZ> pcl_pc;
 
-  pcl::fromROSMsg(*pc, pcl_pc);
-  ROS_INFO("Received PointCloud. Starting preprocessing. Height, Width: %d, %d", pc->height, pc->width);
-  precompute(pcl_pc);
+  pcl::fromROSMsg(*_pc, _pcl_pc);
+  precompute(_pcl_pc);
 
   ROS_INFO("Exporting scenario. Filename %s", _filename.c_str());
   exportScenario();
