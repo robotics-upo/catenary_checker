@@ -32,7 +32,7 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
       // Translate to 2D --> x coord is:  - p.x * plane.b + p.y * plane.a
       pcl::PointXY projected_point;
       projected_point.x = p.y * plane.a - p.x * plane.b;
-      projected_point.y = p_plane.z;
+      projected_point.y = p.z;
 	    ret.push_back(projected_point);
     }
   }
