@@ -27,7 +27,7 @@ public:
 
   void calculateConvexHull();
         
-  bool intersects(std::function<float (float) > &func) const;
+  bool intersects(std::function<float (float) > &func, double x_min, double x_max) const;
     
   std::vector<Point2D> convex_hull;
 
