@@ -18,6 +18,7 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   dbscan_theta = nh->param<float>("dbscan_theta", 0.1);
   use_dbscan_lines = nh->param<bool>("use_dbscan_lines", false);
   
+  debug = nh->param("debug", false);
 
   precomputed_file = nh->param<std::string>("precomputed_file",
                                             static_cast<std::string>(""));
@@ -57,6 +58,12 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
   static int seq = 0;
   bool ret_val = false;
 
+  pts_c_.clear();
+
+  if (debug) {
+    ROS_INFO(PRINTF_YELLOW "AnalyticalChekcCatenary: pi = %f %f %f. pf = %f %f %f", pi_.x, pi_.y, pi_.z, pf_.x, pf_.y, pf_.z);
+  }
+
   pcl::PointXYZ robot(static_cast<float>(pi_.x),
                       static_cast<float>(pi_.y),
                       static_cast<float>(pi_.z));
@@ -86,7 +93,6 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     get_catenary = false;
     return false;
   }
-
 
   // If there is a filename --> we use precomputation for planes
   if (precomputed_file != "") {
@@ -141,7 +147,6 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
 
     int num_pts_per_unit_length = 10;
       
-    pts_c_.clear();
       
     if ( (fabs(robot.x - target.x) < 0.01) && (fabs(robot.y == target.y) < 0.01 ) )
       {
@@ -236,7 +241,7 @@ bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
     precomputePlanes();
   }
 
-  length_cat = ps->checkCatenary(pi_, pf_, pts_c_) *1.01;
+  length_cat = ps->checkCatenary(pi_, pf_, pts_c_, debug) *1.01;
   length_cat_final = length_cat*1.01;
   get_catenary = length_cat > -0.5f;
   

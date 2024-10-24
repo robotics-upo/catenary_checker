@@ -57,7 +57,7 @@ public:
   int dbscan_min_points;
   float dbscan_epsilon, dbscan_gamma, dbscan_theta;
   bool use_dbscan_lines;
-
+  bool debug = false;
   bool get_catenary;
 
   ros::Publisher pc_publisher, marker_publisher;
