@@ -59,18 +59,18 @@ bool Parabola::recursiveApproximateParabola(const Scenario &objects, const Point
   Scenario nonIntersection;
   Parabola back(*this);
 
+  float min_x = std::min(A.x, B.x);
+  float max_x = std::max(A.x, B.x);
+
+
   std::function<float(float)> f = std::bind(&Parabola::apply, this, std::placeholders::_1);
-  int flag_ = 0;
   for (auto &x:objects) {
-    if (x.intersects(f)) {
-      // std::cout << "Adding obstacle: " << x.toString() << std::endl;
-      // std::cout << "obstacle added: x=" << x[flag_].x << " y=" << x[flag_].y <<std::endl;
+    if (x.intersects(f, min_x, max_x)) {
       artificial_obs.add(x);
     }
     else{
       nonIntersection.push_back(x);
     }
-    flag_++;
   }
 
   if (artificial_obs.size() < 1 ) {
@@ -79,8 +79,6 @@ bool Parabola::recursiveApproximateParabola(const Scenario &objects, const Point
 
   artificial_obs.calculateConvexHull();
 
-  float min_x = std::min(A.x, B.x);
-  float max_x = std::max(A.x, B.x);
 
   for (auto &x:artificial_obs.convex_hull) {
     if (x.y < A.y || x.x < min_x || x.x > max_x) {

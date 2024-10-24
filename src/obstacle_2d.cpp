@@ -16,10 +16,14 @@ void Obstacle2D::calculateConvexHull() {
   convex_hull = findConvexHull(*this);
 }
 
-bool Obstacle2D::intersects(std::function<float (float) > &func) const {
+bool Obstacle2D::intersects(std::function<float (float) > &func, double x_min, double x_max) const {
   bool exist_lower = false;
   bool exist_up = false;
   for (size_t p = 0; p < size();p++) {
+    if (at(p).x < x_min || at(p).x > x_max) {
+      continue; // We only take into account the obstacles between the desired Xs 
+    }
+
     float fy = func(at(p).x);
     exist_up |= fy < at(p).y;
     exist_lower |= fy > at(p).y;
