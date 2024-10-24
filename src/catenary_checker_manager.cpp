@@ -83,12 +83,11 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
     auto t1 = high_resolution_clock::now();
     is_found = computeStraight(pi_, pf_, pts_c_);
     if (!is_found) {
-      pts_c_.clear();
       is_found = cc->analyticalCheckCatenary(pi_, pf_, pts_c_);
       if(is_found)
       {
 		if (pts_c_.size() == 0) {
-			ROS_INFO("AnalyticalCheckCatenary returned a zero value: %f %f %f \t %f %f %f", pi_.x, pi_.y, pi_.z, pf_.x, pf_.y, pf_.z);
+			ROS_INFO("AnalyticalCheckCatenary returned a zero length catenary: %f %f %f \t %f %f %f", pi_.x, pi_.y, pi_.z, pf_.x, pf_.y, pf_.z);
 		}
         min_dist_obs_cat = cc->min_dist_obs_cat;
         length_cat_final = cc->length_cat;
@@ -119,7 +118,10 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
     }
     if (!is_found) {
       length_cat = -1.0;
-    }
+	//   ROS_INFO("Did not found catenary at: %f %f %f \t %f %f %f", pi_.x, pi_.y, pi_.z, pf_.x, pf_.y, pf_.z);
+    } else {
+		// ROS_INFO("Found catenary at: %f %f %f \t %f %f %f", pi_.x, pi_.y, pi_.z, pf_.x, pf_.y, pf_.z);
+	}
     auto t2 = high_resolution_clock::now();
     duration<float>fp_s = t2 - t1;
     float delta_t = fp_s.count();
