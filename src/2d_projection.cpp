@@ -5,48 +5,35 @@ pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cl
 					const pcl::PointXYZ &p1,
 					const pcl::PointXYZ &p2, const float max_dist, const float min_z)
 {
-  // std::cout << "project2D sizes: cloud_in:[" << cloud_in.size()  << "] , p1:[" << p1.x << " " << p1.y << " " << p1.z <<"] , p2:[" << p2.x << " " << p2.y << " " << p2.z <<  "] , max_dist:[" << max_dist << std::endl;
-
   PlaneParams plane = getVerticalPlane(p1, p2);
   pcl::PointCloud<pcl::PointXY> ret;  
 
+  float min_x = std::min(p1.x, p2.x);
+  float max_x = std::max(p1.x, p2.x);
+  float min_y = std::min(p1.y, p2.y);
+  float max_y = std::max(p1.y, p2.y);
+  
+  float max_z = std::max(p1.z, p2.z);
+
   //const std::chrono::steady_clock::time_point start(std::chrono::steady_clock::now());
+  auto s = cloud_in.size();
+  ret.reserve(cloud_in.size());
 
-  // Get the x' coordinate of p1 and p2
 
-  float x_1_prima = -p1.x * plane.b + p1.y * plane.a;
-  float x_2_prima = -p2.x * plane.b + p2.y * plane.a;
+  for (size_t i = 0; i < s ; i++) {
+    // Before adding the points, check if they are in the proper range
+    if (p1.x < min_x || p1.x > max_x || p1.y < min_y || p1.y > max_y || p1.z < min_z || p1.z > max_z)
+      continue; 
 
-  // std::cout << " x_1_prima = " << x_1_prima << " , x_2_prima = " << x_2_prima << std::endl;
-
-  float min_x = std::min(x_1_prima, x_2_prima);
-  float max_x = std::max(x_1_prima, x_2_prima);
-  float max_y = std::max(p1.z, p2.z);
-
-  // std::cout << " min_x = " << min_x << " , max_x = " << max_x << " , max_y = " << max_y << std::endl;
-
-  for (int i = cloud_in.size() - 1; i >= 0 ; i--) {
     const pcl::PointXYZ &p = cloud_in[i];
     float dist = plane.getSignedDistance(p);
         
-    if (fabsf(dist) < max_dist && p.z > min_z) {
-            
-      // Get the point of the plane
-      pcl::PointXYZ p_plane(p.x - plane.a * dist, p.y - plane.b * dist, p.z);
-
-      // std::cout << "Adding Point. (" << p.x << ", " << p.y << ", "
-      // << p.z << ")\t Abs Dist: " << fabsf(dist) << "\n";
-
+    if (fabsf(dist) < max_dist) {
       // Translate to 2D --> x coord is:  - p.x * plane.b + p.y * plane.a
       pcl::PointXY projected_point;
-      projected_point.x = p_plane.y * plane.a - p_plane.x * plane.b;
+      projected_point.x = p.y * plane.a - p.x * plane.b;
       projected_point.y = p_plane.z;
-
-      // Before adding the points, check if they pass these
-
-      if (projected_point.x > min_x && projected_point.x < max_x && projected_point.y < max_y) {
-	      ret.push_back(projected_point);
-      }
+	    ret.push_back(projected_point);
     }
   }
   //const std::chrono::steady_clock::time_point end(std::chrono::steady_clock::now());
@@ -100,7 +87,7 @@ PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2) {
   plane.a /= dist;
   plane.b /= dist;
     
-  // Get d by substituting another point ( n * p1 + d = 0 ) --> d = - n * p1
+  // Get d by substituting a point ( n * p1 + d = 0 ) --> d = - n * p1
   plane.d = - plane.a * p1.x - plane.b * p1.y;
 
   return plane;
