@@ -185,7 +185,7 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
     const Scenario &s_ = *scenes[0];
     float min_dist = fabs(s_.plane.getSignedDistance(A));
     int i = 0;
-    int j = min_dist + round(fabs(min_dist) / _plane_dist);
+    int j = round(fabs(min_dist) / _plane_dist);
     
     const Scenario &scen = *scenes[j];
     _last_plane = scen.plane;
@@ -200,6 +200,11 @@ float PreprocessedScenario::checkCatenary(const pcl::PointXYZ &A, const pcl::Poi
       float intensity = 1.0f;
       _pub.publish(scen.toPC("map", j, intensity));
       _pub_marker.publish(scen.toMarkerArray("map", j));
+
+      _pub_marker.publish(getMarkerProblem(A, B));
+      
+
+
 
       ROS_INFO("PreprocessedScenario::checkCatenary. N theta = %d, Yaw = %f. n = %d, j = %d. Scenario size: %lu", _n_theta, yaw, n, j, scen.size());
       ROS_INFO("PreprocessedScenario::checkCatenary. Projected points: A = %s. B = %s", _pa.toString().c_str(), _pb.toString().c_str());
@@ -440,6 +445,53 @@ void PreprocessedScenario::publishScenarios(unsigned int scen) {
       _pub_marker.publish(x->toMarkerArray("map", i++));
     }
   }
+}
+
+visualization_msgs::MarkerArray PreprocessedScenario::getMarkerProblem(const pcl::PointXYZ &A, const pcl::PointXYZ &B) {
+  visualization_msgs::MarkerArray marks;
+  visualization_msgs::Marker marker;
+
+  static int seq = 0;
+
+  //Modifier to describe what the fields are.
+  marker.header = std_msgs::Header();
+  marker.header.stamp = ros::Time::now();
+  marker.header.frame_id = "map";
+  marker.header.seq = seq;
+
+  marker.id = 0;
+  marker.ns = "decision problem";
+  marker.action = visualization_msgs::Marker::ADD;
+
+  // First the point in the origin
+  marker.type = visualization_msgs::Marker::SPHERE_LIST;
+  marker.scale.x = marker.scale.y = marker.scale.z = 0.2;
+  marker.pose.orientation.w = 1; 
+  marker.color = getColor(seq);
+  
+  geometry_msgs::Point g_p;
+  marker.pose.position.x = 0.0;
+  marker.pose.position.y = 0.0;
+  marker.pose.position.z = 0.0;
+  marker.pose.orientation.w = 1.0;
+  g_p.x = A.x;
+  g_p.y = A.y;
+  g_p.z = A.z;
+  marker.points.push_back(g_p);
+  marks.markers.push_back(marker);
+
+  marker.points.clear();
+  marker.header.seq++;
+  marker.id = 1;
+  g_p.x = B.x;
+  g_p.y = B.y;
+  g_p.z = B.z;
+  marker.color = getColor(seq+1);
+  marker.points.push_back(g_p);
+
+  marks.markers.push_back(marker);
+
+  return marks;
 }
 
 visualization_msgs::MarkerArray problemsToMarkerArray(const std::vector<TwoPoints> v, std::string frame_id = "map", int skip = 9) {

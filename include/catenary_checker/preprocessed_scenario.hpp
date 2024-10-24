@@ -95,4 +95,7 @@ protected:
 public:
   void PC_Callback(const sensor_msgs::PointCloud2::ConstPtr &pc);
 
+  visualization_msgs::MarkerArray getMarkerProblem(const pcl::PointXYZ &A, const pcl::PointXYZ &B);
+
+
 };
