@@ -171,7 +171,7 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
       {
         std::cout << "Compute Obstacles using DBSCAN" << std::endl;
         //Tranlate to Obstacles 2D
-        std::shared_ptr<Scenario> scenario = getObstacles(dbscan, robot, target); 
+        std::shared_ptr<Scenario> scenario = getObstacles(dbscan, getVerticalPlane(robot, target)); 
     // std::cout << "Compute getVerticalPlane" << std::endl;
         auto plane = getVerticalPlane(robot,target); 
         Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);

@@ -99,10 +99,7 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
     auto t2 = high_resolution_clock::now();
     duration<float>fp_s = t2 - t1;
     float delta_t = fp_s.count();
-    //	sensor_msgs::PointCloud2ConstPtr msg;
-    //	cc->getPointCloud(msg);
-    //cc->getDataForDistanceinformation(grid_3D, msg, use_distance_function);
-	execution_times_parabola.push_back(delta_t);
+    execution_times_parabola.push_back(delta_t);
 	results_parabola.push_back(length_cat_final);
   }
   if (use_both || !use_parabola) {
@@ -130,48 +127,6 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
   }
   return is_found;
 }
-
-// bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
-// {
-//    bool is_founded;
-//    pts_c_.clear();
-//    	{ // Just to check a straigth line 
-// 		is_founded = NumericalSolutionCatenary(pi_, pf_ ,pts_c_);
-// 	}
-
-
-//     //Check for precomputing time
-//     if (a < 0.0 && cc->precomputing_time > 0.0) {
-//       planes_precomputing_time = a = cc->precomputing_time;
-//       delta_t -= a;
-//     } 
-//     execution_times_parabola.push_back(delta_t);
-//     results_parabola.push_back(length_cat_final);
-//   }
-//   if (!use_parabola || use_both) {
-//     auto t1 = high_resolution_clock::now();
-//     is_found = NumericalSolutionCatenary(pi_, pf_ ,pts_c_);
-
-//     float length_cat = 0.0;
-//     for (unsigned int i = 1; i < pts_c_.size() && is_found;i++) {
-//       auto &p1 = pts_c_[i];
-//       auto &p0 = pts_c_[i - 1];
-//       length_cat += sqrt( pow(p1.x - p0.x, 2.0) + pow(p1.y - p0.y, 2.0) +
-//                           pow(p1.z - p0.z, 2.0));
-//     }
-//     if (!is_found) {
-//       length_cat = -1.0;
-//     }
-//     auto t2 = high_resolution_clock::now();
-//     duration<float>fp_s = t2 - t1;
-//     float delta_t = fp_s.count();
-//     execution_times_bisection.push_back(delta_t);
-
-//     results_bisection.push_back(length_cat);
-//   }
-
-// 	return is_found;
-// }
 
 bool CatenaryCheckerManager::checkStraightCatenary(const geometry_msgs::Point &A,
                                                     const geometry_msgs::Point &B,
@@ -238,7 +193,7 @@ bool CatenaryCheckerManager::computeStraight(const geometry_msgs::Point &p_reel_
 	double dx_ = p_final_.x - p_reel_.x ;
 	double dy_ = p_final_.y - p_reel_.y ;
 	double dz_ = p_final_.z - p_reel_.z ;
-	int num_point_catenary = round( (double)10.0 * fabs(dz_));
+	int num_point_catenary = round( (double)10.0 * fabs(dist_init_final_));
 
     double x_step = dx_ / (double) num_point_catenary;
     double y_step = dy_ / (double) num_point_catenary;

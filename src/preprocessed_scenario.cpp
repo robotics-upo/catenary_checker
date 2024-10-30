@@ -69,44 +69,97 @@ void PreprocessedScenario::precompute(const PointCloud<PointXYZ> &pc) {
   const float increment = M_PI / static_cast<float>(_n_theta + 1);
 
   _scenarios.clear();
-  _problems.clear();
-
-  float angle = -M_PI * 0.5;
   // First we sample the angle
 
   auto pc_filtered = filterHeight(pc, 0.2);
+
+  pcl::PointXYZ min, max;
+  min.x = _min.x; min.y = _min.y; min.z = 0.0;
+  max.x = _max.x; max.y = _max.y; max.z = _max_z;
+
+  _scenarios.resize(_n_theta);
   
-  for (int i = 0; i < _n_theta; i++, angle += increment) {
-    vector<std::shared_ptr<Scenario> > planes;    
-    vector<TwoPoints> ps = getProblemsTheta(angle);
 
-    planes.resize(ps.size());
-    ROS_INFO("Theta %d of %d", i, _n_theta);
+  #pragma omp parallel for num_threads(24) shared(_scenarios) 
+  for (int i = 0; i < _n_theta; i++) {
+    PlaneParams p;
+    float angle = i * increment - M_PI * 0.5;
+    std::vector <std::shared_ptr<Scenario> > planes;
+    auto vec_points_2d = project2D_theta(angle, pc, min, max, p, _plane_dist);
 
-    // For each problem get the obstacles associated
-    int cont = 0;
-    #pragma omp parallel for num_threads(24) shared(pc_filtered, planes, ps, cont) 
-    for (cont = 0; cont < ps.size(); cont++) {
-      auto &x = ps[cont];
-      PointXYZ A(x.first.x, x.first.y, _max_z);
-      PointXYZ B(x.second.x, x.second.y, _max_z);
-      auto scene = PC2Obstacles(A,
-                                B,
-                                pc_filtered,
-                                _plane_dist,
-                                _db_min_points,
-                                _db_epsilon);
-      planes[cont] = scene;
+    planes.resize(vec_points_2d.size());
+    size_t s = vec_points_2d.size();
+    double min_d = p.d;
+    for (int i = 0; i < s ; i++) {
+      PlaneParams curr_plane = p;
+      curr_plane.d = min_d - i * _plane_dist;
+      simplifyCloud(vec_points_2d[i]);
+      auto dbscan = clusterize(vec_points_2d[i], _db_min_points, _db_epsilon);
+      planes[i] = getObstacles(dbscan, curr_plane);
+      
     }
-    #pragma omp barrier
-    _scenarios.push_back(planes);
-    _problems.push_back(ps);
+    _scenarios[i] = planes;
+    
   }
+  #pragma omp barrier
+
+  // #pragma omp barrier  
+  
   
   auto end = chrono::system_clock::now();
   duration<float, std::milli> duration = end - st;
   ROS_INFO("Precomputed scenarios. Expended time: %f s", duration.count() * milliseconds::period::num / milliseconds::period::den);
   ROS_INFO("Scenarios statistics: %s", getStats().c_str() );
+}
+
+void PreprocessedScenario::simplifyCloud(pcl::PointCloud<pcl::PointXY> &c, double min_dist) {
+  float min_x = 1e20;
+  float min_y = 1e20;
+  float max_x = -1e20;
+  float max_y = -1e20;
+  size_t s = c.points.size();
+  if (s == 0) {
+    return;
+  }
+  for (auto &x:c) {
+    min_x = std::min(min_x, x.x);
+    max_x = std::max(max_x, x.x);
+    min_y = std::min(min_y, x.y);
+    max_y = std::max(max_y, x.y);
+  }
+
+  float d_1 = 1.0 / min_dist;
+
+  int rows = (max_y - min_y) * d_1 + 1; 
+  int cols = (max_x - min_x) * d_1 + 1;
+
+  std::vector<std::vector <bool> > occupied(rows);
+
+  for (auto &x:occupied) {
+    x.resize(cols);
+    for (int i = 0; i < cols; i++) {
+      x[i] = false;
+    }
+  }
+
+  std::vector<int> to_be_cleared;
+  to_be_cleared.reserve(s);
+  for (int curr = 0; curr < s; curr++) {
+    int j = (c[curr].x - min_x) * d_1;
+    int i = (c[curr].y - min_y) * d_1;
+
+    if (!occupied[i][j])
+      occupied[i][j] = true;
+    else
+      to_be_cleared.push_back(curr);
+  }
+
+  for (int i = to_be_cleared.size() - 1; i >= 0; i--) {
+    auto x = c.points.begin();
+    x += to_be_cleared[i];
+    
+    c.points.erase(x);
+  }
 }
 
 //! @brief Gets the problems to sample the workspace with vertical planes in the theta direction
@@ -354,6 +407,7 @@ bool PreprocessedScenario::loadScenario(const std::string &file) {
       curr_vec.resize(n_scen);
 
       int j = 0;
+
       #pragma omp parallel for num_threads(24) shared(curr_vec) 
       for (j = 0; j < n_scen; j++) {
         std::shared_ptr<Scenario> s(new Scenario);
@@ -362,6 +416,7 @@ bool PreprocessedScenario::loadScenario(const std::string &file) {
         }
       }
       #pragma omp barrier
+      
       ROS_INFO("Loaded angle %d. Number of scenarios %d", i, static_cast<int>(curr_vec.size()));
       _scenarios.push_back(curr_vec);
       fs::current_path("..");
