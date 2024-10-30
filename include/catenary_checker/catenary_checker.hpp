@@ -54,7 +54,7 @@ DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &pc_2d, int minPts, float
 DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts,
 			 float epsilon, float gamma, float theta);
 
-std::shared_ptr<Scenario> getObstacles(DBSCAN *dbscan, pcl::PointXYZ A, pcl::PointXYZ B);
+std::shared_ptr<Scenario> getObstacles(DBSCAN *dbscan, const PlaneParams &p);
 
 Obstacle2D toObstacle(const std::vector<Point> &obs);
 

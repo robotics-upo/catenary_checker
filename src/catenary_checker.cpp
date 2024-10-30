@@ -67,7 +67,8 @@ std::shared_ptr<Scenario> PC2Obstacles(const pcl::PointXYZ &A, const pcl::PointX
 
   // Get the obstacles 2D clustered
   auto dbscan = clusterize(points_2d, dbscan_min_points, dbscan_epsilon);
-  return getObstacles(dbscan, A, B);
+  PlaneParams p = getVerticalPlane(A, B);
+  return getObstacles(dbscan, p);
 }
 
 DBSCAN *clusterize(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in, int minPts, float epsilon)
@@ -114,7 +115,7 @@ DBSCAN *clusterize_lines(const pcl::PointCloud<pcl::PointXY> &cloud_2d_in,
 }
 
 
-std::shared_ptr<Scenario> getObstacles(DBSCAN *dbscan, pcl::PointXYZ A, pcl::PointXYZ B) {
+std::shared_ptr<Scenario> getObstacles(DBSCAN *dbscan, const PlaneParams &p) {
   auto ret = std::make_shared<Scenario>();
   int dbscan_min_points = dbscan->getMinimumClusterSize();
   for (int i = 1; i < dbscan->getNClusters(); i++) {
@@ -124,17 +125,12 @@ std::shared_ptr<Scenario> getObstacles(DBSCAN *dbscan, pcl::PointXYZ A, pcl::Poi
       auto curr_obstacle = toObstacle(cluster);
       ret->push_back(curr_obstacle);
     }
+    ret->simplify();
   }
-  ret->origin.x = A.x;
-  ret->origin.y = A.y;
+  ret->unit_vec.x = -p.b;
+  ret->unit_vec.y = p.a;
 
-  float dx = B.x - A.x;
-  float dy = B.y - A.y;
-  float dist = sqrt(dx*dx + dy*dy);
-  ret->unit_vec.x = dx / dist;
-  ret->unit_vec.y = dy / dist;
-
-  ret->plane = getVerticalPlane(A,B);
+  ret->plane = p;
 
   return ret;
 }
