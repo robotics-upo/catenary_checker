@@ -46,9 +46,7 @@ public:
   }
 
   inline Point2D project2D(const pcl::PointXYZ &p) const {
-    float dist = getSignedDistance(p);
-    pcl:: PointXYZ p_plane(p.x - a*dist, p.y - b*dist, p.z);
-    return Point2D(p_plane.y * a - p_plane.x * b, p_plane.z);
+    return Point2D(p.y * a - p.x * b, p.z);
   }
 
 };
@@ -61,10 +59,23 @@ inline YAML::Emitter& operator << (YAML::Emitter &out, const PlaneParams &p) {
 }
 
 pcl::PointCloud<pcl::PointXY> project2D(const pcl::PointCloud<pcl::PointXYZ> &cloud_in,
-					const pcl::PointXYZ &p1, const pcl::PointXYZ &p2,
+					const pcl::PointXYZ &p1, const pcl::PointXYZ &p2, 
 					const float max_dist, const float min_z = 0.1);
 
+std::vector<pcl::PointCloud<pcl::PointXY> > project2D_theta(const float theta, const pcl::PointCloud<pcl::PointXYZ> &cloud_in,
+					const pcl::PointXYZ &min, const pcl::PointXYZ &max, PlaneParams &p, const float dist_planes, const float min_z = 0.1f);
+
+
 PlaneParams getVerticalPlane(const pcl::PointXYZ &p1, const pcl::PointXYZ &p2);
+
+inline PlaneParams getVerticalPlane(double theta) {
+  PlaneParams p;
+  p.c = p.d = 0.0;
+  p.a = -sin(theta);
+  p.b = cos(theta);
+
+  return p;
+}
 
 // 3D Reprojection
 
