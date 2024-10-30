@@ -22,7 +22,6 @@ int main(int argc, char **argv) {
 
   catenaryChecker cc(nh);
 
-  
   // Test the scenario preprocessing
   string file = "scenarios.tar.gz";
   if (argc > 1) {
@@ -45,6 +44,7 @@ int main(int argc, char **argv) {
         ros::spinOnce();
         loop_rate.sleep();
         ps->publishScenarios(cont++);
+        cont = cont % ps->_n_theta;
       
       }
     } else {
