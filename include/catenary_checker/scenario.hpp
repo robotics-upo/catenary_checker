@@ -1,6 +1,7 @@
 #pragma once
 
 #include <catenary_checker/point_2d.hpp>
+#include <catenary_checker/point_3d.hpp>
 #include <catenary_checker/obstacle_2d.hpp>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointField.h>
@@ -11,13 +12,18 @@
 #include <fstream>
 #include <visualization_msgs/MarkerArray.h>
 #include "2d_projection.hpp"
+#include "catenary_checker/grid3d.hpp"
 
 inline std_msgs::ColorRGBA getColor(int num);
 
 class Scenario:public std::vector<Obstacle2D> {
 public:
   PlaneParams plane; // Plane in which the obstacle was projected to
-  Point2D origin, unit_vec;
+  Point2D unit_vec;
+
+
+  //! @brief Key constructor: makes a projection from EDF in a discrete way between A and B (ignores the rest of the workspace)  
+  Scenario(Grid3d &grid, pcl::PointXYZ &A, pcl::PointXYZ &B, float res = 0.05f); 
 
   //! @brief Translates the pointcloud to a pointcloud
   inline sensor_msgs::PointCloud2 toPC(const std::string &frame_id, int seq = 0, float intensity = 1.0f) const;
@@ -42,6 +48,12 @@ public:
 
   inline bool loadScenario(const std::string &filename);
 
+  inline void simplify() {
+    for (auto &x:*this) {
+      x.simplify();
+    }
+  }
+
   inline std::string toString() const {
     std::string s;
 
@@ -52,6 +64,15 @@ public:
     return s;
   }
 };
+
+Scenario::Scenario(Grid3d &grid, pcl::PointXYZ &A, pcl::PointXYZ &B, float res = 0.05f) {
+  float height, width;
+  pcl::PointXYZ delta;
+
+  // delta = B - A;
+
+
+}
 
 inline sensor_msgs::PointCloud2 Scenario::toPC(const std::string &frame_id,
                                                int seq, float intensity) const {
@@ -117,27 +138,19 @@ inline visualization_msgs::MarkerArray Scenario::toMarkerArray(const std::string
  marker.id = seq;
  marker.ns = "point_cloud";
  marker.action = visualization_msgs::Marker::ADD;
-
- // First the point in the origin
- marker.type = visualization_msgs::Marker::SPHERE;
- marker.scale.x = marker.scale.y = marker.scale.z = 4.0;
- marker.pose.orientation.z = 0;
- marker.pose.position.x = origin.x;
- marker.pose.position.y = origin.y;
  marker.color = getColor(seq);
- msg.markers.push_back(marker);
-
+ 
  // Then the arrow
  marker.type = visualization_msgs::Marker::ARROW;
  marker.scale.x = marker.scale.y = marker.scale.z = 4.0;
  marker.pose.orientation.w = 1.0;
- marker.pose.position.x = origin.x;
- marker.pose.position.y = origin.y;
+ marker.pose.position.x = 0.0;
+ marker.pose.position.y = 0.0;
  geometry_msgs::Point g_p;
  marker.pose.position.x = 0.0;
  marker.pose.position.y = 0.0;
 
- g_p.x = origin.x; g_p.y = origin.y;
+ g_p.x = 0.0; g_p.y = 0.0;
  marker.points.push_back(g_p);
  g_p.x = unit_vec.x; g_p.y += unit_vec.y;
  marker.points.push_back(g_p);
@@ -171,12 +184,8 @@ inline bool Scenario::loadScenario(const std::string &filename) {
     std::ifstream ifs(filename.c_str());
 
     YAML::Node f = YAML::Load(ifs);
-    origin = Point2D(f["origin"]);
     unit_vec = Point2D(f["unit_vec"]);
     plane = PlaneParams(f["plane"]);
-
-    //printf("Load Scenario: Origin = %s. \t Unit vec: %s\n", origin.toString().c_str(),
-    //         unit_vec.toString().c_str());
 
     for (const auto &x:f["obstacles"]) {
       Obstacle2D o(x);
@@ -192,7 +201,6 @@ inline bool Scenario::loadScenario(const std::string &filename) {
 
 inline YAML::Emitter &operator << (YAML::Emitter &out, const Scenario &s) {
   out << YAML::BeginMap;
-  out << YAML::Key << "origin" << YAML::Value << s.origin;
   out << YAML::Key << "unit_vec" << YAML::Value << s.unit_vec;
   out << YAML::Key << "plane" << YAML::Value << s.plane;
   out << YAML::Key << "obstacles" << YAML::Value;
