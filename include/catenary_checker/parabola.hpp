@@ -6,6 +6,8 @@
 #include <QSplineSeries>
 #include "catenary_checker/scenario.hpp"
 
+class Scenario;
+
 // Stores a parabola of the form: y = ax² + bx + c
 class Parabola {
 public:

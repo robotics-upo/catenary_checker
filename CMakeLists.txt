@@ -105,6 +105,7 @@ add_library(${PROJECT_NAME}
    src/catenary_checker_node.cpp 
    src/catenary_checker_manager_node.cpp
    src/preprocessed_scenario.cpp
+   src/scenario.cpp
    src/solve_parabola_parameter.cpp
    src/solve_catenary_parameter.cpp
    src/solve_parabola_correction_parameter.cpp

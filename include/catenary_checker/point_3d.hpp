@@ -2,6 +2,7 @@
 #define POINT3D_CAT_CHECKER__
 #include <string>
 #include <sstream>
+#include <math.h>
 
 #include "yaml-cpp/yaml.h"
 
@@ -10,9 +11,10 @@ struct Point3D {    //define points for 2d plane
 
   Point3D(float _x = 0.0f, float _y = 0.0f, float _z = 0.0f):x(_x), y(_y), z(_z) {}
 
-  Point2D(const YAML::Node &e) {
+  Point3D(const YAML::Node &e) {
     x = e[0].as<float>();
     y = e[1].as<float>();
+    z = e[2].as<float>();
   }
 
   inline std::string toString() const {
