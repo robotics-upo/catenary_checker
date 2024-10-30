@@ -36,6 +36,8 @@ public:
   static Obstacle2D rectangle(const Point2D &v1, const Point2D &v2, float spacing = 0.1f);
 
   static Obstacle2D randomObstacle(const Point2D &p, int n_points, float std_dev = 1.0f);
+
+  void simplify(double min_dist = 0.05);
 };
 
 YAML::Emitter& operator << (YAML::Emitter &out, const Obstacle2D &o);

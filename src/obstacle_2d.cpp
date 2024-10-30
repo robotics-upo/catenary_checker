@@ -129,6 +129,52 @@ void Obstacle2D::fromYAML(const YAML::Node &n) {
   }
 }
 
+void Obstacle2D::simplify(double min_dist) {
+
+  float min_x = 1e20;
+  float min_y = 1e20;
+  float max_x = -1e20;
+  float max_y = -1e20;
+  for (auto &x:*this) {
+    min_x = std::min(min_x, x.x);
+    max_x = std::max(max_x, x.x);
+    min_y = std::min(min_y, x.y);
+    max_y = std::max(max_y, x.y);
+  }
+
+  int rows = (max_y - min_y) / min_dist + 1; 
+  int cols = (max_x - min_x) / min_dist + 1;
+
+  std::vector<std::vector <bool> > occupied(false);
+
+  occupied.resize(rows);
+  for (auto &x:occupied) {
+    x.resize(cols);
+    for (int i = 0; i < cols; i++) {
+      x[i] = false;
+    }
+  }
+
+  std::vector<int> to_be_cleared;
+  to_be_cleared.reserve(size());
+  for (int curr = 0; curr < size(); curr++) {
+    int j = (at(curr).x - min_x) / min_dist;
+    int i = (at(curr).y - min_y) / min_dist;
+
+    if (!occupied[i][j])
+      occupied[i][j] = true;
+    else
+      to_be_cleared.push_back(curr);
+  }
+
+  for (int i = to_be_cleared.size() - 1; i >= 0; i--) {
+    auto x = begin();
+    x += to_be_cleared[i];
+    
+    this->erase(x);
+  }
+}
+
 // Get scenario from file
 /*bool loadScenario(Scenario &scen_out, const string &filename) {
   bool ret_val = true;
@@ -151,3 +197,4 @@ void Obstacle2D::fromYAML(const YAML::Node &n) {
 
 }
 */
+
