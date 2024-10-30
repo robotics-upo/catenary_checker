@@ -97,5 +97,7 @@ public:
 
   visualization_msgs::MarkerArray getMarkerProblem(const pcl::PointXYZ &A, const pcl::PointXYZ &B);
 
+  void simplifyCloud(pcl::PointCloud<pcl::PointXY> &c, double dist = 0.05);
+
 
 };
