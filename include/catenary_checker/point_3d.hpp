@@ -4,6 +4,9 @@
 #include <sstream>
 #include <math.h>
 
+#include <pcl/pcl_base.h>
+#include <pcl/point_types.h>
+
 #include "yaml-cpp/yaml.h"
 
 struct Point3D {    //define points for 2d plane
@@ -37,7 +40,30 @@ struct Point3D {    //define points for 2d plane
     }
   }
 
+    inline pcl::PointXYZ toPCL() const {
+        pcl::PointXYZ p;
+        p.x = x; p.y = y; p.z = z;
+
+        return p;
+    }
+    
 };
+
+//! addition operator (adds each coordinate)
+inline Point3D operator+(const Point3D &left, const Point3D &right) {
+    return Point3D(left.x + right.x, left.y + right.y, left.z + right.z);
+}
+
+//! substraction operator (substracts each coordinate)
+
+inline Point3D operator-(const Point3D &left, const Point3D &right) {
+    return Point3D(left.x - right.x, left.y - right.y, left.z - right.z);
+}
+
+//! Opposite
+inline Point3D operator-(const Point3D &p) {
+    return Point3D(-p.x, -p.y, -p.z);
+}
 
 inline YAML::Emitter& operator << (YAML::Emitter &out, const Point3D &p) {
   out << YAML::Flow;
@@ -45,6 +71,5 @@ inline YAML::Emitter& operator << (YAML::Emitter &out, const Point3D &p) {
 
   return out;
 }
-
 
 #endif
