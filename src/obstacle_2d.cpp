@@ -19,7 +19,8 @@ void Obstacle2D::calculateConvexHull() {
 bool Obstacle2D::intersects(std::function<float (float) > &func, double x_min, double x_max) const {
   bool exist_lower = false;
   bool exist_up = false;
-  for (size_t p = 0; p < size();p++) {
+  bool intersects = false;
+  for (size_t p = 0; p < size() && !intersects;p++) {
     if (at(p).x < x_min || at(p).x > x_max) {
       continue; // We only take into account the obstacles between the desired Xs 
     }
@@ -27,10 +28,9 @@ bool Obstacle2D::intersects(std::function<float (float) > &func, double x_min, d
     float fy = func(at(p).x);
     exist_up |= fy < at(p).y;
     exist_lower |= fy > at(p).y;
-    if (exist_lower && exist_up)
-      return true;
+    intersects = exist_lower && exist_up;
   }
-  return false;
+  return intersects;
 }
 
 void Obstacle2D::add(const Obstacle2D &obstacle) {
@@ -174,27 +174,3 @@ void Obstacle2D::simplify(double min_dist) {
     this->erase(x);
   }
 }
-
-// Get scenario from file
-/*bool loadScenario(Scenario &scen_out, const string &filename) {
-  bool ret_val = true;
-
-  try {
-    ifstream ifs(filename.c_str());
-
-    YAML::Node f = YAML::Load(ifs);
-
-    for (const auto &x:f) {
-      Obstacle2D o(x);
-
-      scen_out.push_back(o);
-    }
-  } catch (exception &e) {
-    cerr << "Could not load scenario. e: " << e.what() << endl;
-  }
-
-  return ret_val;
-
-}
-*/
-
