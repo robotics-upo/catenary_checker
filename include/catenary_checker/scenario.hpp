@@ -26,7 +26,7 @@ public:
 
 
   //! @brief Key constructor: makes a projection from EDF in a discrete way between A and B (ignores the rest of the workspace)  
-  Scenario(Grid3d &grid, pcl::PointXYZ &A, pcl::PointXYZ &B, float res = 0.05f); 
+  Scenario(Grid3d &grid, Point3D &A, Point3D &B, float min_dist = 0.2f, float res = 0.05f); 
 
   //! @brief Translates the pointcloud to a pointcloud
   sensor_msgs::PointCloud2 toPC(const std::string &frame_id, int seq = 0, float intensity = 1.0f) const;

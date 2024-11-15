@@ -1,11 +1,60 @@
 #include <catenary_checker/scenario.hpp>
 
-Scenario::Scenario(Grid3d &grid, pcl::PointXYZ &A, pcl::PointXYZ &B, float res) {
+Scenario::Scenario(Grid3d &grid, Point3D &A, Point3D &B, float min_dist, float res) {
   float height, width;
-  pcl::PointXYZ delta;
+  
+  // Get the vertical plane
+  Point3D delta = B - A;
+  Point3D direction = delta;
+  direction.normalize(res);
 
-  // delta = B - A;
+  
+  plane = getVerticalPlane(A.toPCL(), B.toPCL());
 
+  Point2D init, end, curr;
+  init = p.project2D(A);
+  end = p.project2D(B);
+
+  int i = 0, j = 0;
+  vector<vector <int> > grid;
+  grid.resize(ceil(delta.y / res));
+  for (int i = 0; i < grid.size(); i++) {
+    grid[i].resize(ceil(data.x /res));
+    for (int j = 0; j < grid[i].size(); j++) {
+      grid[i][j] = 0;
+    }
+  }
+
+  int n_obstacles = 0;
+  for (i = 0, curr = init; curr.y < end.y; curr.y += res ) {
+    for (j = 0,curr.x = init.x; curr.x < end.x; curr.x += res) {
+      Point3D curr_3d = p.project3D(curr);
+
+      if (grid.isIntoMap(curr_3d.x, curr_3d.y, curr_3d.z)) {
+        if (grid.getPointDist(curr_3d.x, curr_3d.y, curr_3d.y) < min_dist) {
+          // First we have to see if there is an obstacle nearby
+          grid[i][j] = 1;
+
+          // Push the obstacle, b
+          if (i > 0 && grid[i-1][j] != 0) {
+            grid[i][j] = grid[i - 1][j];
+            at(grid[i][j]).push_back(curr);
+          } else if (j > 0 && grid[i][j-1] != 0) {
+            grid[i][j] = grid[i][j - 1];
+            at(grid[i][j]).push_back(curr);
+          }
+          else {
+            // New obstacles
+            Obstacle2D o;
+            o.push_back(curr);
+            push_back(o);
+            grid[i][j] = ++n_obstacles;
+          }
+        }
+      }
+    }
+
+  }
 
 }
 
