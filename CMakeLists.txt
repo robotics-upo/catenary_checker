@@ -134,6 +134,7 @@ target_link_libraries(${PROJECT_NAME}
 add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp )
 add_executable(test_catenary_checker src/test_catenary_checker.cpp)
 add_executable(test_preprocessed_scenario src/test_preprocessed_scenario.cpp)
+add_executable(test_scenario src/test_scenario.cpp)
 add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp)
 
 # add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
@@ -153,6 +154,7 @@ target_link_libraries(test_catenary_fit ${PROJECT_NAME} dbscan_line ${catkin_LIB
 # add_dependencies(${PROJECT_NAME}_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(test_catenary_checker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME})
 add_dependencies(test_preprocessed_scenario ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME})
+add_dependencies(test_scenario ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME})
 add_dependencies(${PROJECT_NAME}_manager_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
@@ -182,6 +184,16 @@ target_link_libraries(test_preprocessed_scenario
    Qt5::Widgets
    ${EXTERNAL_LIBRARIES}   
    )
+
+   target_link_libraries(test_scenario
+   ${PROJECT_NAME}
+   ${catkin_LIBRARIES}
+   dbscan_line
+   Qt5::Charts
+   Qt5::Widgets
+   ${EXTERNAL_LIBRARIES}   
+   )
+
 
 target_link_libraries(catenary_checker_manager_node
    ${catkin_LIBRARIES}
