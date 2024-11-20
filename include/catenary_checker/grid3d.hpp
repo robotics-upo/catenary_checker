@@ -42,6 +42,11 @@ struct TrilinearParams
 
 class Grid3d
 {
+public: 
+	pcl::PointCloud<pcl::PointXYZ>::Ptr getPointCloud() const {
+		return m_cloud;
+	}
+
 private:
 	
 	// Ros parameters
