@@ -52,6 +52,13 @@ void catenaryChecker::getPointCloud(const sensor_msgs::PointCloud2::ConstPtr& pc
   ROS_INFO(PRINTF_YELLOW "catenaryChecker::getPointCloud: Received Point Cloud heigth=%i width=%i",pc->height, pc->width);
 }
 
+bool catenaryChecker::checkCatenaryScenario(const Point3D &A, const Point3D &B, const Grid3d &grid, std::vector<geometry_msgs::Point> &pts_c_) {
+  Scenario s(grid, A, B, min_dist_obs_cat, 0.05);
+
+
+  return false; // TODO: complete
+}
+
 //! Gets a point and checks if there exists
 bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
 {
@@ -61,7 +68,7 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
   pts_c_.clear();
 
   if (debug) {
-    ROS_INFO(PRINTF_YELLOW "AnalyticalChekcCatenary: pi = %f %f %f. pf = %f %f %f", pi_.x, pi_.y, pi_.z, pf_.x, pf_.y, pf_.z);
+    ROS_INFO(PRINTF_YELLOW "AnalyticalCheckCatenary: pi = %f %f %f. pf = %f %f %f", pi_.x, pi_.y, pi_.z, pf_.x, pf_.y, pf_.z);
   }
 
   pcl::PointXYZ robot(static_cast<float>(pi_.x),

@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
         loop_rate.sleep();
       }
 
-      cc.getPointCloud(ps->_pc);
+      cc.getPointCloud(ps->_pc); // Set the pointcloud
  
       while(ros::ok()) {
         cout << "Please enter A: ";

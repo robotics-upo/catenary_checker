@@ -40,6 +40,8 @@ public:
                                      const sensor_msgs::PointCloud2::ConstPtr& msg,
                                      bool use_distance_function_);
 
+  bool checkCatenaryScenario(const Point3D &A, const Point3D &B, const Grid3d &grid, std::vector<geometry_msgs::Point> &pts_c_);
+
   bool precomputePlanes();
 
   std_msgs::ColorRGBA getColor(int num);

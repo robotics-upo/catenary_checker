@@ -1,50 +1,60 @@
 #include <catenary_checker/scenario.hpp>
 
-Scenario::Scenario(Grid3d &grid, Point3D &A, Point3D &B, float min_dist, float res) {
+Scenario::Scenario(const Grid3d &grid3d, const Point3D &A, const Point3D &B, float min_dist, float res) {
   float height, width;
   
   // Get the vertical plane
   Point3D delta = B - A;
   Point3D direction = delta;
   direction.normalize(res);
-
   
   plane = getVerticalPlane(A.toPCL(), B.toPCL());
 
   Point2D init, end, curr;
-  init = p.project2D(A);
-  end = p.project2D(B);
+  init = plane.project2D(A.toPCL());
+  end = plane.project2D(B.toPCL());
+
+  init.y = 0.0;
+  end.y = 6.0;
+
+  if (init.x > end.x) {
+    float aux = init.x;
+    init.x = end.x;
+    end.x = aux;
+  }
 
   int i = 0, j = 0;
   vector<vector <int> > grid;
-  grid.resize(ceil(delta.y / res));
+  grid.resize(ceil(end.y / res));
   for (int i = 0; i < grid.size(); i++) {
-    grid[i].resize(ceil(data.x /res));
+    grid[i].resize(ceil((end.x - init.x) /res));
     for (int j = 0; j < grid[i].size(); j++) {
       grid[i][j] = 0;
     }
   }
 
   int n_obstacles = 0;
-  for (i = 0, curr = init; curr.y < end.y; curr.y += res ) {
-    for (j = 0,curr.x = init.x; curr.x < end.x; curr.x += res) {
-      Point3D curr_3d = p.project3D(curr);
+  for (i = 0, curr = init; curr.y < end.y; curr.y += res, i++ ) {
+    for (j = 0, curr.x = init.x; curr.x < end.x; curr.x += res, j++) {
+      pcl::PointXYZ curr_3d = plane.project3D(curr);
 
-      if (grid.isIntoMap(curr_3d.x, curr_3d.y, curr_3d.z)) {
-        if (grid.getPointDist(curr_3d.x, curr_3d.y, curr_3d.y) < min_dist) {
-          // First we have to see if there is an obstacle nearby
-          grid[i][j] = 1;
+      if (grid3d.isIntoMap(curr_3d.x, curr_3d.y, curr_3d.z)) {
+        // ROS_INFO("Generating Scenario. Current Point: %f, %f, %f. Distance: %f", curr_3d.x, curr_3d.y, curr_3d.z, grid3d.getPointDist(curr_3d.x, curr_3d.y, curr_3d.z));
 
-          // Push the obstacle, b
-          if (i > 0 && grid[i-1][j] != 0) {
+        if (grid3d.getPointDist(curr_3d.x, curr_3d.y, curr_3d.z) < min_dist) {
+          // First we have to see if there is a neighbor obstacle previously detected
+          if (i > 0 && grid[i - 1][j] != 0) {
+            ROS_INFO("Updating obstacle (row). ID: %d", grid[i - 1][j]);
+            
             grid[i][j] = grid[i - 1][j];
-            at(grid[i][j]).push_back(curr);
-          } else if (j > 0 && grid[i][j-1] != 0) {
+            at(grid[i][j] - 1).push_back(curr);
+          } else if (j > 0 && grid[i][j - 1] != 0) {
+            ROS_INFO("Updating obstacle (column). ID: %d", grid[i][j - 1]);
             grid[i][j] = grid[i][j - 1];
-            at(grid[i][j]).push_back(curr);
-          }
-          else {
+            at(grid[i][j] - 1).push_back(curr);
+          } else {
             // New obstacles
+            ROS_INFO("New obstacle. N_obstacles: %d", n_obstacles);
             Obstacle2D o;
             o.push_back(curr);
             push_back(o);
@@ -53,9 +63,7 @@ Scenario::Scenario(Grid3d &grid, Point3D &A, Point3D &B, float min_dist, float r
         }
       }
     }
-
   }
-
 }
 
 sensor_msgs::PointCloud2 Scenario::toPC(const std::string &frame_id,
