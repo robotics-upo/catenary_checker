@@ -9,8 +9,8 @@
   <node pkg="tf" type="static_transform_publisher" name="odom_tf" args="$(arg robot_x) $(arg robot_y) $(arg robot_z) 0 0 0 map base_link 10" />
 
 
-  <arg name="target_x" default="1.25"/>
-  <arg name="target_y" default="7.2"/>
+  <arg name="target_x" default="-3.25"/>
+  <arg name="target_y" default="-2.0"/>
   <arg name="target_z" default="3.0"/>
 
   # Stage 1 map conf
@@ -28,7 +28,8 @@
   <arg name="debug" default="false"/>
   <arg name="pref_debug" default="" unless="$(arg debug)"/>
   <arg name="pref_debug" default="xterm -e gdb --args" if="$(arg debug)"/>
-  <node name="test_scenario" pkg="catenary_checker" type="test_scenario" output="screen" args=""  launch-prefix="$(arg pref_debug)" >
+  <node name="test_scenario" pkg="catenary_checker" type="test_scenario" output="screen" 
+        args="$(arg robot_x) $(arg robot_y) $(arg robot_z) $(arg target_x) $(arg target_y) $(arg target_z) $(arg plane_dist)"  launch-prefix="$(arg pref_debug)" >
     <rosparam command="load" file="$(find marsupial_optimizer)/cfg/$(arg map)_ws.yaml"/>
     <remap from="point_cloud" to="octomap_point_cloud_centers"/>
     <param name="plane_dist" value="$(arg plane_dist)"/>
