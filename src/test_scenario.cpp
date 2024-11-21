@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 
     ros::Publisher marker_publisher = nh->advertise<visualization_msgs::MarkerArray>("scenario", 2, true);
 
-    marker_publisher.publish(s.toMarkerArray("map"));
+    marker_publisher.publish(s.toMarkerArray("map", 0, true));
 
     ros::spin();
 

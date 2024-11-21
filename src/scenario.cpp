@@ -33,6 +33,8 @@ Scenario::Scenario(const Grid3d &grid3d, const Point3D &A, const Point3D &B, flo
     }
   }
 
+  int max_j = ceil((end.x - init.x) / res);
+
   int n_obstacles = 0;
   for (i = 0, curr = init; curr.y < end.y; curr.y += res, i++ ) {
     for (j = 0, curr.x = init.x; curr.x < end.x; curr.x += res, j++) {
@@ -51,6 +53,14 @@ Scenario::Scenario(const Grid3d &grid3d, const Point3D &A, const Point3D &B, flo
           } else if (j > 0 && grid[i][j - 1] != 0) {
             ROS_INFO("Updating obstacle (column). ID: %d", grid[i][j - 1]);
             grid[i][j] = grid[i][j - 1];
+            at(grid[i][j] - 1).push_back(curr);
+          } else if (i > 0 && j > 0 && grid[i - 1][j - 1] != 0) {
+            ROS_INFO("Updating obstacle (column). ID: %d", grid[i][j - 1]);
+            grid[i][j] = grid[i - 1][j - 1];
+            at(grid[i][j] - 1).push_back(curr);
+          } else if (j < max_j - 1 &&  i > 0 && grid[i][j - 1] != 0) {
+            ROS_INFO("Updating obstacle (column). ID: %d", grid[i][j - 1]);
+            grid[i][j] = grid[i - 1][j + 1];
             at(grid[i][j] - 1).push_back(curr);
           } else {
             // New obstacles
@@ -117,7 +127,7 @@ sensor_msgs::PointCloud2 Scenario::toPC(const std::string &frame_id,
 }
 
 visualization_msgs::MarkerArray Scenario::toMarkerArray(const std::string &frame_id,
-                                               int seq) const {
+                                               int seq, bool different_color) const {
  visualization_msgs::MarkerArray msg;
  visualization_msgs::Marker marker;
     
@@ -151,19 +161,27 @@ visualization_msgs::MarkerArray Scenario::toMarkerArray(const std::string &frame
  // Add the sphere list
  marker.type = visualization_msgs::Marker::SPHERE_LIST;
  marker.scale.x = marker.scale.y = marker.scale.z = 0.2;
- marker.points.resize(getTotalPoints());
- int i = 0;
+ 
+ int n_obs = 0;
  for (const Obstacle2D &o:*this) {
+   int i = 0;
+   if (different_color) {
+     marker.id = n_obs;
+     marker.color = getColor(n_obs++);
+   }
+   marker.points.resize(o.size());
    for (const Point2D &p:o) {
      pcl::PointXYZ p3 = to3D(p);
+
      g_p.x = p3.x;
      g_p.y = p3.y;
      g_p.z = p3.z;
 
      marker.points[i++] = g_p;
    }
+   msg.markers.push_back(marker);
  }
- msg.markers.push_back(marker);
+ 
 
  return msg;
 }

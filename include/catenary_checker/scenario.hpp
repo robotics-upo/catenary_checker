@@ -31,7 +31,7 @@ public:
   //! @brief Translates the pointcloud to a pointcloud
   sensor_msgs::PointCloud2 toPC(const std::string &frame_id, int seq = 0, float intensity = 1.0f) const;
 
-  visualization_msgs::MarkerArray toMarkerArray(const std::string &frame_id, int seq = 0) const;
+  visualization_msgs::MarkerArray toMarkerArray(const std::string &frame_id, int seq = 0, bool different_color = false) const;
 
   inline Point2D to2D(const pcl::PointXYZ &p) const {
     return plane.project2D(p);
