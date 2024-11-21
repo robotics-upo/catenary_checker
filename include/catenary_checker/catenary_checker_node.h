@@ -21,9 +21,7 @@
 #define PRINTF_GREEN "\x1B[32m"
 
 class catenaryChecker{
-
 public:
-
   catenaryChecker(ros::NodeHandlePtr nh);
   visualization_msgs::Marker pointsToMarker(const std::vector<Point> &points,
                                             const std::string frame_id, int n_lines = -1);
@@ -40,7 +38,8 @@ public:
                                      const sensor_msgs::PointCloud2::ConstPtr& msg,
                                      bool use_distance_function_);
 
-  bool checkCatenaryScenario(const Point3D &A, const Point3D &B, const Grid3d &grid, std::vector<geometry_msgs::Point> &pts_c_);
+  bool checkCatenaryScenario(const pcl::PointXYZ &A, const pcl::PointXYZ &B, 
+                             const Grid3d &grid, std::vector<geometry_msgs::Point> &pts_c_);
 
   bool precomputePlanes();
 

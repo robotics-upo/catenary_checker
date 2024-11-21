@@ -52,11 +52,34 @@ void catenaryChecker::getPointCloud(const sensor_msgs::PointCloud2::ConstPtr& pc
   ROS_INFO(PRINTF_YELLOW "catenaryChecker::getPointCloud: Received Point Cloud heigth=%i width=%i",pc->height, pc->width);
 }
 
-bool catenaryChecker::checkCatenaryScenario(const Point3D &A, const Point3D &B, const Grid3d &grid, std::vector<geometry_msgs::Point> &pts_c_) {
-  Scenario s(grid, A, B, min_dist_obs_cat, 0.05);
+bool catenaryChecker::checkCatenaryScenario(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Grid3d &grid, std::vector<geometry_msgs::Point> &pts_c_) {
+  bool ret_val = false;
 
+  Scenario s(grid, Point3D::fromPCL(A), Point3D::fromPCL(B), 0.05, 0.05);
 
-  return false; // TODO: complete
+    
+  Point2D A_2d = s.plane.project2D(A);
+  Point2D B_2d = s.plane.project2D(B);
+
+  Parabola p;
+
+  ret_val = p.approximateParabola(s, A_2d, B_2d);
+
+  pcl::PointCloud<pcl::PointXYZ> points;
+  if (ret_val) {
+    length_cat = getParabolaPoints(p, A, B, points);
+
+    geometry_msgs::Point pts_; // To save Catenary point
+    pts_c_.clear();
+    for (size_t i = 0 ; i < points.size() ; i ++){
+      pts_.x = points.points[points.size()-(1+i)].x; 
+      pts_.y = points.points[points.size()-(1+i)].y; 
+      pts_.z = points.points[points.size()-(1+i)].z; 
+      pts_c_.push_back(pts_);
+    }
+  }
+
+  return ret_val;
 }
 
 //! Gets a point and checks if there exists
@@ -105,106 +128,7 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
   if (precomputed_file != "") {
     ret_val = precomputedCheckCatenary(robot, target, pts_c_);
   } else {
-    // If not, we compute the obstacles in the plane
-    // and then check for Parabola
-    
-    if (pc == NULL) { 
-      ROS_ERROR("Cloud not configured");
-      return false;
-    }
-    DBSCAN *dbscan = NULL;
-
-    pcl::PointCloud<pcl::PointXYZ> pcl_pc;
-    pcl::PCLPointCloud2 pcl_pc2;
-
-    pcl_conversions::toPCL(*pc,pcl_pc2);
-    pcl::fromPCLPointCloud2(pcl_pc2, pcl_pc); // TODO: Avoid conversions!!
-      
-    std::cout << "catenaryChecker::getPointCloud: Robot:[" << robot.x << "," << robot.y << "," << robot.z << "] , Target:[" << target.x << "," << target.y << "," << target.z << "]" << std::endl;
-    std::cout << "Preparando para calcular Plano 2D" << std::endl;
-
-    auto points_2d = project2D(pcl_pc, robot, target, plane_dist);
-    // ROS_INFO("Obtained 2D cloud projection. Number of points: %lu", points_2d.size());
-    if (publish_pc) {
-      std::cout << "Preparando para calcular Plano 3D" << std::endl;
-      auto points_3d = reproject3D(points_2d, robot, target);
-      pcl::toPCLPointCloud2(points_3d, pcl_pc2);
-          
-      sensor_msgs::PointCloud2 out_pc2;
-      pcl_conversions::moveFromPCL(pcl_pc2, out_pc2);
-      out_pc2.header.stamp = ros::Time::now();
-      out_pc2.header.seq = seq++;
-      out_pc2.header.frame_id = global_frame;
-
-      pc_publisher.publish(out_pc2);
-      std::cout << "Plano 3D calculado" << std::endl;
-    }
-    std::cout << "Preparando CLUSTERIZE" << std::endl;
-    if (use_dbscan_lines) {
-      dbscan = clusterize_lines(points_2d, dbscan_min_points, dbscan_epsilon, dbscan_gamma, dbscan_theta);
-    } else {
-      dbscan = clusterize(points_2d, dbscan_min_points, dbscan_epsilon);
-    }
-    std::cout << "Hecho el CLUSTERIZE" << std::endl;
-
-    // ROS_INFO("Clusterized with DBSCAN. N_clusters: %d. \tN_points: %lu",dbscan->getNClusters(), dbscan->getPoints().size());
-    if (publish_marker) {
-      marker_publisher.publish(pointsToMarker(dbscan->getPoints(), global_frame, 1000));
-    }
-
-    int num_pts_per_unit_length = 10;
-      
-      
-    if ( (fabs(robot.x - target.x) < 0.01) && (fabs(robot.y == target.y) < 0.01 ) )
-      {
-        length_cat = fabs(robot.z - target.z) *1.01;
-        // std::cout << "catenaryChecker::getPointCloud -if- length_cat= " << length_cat << std::endl;
-        int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
-        for (size_t i = 0 ; i < num_pts_cat_ ; i ++){
-          pts_.x = robot.x; 
-          pts_.y = robot.y; 
-          pts_.z = robot.z + (length_cat/num_pts_cat_)*(i+1); 
-          pts_c_.push_back(pts_);
-          // double dist_cat_obs = getPointDistanceFullMap(use_distance_function, pts_);
-          // if (d_min_point_cat > dist_cat_obs){
-          //   min_dist_obs_cat = dist_cat_obs;
-          //   d_min_point_cat = dist_cat_obs;
-          // }
-        }
-        min_dist_obs_cat = -1.0;
-        std::cout << "Parabola en 1 plano Calculada" << std::endl;
-      }
-    else
-      {
-        std::cout << "Compute Obstacles using DBSCAN" << std::endl;
-        //Tranlate to Obstacles 2D
-        std::shared_ptr<Scenario> scenario = getObstacles(dbscan, getVerticalPlane(robot, target)); 
-    // std::cout << "Compute getVerticalPlane" << std::endl;
-        auto plane = getVerticalPlane(robot,target); 
-        Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
-        Point2D B(target.y * plane.a - target.x * plane.b, target.z);
-  // std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
-        Parabola parabola;
-        ret_val = parabola.approximateParabola(*scenario, A, B);
-        if (ret_val) {
-        // Represent parabola and get min distance to obstacles
-            // ROS_INFO("Got parabola: %s", parabola.toString().c_str()); 
-          pcl::PointCloud<pcl::PointXYZ> pc_catenary;
-          length_cat = getParabolaPoints(parabola, robot, target, pc_catenary);
-          std::cout << "Parabola en 1 plano Calculada. Length cat = " << length_cat << std::endl;
-
-          for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
-            // if (i%quot == 0){
-            pts_.x = pc_catenary.points[pc_catenary.size()-(1+i)].x; 
-            pts_.y = pc_catenary.points[pc_catenary.size()-(1+i)].y; 
-            pts_.z = pc_catenary.points[pc_catenary.size()-(1+i)].z; 
-            pts_c_.push_back(pts_);
-          }
-          min_dist_obs_cat = -1.0;
-        }
-        
-      }
-    delete dbscan;
+    ret_val = checkCatenaryScenario(robot, target, *grid_3D, pts_c_);
   }
   
   get_catenary = ret_val;
@@ -256,16 +180,7 @@ bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
   return get_catenary;
 
   // pcl::PointCloud<pcl::PointXYZ> pc_catenary;
-  // length_cat = getParabolaPoints(ps->_parabola, pi_, pf_, pc_catenary);
-
-  // geometry_msgs::Point pts_; // To save Catenary point
-  // pts_c_.clear();
-  // for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
-  //   pts_.x = pc_catenary.points[pc_catenary.size()-(1+i)].x; 
-  //   pts_.y = pc_catenary.points[pc_catenary.size()-(1+i)].y; 
-  //   pts_.z = pc_catenary.points[pc_catenary.size()-(1+i)].z; 
-  //   pts_c_.push_back(pts_);
-  // }
+  
 }
 
 std_msgs::ColorRGBA catenaryChecker::getColor(int num) {
@@ -425,4 +340,3 @@ void catenaryChecker::getDataForDistanceinformation(Grid3d *grid3D_,
   nn_obs.setInput(*msg);
   use_distance_function = use_distance_function_;
 }
-

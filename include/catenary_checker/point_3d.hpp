@@ -46,6 +46,13 @@ struct Point3D {    //define points for 2d plane
 
         return p;
     }
+
+    inline static Point3D fromPCL(const pcl::PointXYZ &p) {
+      Point3D ret;
+      ret.x = p.x; ret.y = p.y; ret.z = p.z;
+
+      return ret;
+    }
     
 };
 
