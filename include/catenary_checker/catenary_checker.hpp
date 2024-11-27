@@ -37,6 +37,9 @@ float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const pcl::P
 //! @return The parabola length
 float getParabolaPoints(Parabola &parabola, const pcl::PointXYZ &A, const pcl::PointXYZ &B, pcl::PointCloud<pcl::PointXYZ> &par_points, float delta_t=0.05);
 
+float getParabolaPoints(Parabola &parabola, const Point3D &A, const Point3D &B, 
+                      std::vector<geometry_msgs::Point> &points, float delta_t = 0.05f);
+
 //! @brief Deprecated: Makes a preprocess of several planes in a given (x,y) position (UGV fixed)
 //! @param A First point (fixed)
 //! @param pc Point cloud where the obstacles will be obtained

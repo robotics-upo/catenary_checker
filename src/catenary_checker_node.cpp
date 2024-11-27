@@ -65,18 +65,8 @@ bool catenaryChecker::checkCatenaryScenario(const pcl::PointXYZ &A, const pcl::P
 
   ret_val = p.approximateParabola(s, A_2d, B_2d);
 
-  pcl::PointCloud<pcl::PointXYZ> points;
   if (ret_val) {
-    length_cat = getParabolaPoints(p, A, B, points);
-
-    geometry_msgs::Point pts_; // To save Catenary point
-    pts_c_.clear();
-    for (size_t i = 0 ; i < points.size() ; i ++){
-      pts_.x = points.points[points.size()-(1+i)].x; 
-      pts_.y = points.points[points.size()-(1+i)].y; 
-      pts_.z = points.points[points.size()-(1+i)].z; 
-      pts_c_.push_back(pts_);
-    }
+    length_cat = getParabolaPoints(p, Point3D::fromPCL(A), Point3D::fromPCL(B), pts_c_);
   }
 
   return ret_val;

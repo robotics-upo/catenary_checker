@@ -46,20 +46,20 @@ Scenario::Scenario(const Grid3d &grid3d, const Point3D &A, const Point3D &B, flo
         if (grid3d.getPointDist(curr_3d.x, curr_3d.y, curr_3d.z) < min_dist) {
           // First we have to see if there is a neighbor obstacle previously detected
           if (i > 0 && grid[i - 1][j] != 0) {
-            ROS_INFO("Updating obstacle (row). ID: %d", grid[i - 1][j]);
+            // ROS_INFO("Updating obstacle (row). ID: %d", grid[i - 1][j]);
             
             grid[i][j] = grid[i - 1][j];
             at(grid[i][j] - 1).push_back(curr);
           } else if (j > 0 && grid[i][j - 1] != 0) {
-            ROS_INFO("Updating obstacle (column). ID: %d", grid[i][j - 1]);
+            // ROS_INFO("Updating obstacle (column). ID: %d", grid[i][j - 1]);
             grid[i][j] = grid[i][j - 1];
             at(grid[i][j] - 1).push_back(curr);
           } else if (i > 0 && j > 0 && grid[i - 1][j - 1] != 0) {
-            ROS_INFO("Updating obstacle (column). ID: %d", grid[i][j - 1]);
+            // ROS_INFO("Updating obstacle (column). ID: %d", grid[i - 1][j - 1]);
             grid[i][j] = grid[i - 1][j - 1];
             at(grid[i][j] - 1).push_back(curr);
-          } else if (j < max_j - 1 &&  i > 0 && grid[i][j - 1] != 0) {
-            ROS_INFO("Updating obstacle (column). ID: %d", grid[i][j - 1]);
+          } else if (j < max_j - 1 &&  i > 0 && grid[i - 1][j + 1] != 0) {
+            // ROS_INFO("Updating obstacle (column). ID: %d", grid[i][j + 1]);
             grid[i][j] = grid[i - 1][j + 1];
             at(grid[i][j] - 1).push_back(curr);
           } else {

@@ -32,6 +32,28 @@ float getParabolaPoints(Parabola &parabola, const pcl::PointXYZ &A, const pcl::P
   return length;
 }
 
+float getParabolaPoints(Parabola &parabola, const Point3D &A, const Point3D &B, 
+                      std::vector<geometry_msgs::Point> &points, float delta_t) {
+
+  // Project to 2D the init and goal points
+  auto plane = getVerticalPlane(A.toPCL(), B.toPCL());
+  Point2D A_ = plane.project2D(A);
+  Point2D B_ = plane.project2D(B);
+
+  auto parabola2d_points = parabola.getPoints(A_.x, B_.x, delta_t);
+  float length = 0.0f;
+  
+
+  // Simon: This is an example to get the 3D parabola:
+  points.resize(parabola2d_points.size());
+  for (int i = parabola2d_points.size(); i >= 0; i--) {
+    points[i] = plane.project3D_p(parabola2d_points[i]);
+  }
+
+  return parabola.getLength(A_.x, B_.x);
+
+}
+
 float checkCatenary(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Scenario &scenario) {
   double ret_val = -1.0;
 
