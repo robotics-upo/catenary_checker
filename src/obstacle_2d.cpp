@@ -13,7 +13,15 @@ Obstacle2D::Obstacle2D():std::vector<Point2D>() {}
 Obstacle2D::Obstacle2D(const Obstacle2D &points):std::vector<Point2D>(points) {}
 
 void Obstacle2D::calculateConvexHull() {
-  convex_hull = findConvexHull(*this);
+  if (size() > 3) {
+    convex_hull = findConvexHull(*this);
+  }
+  else {
+    convex_hull.clear();
+    for (auto &x:*this) {
+      convex_hull.push_back(x);
+    }
+  }
 }
 
 bool Obstacle2D::intersects(std::function<float (float) > &func, double x_min, double x_max) const {
