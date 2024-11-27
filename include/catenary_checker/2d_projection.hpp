@@ -3,6 +3,7 @@
 #include <dbscan_line/dbscan_lines.h>
 #include "catenary_checker/obstacle_2d.hpp"
 #include "parabola.hpp"
+#include <geometry_msgs/Point.h>
 #include "yaml-cpp/yaml.h"
 
 #ifndef __2D_PROYECTION_LIB__
@@ -38,6 +39,15 @@ public:
     return os.str();
   }
 
+  inline geometry_msgs::Point project3D_p(const Point2D &p) {
+    geometry_msgs::Point ret;
+    ret.x = -p.x * b - a * d;
+    ret.y = p.x * a - b * d;
+    ret.z = p.y;
+
+    return ret;
+  }
+
   inline pcl::PointXYZ project3D(const Point2D &p) const {
     pcl::PointXYZ p_3d(-p.x * b - a * d,
                        p.x * a - b * d,
@@ -46,6 +56,10 @@ public:
   }
 
   inline Point2D project2D(const pcl::PointXYZ &p) const {
+    return Point2D(p.y * a - p.x * b, p.z);
+  }
+
+  inline Point2D project2D(const Point3D &p) const {
     return Point2D(p.y * a - p.x * b, p.z);
   }
 
