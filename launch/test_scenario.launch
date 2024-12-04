@@ -27,7 +27,9 @@
   <arg name="plane_dist" default="0.1"/>
   <arg name="debug" default="false"/>
   <arg name="pref_debug" default="" unless="$(arg debug)"/>
-  <arg name="pref_debug" default="xterm -e gdb --args" if="$(arg debug)"/>
+  <!-- <arg name="pref_debug" default="xterm -e gdb - -args" if="$(arg debug)"/> -->
+  <arg name="pref_debug" default="xterm -e valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes       --verbose 
+         --log-file=valgrind-out.txt " if="$(arg debug)"/>
   <node name="test_scenario" pkg="catenary_checker" type="test_scenario" output="screen" 
         args="$(arg robot_x) $(arg robot_y) $(arg robot_z) $(arg target_x) $(arg target_y) $(arg target_z) $(arg plane_dist)"  launch-prefix="$(arg pref_debug)" >
     <rosparam command="load" file="$(find marsupial_optimizer)/cfg/$(arg map)_ws.yaml"/>

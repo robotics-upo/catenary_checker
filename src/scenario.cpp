@@ -24,20 +24,12 @@ Scenario::Scenario(const Grid3d &grid3d, const Point3D &A, const Point3D &B, flo
   }
 
   int i = 0, j = 0;
-  vector<vector <int> > grid;
-  grid.resize(ceil(end.y / res));
-  for (int i = 0; i < grid.size(); i++) {
-    grid[i].resize(ceil((end.x - init.x) /res));
-    for (int j = 0; j < grid[i].size(); j++) {
-      grid[i][j] = 0;
-    }
-  }
-
   int max_j = ceil((end.x - init.x) / res);
-
+  int max_i = ceil((end.y) / res);
+  vector<vector <int> > grid(max_i, std::vector<int>(max_j, 0));
   int n_obstacles = 0;
-  for (i = 0, curr = init; curr.y < end.y; curr.y += res, i++ ) {
-    for (j = 0, curr.x = init.x; curr.x < end.x; curr.x += res, j++) {
+  for (i = 0, curr = init; i < max_i; curr.y += res, i++ ) {
+    for (j = 0, curr.x = init.x; j < max_j; curr.x += res, j++) {
       pcl::PointXYZ curr_3d = plane.project3D(curr);
 
       if (grid3d.isIntoMap(curr_3d.x, curr_3d.y, curr_3d.z)) {
@@ -64,7 +56,7 @@ Scenario::Scenario(const Grid3d &grid3d, const Point3D &A, const Point3D &B, flo
             at(grid[i][j] - 1).push_back(curr);
           } else {
             // New obstacles
-            ROS_INFO("New obstacle. N_obstacles: %d", n_obstacles);
+            // ROS_INFO("New obstacle. N_obstacles: %d", n_obstacles);
             Obstacle2D o;
             o.push_back(curr);
             push_back(o);
