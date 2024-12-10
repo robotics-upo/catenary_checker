@@ -76,12 +76,13 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
   bool is_found = false;
   pts_c_.clear();
 
-  problems.push_back(std::make_pair(pi_, pf_));
+  
   if(just_line_of_sight || use_both){
     is_found = computeStraight(pi_, pf_ ,pts_c_);
   }
   
   if (!is_found || !use_both) { // If using both for comparison --> do not take into account straight line approaches
+    problems.push_back(std::make_pair(pi_, pf_));
 	if (use_parabola || use_both ) {
 		auto t1 = high_resolution_clock::now();
 		is_found = computeStraight(pi_, pf_, pts_c_);
