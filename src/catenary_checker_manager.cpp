@@ -77,12 +77,11 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
   pts_c_.clear();
 
   
-  if(just_line_of_sight || use_both){
+  if(just_line_of_sight){
     is_found = computeStraight(pi_, pf_ ,pts_c_);
-  }
-  
-  if (!is_found || !use_both) { // If using both for comparison --> do not take into account straight line approaches
+  } else {
     problems.push_back(std::make_pair(pi_, pf_));
+	bool straight = false;
 	if (use_parabola || use_both ) {
 		auto t1 = high_resolution_clock::now();
 		is_found = computeStraight(pi_, pf_, pts_c_);
@@ -90,21 +89,23 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
 		is_found = cc->analyticalCheckCatenary(pi_, pf_, pts_c_);
 		if(is_found)
 		{
+			straight = true;
 			if (pts_c_.size() == 0) {
 				ROS_INFO("AnalyticalCheckCatenary returned a zero length catenary: %f %f %f \t %f %f %f", pi_.x, pi_.y, pi_.z, pf_.x, pf_.y, pf_.z);
 			}
 			min_dist_obs_cat = cc->min_dist_obs_cat;
 			length_cat_final = cc->length_cat;
-		} else {
-			min_dist_obs_cat = -1.0;
-			length_cat_final = -1.0;
-		}
+			} else {
+				min_dist_obs_cat = -1.0;
+				length_cat_final = -1.0;
+			}
 		}
 		auto t2 = high_resolution_clock::now();
 		duration<float>fp_s = t2 - t1;
 		float delta_t = fp_s.count();
 		execution_times_parabola.push_back(delta_t);
 		results_parabola.push_back(length_cat_final);
+	
 	}
 	if (use_both || !use_parabola) {
 		auto t1 = high_resolution_clock::now();
@@ -129,6 +130,7 @@ bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_,
 		execution_times_bisection.push_back(delta_t);
 		results_bisection.push_back(length_cat);
 	}
+	results_straight.push_back(straight);
   }
   return is_found;
 }
@@ -380,12 +382,17 @@ bool CatenaryCheckerManager::exportStats(const std::string &filename) const {
     if (!use_parabola || use_both) {
       ofs << execution_times_bisection[i] << "\t" << results_bisection[i] << "\t";
     }
-	const auto &p1 = problems[i].first;
-	const auto &p2 = problems[i].second;
+	ofs << results_straight[i];
+	// const auto &p1 = problems[i].first;
+	// const auto &p2 = problems[i].second;
 	
-	ofs << p1.x << "," << p1.y <<"," << p1.z << "\t";
-	ofs << p2.x << "," << p2.y <<"," << p2.z << "\t";
-    ofs << "\n";
+	// ofs << p1.x << "," << p1.y <<"," << p1.z << "\t";
+	// ofs << p2.x << "," << p2.y <<"," << p2.z << "\t";
+    
+	
+	
+	
+	ofs << "\n";
   }
   return true;
 }
