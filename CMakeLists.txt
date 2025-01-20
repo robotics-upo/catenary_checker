@@ -36,8 +36,8 @@ include_directories( include/
   ${Qt5Widgets_INCLUDE_DIRS}
   ${Qt5Charts_INCLUDE_DIRS}
   ${CERES_INCLUDE_DIRS}
-
 )
+
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
@@ -108,7 +108,7 @@ add_library(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
    ${EXTERNAL_LIBS}
    ${catkin_LIBRARIES}
-   Ceres::ceres
+
    ${CERES_LIBRARIES}
 )
 
