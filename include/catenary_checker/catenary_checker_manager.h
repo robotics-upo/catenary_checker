@@ -36,17 +36,17 @@ public:
     void PointCloudObstaclesCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
     void Init(Grid3d *grid_3D_, double d_obs_tether_, double d_obs_ugv_, double d_obs_uav_, double l_cat_max_, double ws_z_min_, 
 								double step_, bool use_parabola_, bool use_distance_function_, geometry_msgs::Vector3 p_reel_ugv_, bool j_l_o_s_, bool use_catenary_as_tether);
-    bool SearchCatenary(const geometry_msgs::Vector3 &pi_, const geometry_msgs::Vector3 &pf_, std::vector<geometry_msgs::Vector3> &pts_c_);
-    bool NumericalSolutionCatenary(const geometry_msgs::Vector3 &p_reel_, const geometry_msgs::Vector3 &p_final_, std::vector<geometry_msgs::Vector3> &points_catenary_);
-    double getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Vector3 p_);
-    double getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Vector3 p_, int pose_, string msg_);
+    bool SearchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_);
+    bool NumericalSolutionCatenary(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_);
+    double getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Point p_);
+    double getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Point p_, int pose_, string msg_);
     bool CheckStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<double> ct_);
-    // bool CheckStatusCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_);
-    bool CheckStatusTetherCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_, vector<float> length_);
-    bool CheckFreeCollisionPoint(geometry_msgs::Vector3 p_, string mode_, int pose_);
-    geometry_msgs::Vector3 getReelNode(const geometry_msgs::Vector3 p_, const geometry_msgs::Quaternion q_);
+    // bool CheckStatusCollision(vector<geometry_msgs::Point> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Point >v2_, vector<tether_parameters> v3_);
+    bool CheckStatusTetherCollision(vector<geometry_msgs::Point> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Point >v2_, vector<tether_parameters> v3_, vector<float> length_);
+    bool CheckFreeCollisionPoint(geometry_msgs::Point p_, string mode_, int pose_);
+    geometry_msgs::Point getReelNode(const geometry_msgs::Point p_, const geometry_msgs::Quaternion q_);
     double getYawFromQuaternion(double x_, double y_, double z_, double w_);
-    bool computeStraight(const geometry_msgs::Vector3 &p_reel_, const geometry_msgs::Vector3 &p_final_, std::vector<geometry_msgs::Vector3> &points_catenary_);
+    bool computeStraight(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_);
 
 	bisectionCatenary bc;
     NearNeighbor nn_obs;
@@ -55,7 +55,7 @@ public:
     ros::NodeHandlePtr nh;
     ros::Subscriber point_cloud_sub_, point_cloud_ugv_obs_sub_;
     sensor_msgs::PointCloud2::ConstPtr point_cloud;
-    geometry_msgs::Vector3 p_reel_ugv;
+    geometry_msgs::Point p_reel_ugv;
 
     bool use_parabola;
     bool just_line_of_sigth, use_catenary_as_tether; // This variable allow the class just compute the straigth state of the tether 

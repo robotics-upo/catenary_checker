@@ -48,26 +48,26 @@ class GetTetherParameter
 {
 	public:
 		GetTetherParameter();
-		GetTetherParameter(vector<geometry_msgs::Vector3> v_p_init_ugv_, vector<geometry_msgs::Vector3> v_p_init_uav_, 
+		GetTetherParameter(vector<geometry_msgs::Point> v_p_init_ugv_, vector<geometry_msgs::Point> v_p_init_uav_, 
 							vector<float> &v_l_cat_init_, vector<geometry_msgs::Quaternion> v_init_r_ugv_, 
 							geometry_msgs::TransformStamped p_reel_local_, vector <tether_parameters> v_tether_init_param_, float ws_z_max_);
-		GetTetherParameter(vector<geometry_msgs::Vector3> v_p_init_ugv_, vector<geometry_msgs::Vector3> v_p_init_uav_, 
+		GetTetherParameter(vector<geometry_msgs::Point> v_p_init_ugv_, vector<geometry_msgs::Point> v_p_init_uav_, 
 						   vector<float> &v_l_cat_init_, vector<geometry_msgs::Quaternion> v_init_r_ugv_, geometry_msgs::TransformStamped p_reel_local_);
 
 		// ~GetTetherParameter(){};
 		virtual void ParametersParabola(vector<float> v_param_x_, vector<float> v_param_y_, vector<float> v_param_c_);
 		virtual void ParametersCatenary();
-		virtual void ComputeCatenaryArea(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, double length_, float x0_, float y0_, float c_);
-		virtual geometry_msgs::Vector3 getReelPoint(const float px_, const float py_, const float pz_,
+		virtual void ComputeCatenaryArea(geometry_msgs::Point p1_, geometry_msgs::Point p2_, double length_, float x0_, float y0_, float c_);
+		virtual geometry_msgs::Point getReelPoint(const float px_, const float py_, const float pz_,
 													const float qx_, const float qy_, const float qz_, const float qw_);	
-		virtual void getParabolaInPlane(geometry_msgs::Vector3 v1_, geometry_msgs::Vector3 v2_, points_2D &pA_, points_2D &pB_);
-    	virtual void getPointParabolaStraight(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, vector<geometry_msgs::Vector3> &v_p_, float length_);
-		virtual void getParabolaPoints(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, tether_parameters param_, vector<geometry_msgs::Vector3> &v_p_);
-		virtual void getCatenaryPoints(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, tether_parameters param_, vector<geometry_msgs::Vector3> &v_p_, float length_);
+		virtual void getParabolaInPlane(geometry_msgs::Point v1_, geometry_msgs::Point v2_, points_2D &pA_, points_2D &pB_);
+    	virtual void getPointParabolaStraight(geometry_msgs::Point p1_, geometry_msgs::Point p2_, vector<geometry_msgs::Point> &v_p_, float length_);
+		virtual void getParabolaPoints(geometry_msgs::Point p1_, geometry_msgs::Point p2_, tether_parameters param_, vector<geometry_msgs::Point> &v_p_);
+		virtual void getCatenaryPoints(geometry_msgs::Point p1_, geometry_msgs::Point p2_, tether_parameters param_, vector<geometry_msgs::Point> &v_p_, float length_);
 
 		
 
-		vector<geometry_msgs::Vector3> v_p_ugv, v_p_uav;
+		vector<geometry_msgs::Point> v_p_ugv, v_p_uav;
 		vector<geometry_msgs::Quaternion> v_r_ugv;
 		std::vector <points_2D> v_pts_A_2D, v_pts_B_2D;
 		std::vector <tether_parameters> v_tether_params, v_tether_init_params;
@@ -97,7 +97,7 @@ class GetTetherParameter
 
 inline GetTetherParameter::GetTetherParameter(){}
 
-inline GetTetherParameter::GetTetherParameter(vector<geometry_msgs::Vector3> v_p_init_ugv_, vector<geometry_msgs::Vector3> v_p_init_uav_, 
+inline GetTetherParameter::GetTetherParameter(vector<geometry_msgs::Point> v_p_init_ugv_, vector<geometry_msgs::Point> v_p_init_uav_, 
 											vector<float> &v_l_cat_init_, vector<geometry_msgs::Quaternion> v_init_r_ugv_, 
 											geometry_msgs::TransformStamped p_reel_local_)
 {
@@ -115,7 +115,7 @@ inline GetTetherParameter::GetTetherParameter(vector<geometry_msgs::Vector3> v_p
 	vec_len_cat_init = v_l_cat_init_;
 }
 
-inline GetTetherParameter::GetTetherParameter(vector<geometry_msgs::Vector3> v_p_init_ugv_, vector<geometry_msgs::Vector3> v_p_init_uav_, 
+inline GetTetherParameter::GetTetherParameter(vector<geometry_msgs::Point> v_p_init_ugv_, vector<geometry_msgs::Point> v_p_init_uav_, 
 											vector<float> &v_l_cat_init_, vector<geometry_msgs::Quaternion> v_init_r_ugv_, 
 											geometry_msgs::TransformStamped p_reel_local_, vector <tether_parameters> v_tether_init_param_, float ws_z_max_)
 {
@@ -138,7 +138,7 @@ inline GetTetherParameter::GetTetherParameter(vector<geometry_msgs::Vector3> v_p
 inline void GetTetherParameter::ParametersCatenary()
 {
 	CatenaryParametersSolver CPS;
-	geometry_msgs::Vector3 p_reel_;
+	geometry_msgs::Point p_reel_;
 	vec_areas.clear(); v_pts_A_2D.clear(); v_pts_B_2D.clear(); v_tether_params.clear();
 
 	tether_parameters catenary_params_;
@@ -163,7 +163,7 @@ inline void GetTetherParameter::ParametersCatenary()
 inline void GetTetherParameter::ParametersParabola(vector<float> v_param_x_, vector<float> v_param_y_, vector<float> v_param_c_)
 {
 	ParabolaParametersSolver PPS;
-	geometry_msgs::Vector3 p_reel_;
+	geometry_msgs::Point p_reel_;
 	vec_areas.clear(); v_pts_A_2D.clear(); v_pts_B_2D.clear(); v_tether_params.clear();
 
 	tether_parameters parabola_params_;
@@ -182,7 +182,7 @@ inline void GetTetherParameter::ParametersParabola(vector<float> v_param_x_, vec
 	}
 } 
 
-inline void GetTetherParameter::ComputeCatenaryArea(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, double length_, float x0_, float y0_, float c_)
+inline void GetTetherParameter::ComputeCatenaryArea(geometry_msgs::Point p1_, geometry_msgs::Point p2_, double length_, float x0_, float y0_, float c_)
 {
     double x1_, x2_, y1_, y2_, Y_1_, Y_2_, area_;
 	points_2D pt_A_2D_, pt_B_2D_;
@@ -205,9 +205,9 @@ inline void GetTetherParameter::ComputeCatenaryArea(geometry_msgs::Vector3 p1_, 
 } 
 
 
-inline geometry_msgs::Vector3 GetTetherParameter::getReelPoint(const float px_, const float py_, const float pz_,const float qx_, const float qy_, const float qz_, const float qw_)
+inline geometry_msgs::Point GetTetherParameter::getReelPoint(const float px_, const float py_, const float pz_,const float qx_, const float qy_, const float qz_, const float qw_)
 {
-	geometry_msgs::Vector3 ret;
+	geometry_msgs::Point ret;
 
 	double roll_, pitch_, yaw_;
 	tf::Quaternion q_(qx_,qy_,qz_,qw_);
@@ -222,8 +222,8 @@ inline geometry_msgs::Vector3 GetTetherParameter::getReelPoint(const float px_, 
 	return ret;
 }
 
-inline void GetTetherParameter::getParabolaInPlane(geometry_msgs::Vector3 v1_, geometry_msgs::Vector3 v2_, points_2D &pA_, points_2D &pB_){
-	geometry_msgs::Vector3 vd, va;
+inline void GetTetherParameter::getParabolaInPlane(geometry_msgs::Point v1_, geometry_msgs::Point v2_, points_2D &pA_, points_2D &pB_){
+	geometry_msgs::Point vd, va;
 	double _A, _B, _C, _d0 , _d1;
 	_d0 =_d1 = 0.0;
 	// First get General Plane Ecuation: A(x-x1) + B(y-y1) + C(z-z1) = 0
@@ -256,11 +256,11 @@ inline void GetTetherParameter::getParabolaInPlane(geometry_msgs::Vector3 v1_, g
 	pB_.y = v2_.z;
 }
 
-inline void GetTetherParameter::getParabolaPoints(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, tether_parameters param_, 
-													std::vector<geometry_msgs::Vector3> &v_p_)
+inline void GetTetherParameter::getParabolaPoints(geometry_msgs::Point p1_, geometry_msgs::Point p2_, tether_parameters param_, 
+													std::vector<geometry_msgs::Point> &v_p_)
 {
   	num_point_per_unit_length = 20;
-	geometry_msgs::Vector3 p_;
+	geometry_msgs::Point p_;
 	int	num_point_catenary;
 	double d_, x_, y_, tetha_, dx_, dy_, dz_, dxy_;
 	d_ = x_ = y_ = 0.0;
@@ -296,11 +296,11 @@ inline void GetTetherParameter::getParabolaPoints(geometry_msgs::Vector3 p1_, ge
 	}
 }
 
-inline void GetTetherParameter::getCatenaryPoints(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, tether_parameters param_, 
-												  vector<geometry_msgs::Vector3> &v_p_, float length_)
+inline void GetTetherParameter::getCatenaryPoints(geometry_msgs::Point p1_, geometry_msgs::Point p2_, tether_parameters param_, 
+												  vector<geometry_msgs::Point> &v_p_, float length_)
 {
   	num_point_per_unit_length = 20;
-	geometry_msgs::Vector3 p_;
+	geometry_msgs::Point p_;
 	int	num_point_catenary;
 	double d_, x_, u_x , u_y;
 	d_ = x_ = 0.0;
@@ -347,7 +347,7 @@ inline void GetTetherParameter::getCatenaryPoints(geometry_msgs::Vector3 p1_, ge
 	}
 }
 
-inline void GetTetherParameter::getPointParabolaStraight(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, std::vector<geometry_msgs::Vector3> &v_p_, float length_)
+inline void GetTetherParameter::getPointParabolaStraight(geometry_msgs::Point p1_, geometry_msgs::Point p2_, std::vector<geometry_msgs::Point> &v_p_, float length_)
 {
 	v_p_.clear();
 	double dx_ = p2_.x - p1_.x ;
@@ -365,7 +365,7 @@ inline void GetTetherParameter::getPointParabolaStraight(geometry_msgs::Vector3 
 
     for(int i=0; i < num_point_catenary ; i++)
     {       
-        geometry_msgs::Vector3 p_;
+        geometry_msgs::Point p_;
 
         p_.x = (p1_.x + x_step* (double)i);
         p_.y = (p1_.y + y_step* (double)i);
