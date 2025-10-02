@@ -34,9 +34,9 @@ public:
     // ~CatenaryCheckerManager();
     void PointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
     void PointCloudObstaclesCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
-    void Init(Grid3d *grid_3D_, double d_obs_tether_, double d_obs_ugv_, double d_obs_uav_, double l_cat_max_, double ws_z_min_, 
-								double step_, bool use_parabola_, bool use_distance_function_, geometry_msgs::Vector3 p_reel_ugv_, bool j_l_o_s_, bool use_catenary_as_tether);
-    bool SearchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_);
+    void init(Grid3d *grid_3D_, double d_obs_tether_, double d_obs_ugv_, double d_obs_uav_, double l_cat_max_, double ws_z_min_, 
+								double step_, bool use_parabola_, bool use_distance_function_, geometry_msgs::Point p_reel_ugv_, bool j_l_o_s_, bool use_catenary_as_tether);
+    bool searchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_);
     bool NumericalSolutionCatenary(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_);
     double getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Point p_);
     double getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Point p_, int pose_, string msg_);
