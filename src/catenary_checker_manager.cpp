@@ -26,8 +26,8 @@ void CatenaryCheckerManager::PointCloudObstaclesCallback(const sensor_msgs::Poin
     ROS_INFO(PRINTF_YELLOW "CatenaryCheckerManager::PointCloudObstaclesCallback: Received Point Cloud UGV Obstacles");
 }
  
-void CatenaryCheckerManager::Init(Grid3d *grid_3D_, double d_obs_tether_, double d_obs_ugv_, double d_obs_uav_, double l_cat_max_, double ws_z_min_, 
-								double step_, bool use_parabola_, bool use_distance_function_, geometry_msgs::Vector3 p_reel_ugv_, bool j_l_o_s_, bool use_catenary_as_tether_)
+void CatenaryCheckerManager::init(Grid3d *grid_3D_, double d_obs_tether_, double d_obs_ugv_, double d_obs_uav_, double l_cat_max_, double ws_z_min_, 
+								double step_, bool use_parabola_, bool use_distance_function_, geometry_msgs::Point p_reel_ugv_, bool j_l_o_s_, bool use_catenary_as_tether_)
 {
 	ROS_INFO(PRINTF_GREEN "Initializing CatenaryCheckerManager");
 	
@@ -58,7 +58,7 @@ void CatenaryCheckerManager::Init(Grid3d *grid_3D_, double d_obs_tether_, double
         ROS_INFO(PRINTF_GREEN "CatenaryCheckerManager: Using KDTree");
 }
 
-// bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Vector3 &pi_, const geometry_msgs::Vector3 &pf_, std::vector<geometry_msgs::Vector3> &pts_c_)
+// bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
 // {
 //    bool is_founded;
 //    pts_c_.clear();
@@ -82,7 +82,7 @@ void CatenaryCheckerManager::Init(Grid3d *grid_3D_, double d_obs_tether_, double
 // 	return is_founded;
 // }
 
-bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Vector3 &pi_, const geometry_msgs::Vector3 &pf_, std::vector<geometry_msgs::Vector3> &pts_c_)
+bool CatenaryCheckerManager::searchCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
 {
    bool is_founded;
    pts_c_.clear();
@@ -95,7 +95,7 @@ bool CatenaryCheckerManager::SearchCatenary(const geometry_msgs::Vector3 &pi_, c
 	return is_founded;
 }
 
-bool CatenaryCheckerManager::computeStraight(const geometry_msgs::Vector3 &p_reel_, const geometry_msgs::Vector3 &p_final_, std::vector<geometry_msgs::Vector3> &points_catenary_)
+bool CatenaryCheckerManager::computeStraight(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_)
 { 
 	bool founded_catenary = true;
 	points_catenary_.clear();
@@ -115,7 +115,7 @@ bool CatenaryCheckerManager::computeStraight(const geometry_msgs::Vector3 &p_ree
 
     for(int i=0; i < num_point_catenary ; i++)
     {       
-        geometry_msgs::Vector3 p_;
+        geometry_msgs::Point p_;
         p_.x = (p_reel_.x + x_step* (double)i);
         p_.y = (p_reel_.y + y_step* (double)i);
         p_.z = (p_reel_.z + z_step* (double)i);    
@@ -134,7 +134,7 @@ bool CatenaryCheckerManager::computeStraight(const geometry_msgs::Vector3 &p_ree
 	return founded_catenary;
 }
 
-bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Vector3 &p_reel_, const geometry_msgs::Vector3 &p_final_, std::vector<geometry_msgs::Vector3> &points_catenary_)
+bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Point &p_reel_, const geometry_msgs::Point &p_final_, std::vector<geometry_msgs::Point> &points_catenary_)
 {
 	double dist_init_final_ = sqrt(pow(p_reel_.x - p_final_.x,2) + pow(p_reel_.y - p_final_.y,2) + pow(p_reel_.z - p_final_.z,2));
 	double delta_ = 0.0;	//Initial Value
@@ -168,8 +168,8 @@ bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Vect
 			if (n_points_cat_dis_ < 5)
 				n_points_cat_dis_ = 5;
 			for (size_t i = 0 ; i < points_catenary_.size() ; i++){
-				geometry_msgs::Vector3 point_cat;
-				geometry_msgs::Vector3 p_in_cat_;
+				geometry_msgs::Point point_cat;
+				geometry_msgs::Point p_in_cat_;
 				if (points_catenary_[i].z < ws_z_min*step + ((1*step)+distance_tether_obstacle)){
 					check_catenary = false;
 					break;
@@ -220,7 +220,7 @@ bool CatenaryCheckerManager::NumericalSolutionCatenary(const geometry_msgs::Vect
 	return founded_catenary;
 }
 
-double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Vector3 p_)
+double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Point p_)
 {
 	double dist;
 	Eigen::Vector3d obs_, pos_;
@@ -248,7 +248,7 @@ double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_,
 	return dist;
 }
 
-double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Vector3 p_, int pose_, string msg_)
+double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_, geometry_msgs::Point p_, int pose_, string msg_)
 {
 	double dist, x, y, z;
 	if(use_dist_func_){
@@ -280,12 +280,12 @@ double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_,
 	return dist;
 }
 
-bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<float> ct_)
+bool CatenaryCheckerManager::checkStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<float> ct_)
 {
 	bool ret_;
 
-	geometry_msgs::Vector3 p_ugv_, p_uav_, p_reel_; 
-	std::vector<geometry_msgs::Vector3> points_catenary_;
+	geometry_msgs::Point p_ugv_, p_uav_, p_reel_; 
+	std::vector<geometry_msgs::Point> points_catenary_;
     double len_cat_, dist_;
 	bisectionCatenary bc;
 	count_ugv_coll = count_uav_coll = count_tether_coll = 0;
@@ -307,7 +307,7 @@ bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJoint
 		// Catenary 
 		len_cat_ = ct_[i];
 
-		geometry_msgs::Vector3 p_;
+		geometry_msgs::Point p_;
 		geometry_msgs::Quaternion q_;
 		p_.x = p_ugv_.x;
 		p_.y = p_ugv_.y;
@@ -364,11 +364,11 @@ bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJoint
 	return ret_;
 }
 
-// bool CatenaryCheckerManager::CheckStatusCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_)
+// bool CatenaryCheckerManager::checkStatusCollision(vector<geometry_msgs::Point> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Point >v2_, vector<tether_parameters> v3_)
 // {
 // 	bool ret_;
-// 	geometry_msgs::Vector3 p_reel_; 
-// 	std::vector<geometry_msgs::Vector3> points_tether_;
+// 	geometry_msgs::Point p_reel_; 
+// 	std::vector<geometry_msgs::Point> points_tether_;
 //     double len_cat_, dist_;
 // 	count_ugv_coll = count_uav_coll = count_tether_coll = 0;
 //     std::cout << std::endl << "	CatenaryCheckerManager started: analizing collision status for the marsupial agents" << std::endl; 
@@ -410,12 +410,12 @@ bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJoint
 // 	return ret_;
 // }
 
-bool CatenaryCheckerManager::CheckStatusTetherCollision(vector<geometry_msgs::Vector3> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Vector3 >v2_, vector<tether_parameters> v3_, vector<float> length_, bool use_catenary_as_tether_)
+bool CatenaryCheckerManager::checkStatusTetherCollision(vector<geometry_msgs::Point> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Point >v2_, vector<tether_parameters> v3_, vector<float> length_, bool use_catenary_as_tether_)
 {
 	bool ret_;
 
-	geometry_msgs::Vector3 p_reel_; 
-	std::vector<geometry_msgs::Vector3> points_tether_;
+	geometry_msgs::Point p_reel_; 
+	std::vector<geometry_msgs::Point> points_tether_;
     double len_cat_, dist_;
 	int first_coll_, last_coll_;
 	count_ugv_coll = count_uav_coll = count_tether_coll = count_total_tether_coll_ = 0;
@@ -477,7 +477,7 @@ bool CatenaryCheckerManager::CheckStatusTetherCollision(vector<geometry_msgs::Ve
 	return ret_;
 }
 
-bool CatenaryCheckerManager::CheckFreeCollisionPoint(geometry_msgs::Vector3 p_, string mode_, int pose_)
+bool CatenaryCheckerManager::CheckFreeCollisionPoint(geometry_msgs::Point p_, string mode_, int pose_)
 {
 	double sefaty_distance_;
 	bool use_distance_function_;
@@ -504,9 +504,9 @@ bool CatenaryCheckerManager::CheckFreeCollisionPoint(geometry_msgs::Vector3 p_, 
 	}
 }
 
-geometry_msgs::Vector3 CatenaryCheckerManager::getReelNode(const geometry_msgs::Vector3 p_, const geometry_msgs::Quaternion q_)
+geometry_msgs::Point CatenaryCheckerManager::getReelNode(const geometry_msgs::Point p_, const geometry_msgs::Quaternion q_)
 {
-	geometry_msgs::Vector3 pos_reel;
+	geometry_msgs::Point pos_reel;
 	double yaw_ugv;
 
 	yaw_ugv = getYawFromQuaternion(q_.x, q_.y, q_.z, q_.w);
@@ -528,10 +528,10 @@ double CatenaryCheckerManager::getYawFromQuaternion(double x_, double y_, double
 	return yaw_;
 }
 
-bool CatenaryCheckerManager::CheckFreeCollisionTether(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, tether_parameters p_, float l_, int pos_)
+bool CatenaryCheckerManager::checkFreeCollisionTether(geometry_msgs::Point p1_, geometry_msgs::Point p2_, tether_parameters p_, float l_, int pos_)
 {
 	GetTetherParameter GPP_;
-	std::vector<geometry_msgs::Vector3> points_tether_;
+	std::vector<geometry_msgs::Point> points_tether_;
 	std::vector<int> v_coll_; v_coll_.clear();
 	std::vector<double> v_dist_; v_dist_.clear();
 	double dist_, x_, y_, z_;

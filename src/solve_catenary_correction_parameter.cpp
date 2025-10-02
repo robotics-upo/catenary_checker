@@ -1,7 +1,7 @@
 #include "catenary_checker/solve_catenary_correction_parameter.hpp"
 
 
-CorrectionCatenaryParametersSolver::CorrectionCatenaryParametersSolver(Grid3d* g_3D_, double d_tether_obs_, double l_tether_max_, int i_, geometry_msgs::Vector3 plr_) 
+CorrectionCatenaryParametersSolver::CorrectionCatenaryParametersSolver(Grid3d* g_3D_, double d_tether_obs_, double l_tether_max_, int i_, geometry_msgs::Point plr_) 
 {
   // google::InitGoogleLogging("CatenaryCeresSolver");
   max_num_iterations = 500;
@@ -16,7 +16,7 @@ CorrectionCatenaryParametersSolver::~CorrectionCatenaryParametersSolver(void)
 {
 } 
 
-void CorrectionCatenaryParametersSolver::loadInitialStatus(geometry_msgs::Vector3 p1_, geometry_msgs::Vector3 p2_, double pa_, double pb_, double pc_)
+void CorrectionCatenaryParametersSolver::loadInitialStatus(geometry_msgs::Point p1_, geometry_msgs::Point p2_, double pa_, double pb_, double pc_)
 {
   statesTetherParams.parameter[0] = 0;  
   statesTetherParams.parameter[1] = pa_;  
