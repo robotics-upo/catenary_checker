@@ -125,8 +125,8 @@ bool bisectionCatenary::configBisection(double _l, double _x1, double _y1, doubl
     if (L > distance_3d)
         getNumberPointsCatenary(L);
     else{
-        printf("Warning: Input Length minor that necesary distance between point to apply bisection method L=%.4f D=%.4f for points: P1= [%.3f %.3f %.3f] P2=[%.3f %.3f %.3f]\n", distance_3d, distance_3d, X1,Y1,Z1,X2,Y2,Z2);
-        printf("Warning: length propouse to compute points L=%.4f \n", 1.01*distance_3d);
+        // printf("Warning: Input Length minor that necesary distance between point to apply bisection method L=%.4f D=%.4f for points: P1= [%.3f %.3f %.3f] P2=[%.3f %.3f %.3f]\n", distance_3d, distance_3d, X1,Y1,Z1,X2,Y2,Z2);
+        // printf("Warning: length propouse to compute points L=%.4f \n", 1.01*distance_3d);
         getNumberPointsCatenary(1.01*distance_3d);
     }
 

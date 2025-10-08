@@ -62,13 +62,13 @@ bool checkCollisionPathPlanner::CheckStatus(trajectory_msgs::MultiDOFJointTrajec
 		dist_ = CheckCM->getPointDistanceObstaclesMap(false, p_ugv_,i,"UGV");
         if (dist_ < distance_obstacle_ugv){
 			count_ugv_coll++;
-            std::cout << "      The agent UGV in the state = " << i << " is in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
+            // std::cout << "      The agent UGV in the state = " << i << " is in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
         }
 
         dist_ = CheckCM->getPointDistanceObstaclesMap(true, p_uav_,i,"UAV");
         if (dist_ < distance_obstacle_uav){
             count_uav_coll++;
-		    std::cout << "      The agent UAV in the state = " << i << " idistance_tether_obstacles in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
+		    // std::cout << "      The agent UAV in the state = " << i << " idistance_tether_obstacles in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
 		}
 
 		p_reel_ = getReelNode(p_,q_);
@@ -80,9 +80,9 @@ bool checkCollisionPathPlanner::CheckStatus(trajectory_msgs::MultiDOFJointTrajec
             dist_ = CheckCM->getPointDistanceObstaclesMap(true, points_catenary_[j],i,"TETHER") ;
             if( dist_ < distance_tether_obstacle){
             	count_tether_coll++;
-				std::cout << " 		The agent TETHER in the state[" << i << "/"<< mt_.points.size() <<"] length["<< len_cat_<<"] position[" << j <<"/"<< points_catenary_.size() <<"] is in COLLISION ["
-						<< dist_ <<" mts to obstacle/"<< distance_tether_obstacle<<"] pto["<< points_catenary_[j].x <<", "<< points_catenary_[j].y << ", "<< points_catenary_[j].z <<"] reel[" 
-						<< p_reel_.x <<"," << p_reel_.y << "," << p_reel_.z <<"] UAV["<< p_uav_.x<<"," <<p_uav_.y <<"," << p_uav_.z << "]" <<std::endl; 
+				// std::cout << " 		The agent TETHER in the state[" << i << "/"<< mt_.points.size() <<"] length["<< len_cat_<<"] position[" << j <<"/"<< points_catenary_.size() <<"] is in COLLISION ["
+						// << dist_ <<" mts to obstacle/"<< distance_tether_obstacle<<"] pto["<< points_catenary_[j].x <<", "<< points_catenary_[j].y << ", "<< points_catenary_[j].z <<"] reel[" 
+						// << p_reel_.x <<"," << p_reel_.y << "," << p_reel_.z <<"] UAV["<< p_uav_.x<<"," <<p_uav_.y <<"," << p_uav_.z << "]" <<std::endl; 
 			}
 		}
 		if(count_tether_coll != aux_coll_theter_){

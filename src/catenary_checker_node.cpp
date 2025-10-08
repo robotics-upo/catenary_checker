@@ -85,8 +85,8 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     
     // auto check_cat = checkCatenary(robot, target, pcl_pc, plane_dist, dbscan_min_points, dbscan_epsilon);
 
-    std::cout << "catenaryChecker::getPointCloud: Robot:[" << robot.x << "," << robot.y << "," << robot.z << "] , Target:[" << target.x << "," << target.y << "," << target.z << "]" << std::endl;
-    std::cout << "Preparando para cancular Plano 2D" << std::endl;
+    // std::cout << "catenaryChecker::getPointCloud: Robot:[" << robot.x << "," << robot.y << "," << robot.z << "] , Target:[" << target.x << "," << target.y << "," << target.z << "]" << std::endl;
+    // std::cout << "Preparando para cancular Plano 2D" << std::endl;
       // ROS_INFO("Publishing 2D cloud reconverted to 3D . Number of points: %lu", points_3d.size());
     
     // ROS_INFO("Got PC. Sizes: original:%lu \t pcl_2:%lu \t pcl_pc:%lu", pc->data.size(), pcl_pc2.data.size(), pcl_pc.size());
@@ -94,7 +94,7 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
     auto points_2d = project2D(pcl_pc, robot, target, plane_dist);
     // ROS_INFO("Obtained 2D cloud projection. Number of points: %lu", points_2d.size());
     if (publish_pc) {
-std::cout << "Preparando para cancular Plano 3D" << std::endl;
+// std::cout << "Preparando para cancular Plano 3D" << std::endl;
       auto points_3d = reproject3D(points_2d, robot, target);
       pcl::toPCLPointCloud2(points_3d, pcl_pc2);
          
@@ -105,15 +105,15 @@ std::cout << "Preparando para cancular Plano 3D" << std::endl;
       out_pc2.header.frame_id = global_frame;
 
       pc_publisher.publish(out_pc2);
-std::cout << "Plano 3D calculado" << std::endl;
+// std::cout << "Plano 3D calculado" << std::endl;
     }
-std::cout << "Preparando CLUSTERIZE" << std::endl;
+// std::cout << "Preparando CLUSTERIZE" << std::endl;
     if (use_dbscan_lines) {
       dbscan = clusterize_lines(points_2d, dbscan_min_points, dbscan_epsilon, dbscan_gamma, dbscan_theta);
     } else {
       dbscan = clusterize(points_2d, dbscan_min_points, dbscan_epsilon);
     }
-std::cout << "Hecho el CLUSTERIZE" << std::endl;
+// std::cout << "Hecho el CLUSTERIZE" << std::endl;
 
     // ROS_INFO("Clusterized with DBSCAN. N_clusters: %d. \tN_points: %lu",dbscan->getNClusters(), dbscan->getPoints().size());
     if (publish_marker) {
@@ -132,7 +132,7 @@ std::cout << "Hecho el CLUSTERIZE" << std::endl;
     
     pts_c_.clear();
     
-  std::cout << "Preparando para obtener Parabola" << std::endl;
+  // std::cout << "Preparando para obtener Parabola" << std::endl;
     if ( (fabs(robot.x - target.x) < 0.01) && (fabs(robot.y == target.y) < 0.01 ) )
     {
       length_cat = fabs(robot.z - target.z) *1.01;
@@ -150,21 +150,21 @@ std::cout << "Hecho el CLUSTERIZE" << std::endl;
           // }
       }
       min_dist_obs_cat = -1.0;
-std::cout << "Parabola en 1 plano Calculada" << std::endl;
+// std::cout << "Parabola en 1 plano Calculada" << std::endl;
     }
     else
     {
-std::cout << "Compute Obstacles usind DBSCAN" << std::endl;
+// std::cout << "Compute Obstacles usind DBSCAN" << std::endl;
       //Tranlate to Obstacles 2D
       std::vector<Obstacle2D> scenario = getObstacles(dbscan); 
       // ROS_INFO("scenario: %lu \n",scenario.size());
       
       // Get the initial parabola (line between A and B)
-std::cout << "Compute getVerticalPlane" << std::endl;
+// std::cout << "Compute getVerticalPlane" << std::endl;
       auto plane = getVerticalPlane(robot,target); 
       Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
       Point2D B(target.y * plane.a - target.x * plane.b, target.z);
-std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
+// std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
       Parabola parabola;
       get_catenary = parabola.approximateParabola(scenario, A, B);
 
@@ -202,7 +202,7 @@ std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , 
         // }
       }
       min_dist_obs_cat = -1.0;
-    std::cout << "Parabola Calculada" << std::endl;
+    // std::cout << "Parabola Calculada" << std::endl;
     }
 
     //    /********************* To obligate pause method and check Planning result *********************/

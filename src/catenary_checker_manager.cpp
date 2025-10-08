@@ -251,7 +251,7 @@ double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_,
 			// dist =  grid_3D->getPointDist((double)p_.x,(double)p_.y,(double)p_.z) ;
 		}
 		else{
-            std::cout << "\tThe agent " << msg_ << " in the state = " << pose_ << " is out of the GRID["<<p_.x<< ", " << p_.y << ", " <<p_.z << "]"<< std::endl; 
+            // std::cout << "\tThe agent " << msg_ << " in the state = " << pose_ << " is out of the GRID["<<p_.x<< ", " << p_.y << ", " <<p_.z << "]"<< std::endl; 
 			dist = -1.0;
         }
     }
@@ -269,7 +269,7 @@ double CatenaryCheckerManager::getPointDistanceObstaclesMap(bool use_dist_func_,
 	return dist;
 }
 
-bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<double> ct_)
+bool CatenaryCheckerManager::checkStatusCollision(trajectory_msgs::MultiDOFJointTrajectory mt_, std::vector<float> ct_)
 {
 	bool ret_;
 
@@ -310,13 +310,13 @@ bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJoint
 		dist_ = getPointDistanceObstaclesMap(false, p_ugv_,i,"UGV");
         if (dist_ < distance_obstacle_ugv){
 			count_ugv_coll++;
-            std::cout << "      The agent UGV in the state = " << i << " is in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
+            // std::cout << "      The agent UGV in the state = " << i << " is in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
         }
 
         dist_ = getPointDistanceObstaclesMap(true, p_uav_,i,"UAV");
         if (dist_ < distance_obstacle_uav){
             count_uav_coll++;
-		    std::cout << "      The agent UAV in the state = " << i << " idistance_tether_obstacles in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
+		    // std::cout << "      The agent UAV in the state = " << i << " idistance_tether_obstacles in COLLISION ["<< dist_ <<" mts to obstacle]" << std::endl; 
 		}
 
 		p_reel_ = getReelNode(p_,q_);
@@ -328,9 +328,9 @@ bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJoint
             dist_ = getPointDistanceObstaclesMap(true, points_catenary_[j],i,"TETHER") ;
             if( dist_ < distance_tether_obstacle){
             	count_tether_coll++;
-				std::cout << " 		The agent TETHER in the state[" << i << "/"<< mt_.points.size() <<"] length["<< len_cat_<<"] position[" << j <<"/"<< points_catenary_.size() <<"] is in COLLISION ["
-						<< dist_ <<" mts to obstacle/"<< distance_tether_obstacle<<"] pto["<< points_catenary_[j].x <<", "<< points_catenary_[j].y << ", "<< points_catenary_[j].z <<"] reel[" 
-						<< p_reel_.x <<"," << p_reel_.y << "," << p_reel_.z <<"] UAV["<< p_uav_.x<<"," <<p_uav_.y <<"," << p_uav_.z << "]" <<std::endl; 
+				// std::cout << " 		The agent TETHER in the state[" << i << "/"<< mt_.points.size() <<"] length["<< len_cat_<<"] position[" << j <<"/"<< points_catenary_.size() <<"] is in COLLISION ["
+						// << dist_ <<" mts to obstacle/"<< distance_tether_obstacle<<"] pto["<< points_catenary_[j].x <<", "<< points_catenary_[j].y << ", "<< points_catenary_[j].z <<"] reel[" 
+						// << p_reel_.x <<"," << p_reel_.y << "," << p_reel_.z <<"] UAV["<< p_uav_.x<<"," <<p_uav_.y <<"," << p_uav_.z << "]" <<std::endl; 
 			}
 		}
 		if(count_tether_coll != aux_coll_theter_){
@@ -353,7 +353,7 @@ bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJoint
 	return ret_;
 }
 
-// bool CatenaryCheckerManager::CheckStatusCollision(vector<geometry_msgs::Point> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Point >v2_, vector<tether_parameters> v3_)
+// bool CatenaryCheckerManager::checkStatusCollision(vector<geometry_msgs::Point> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Point >v2_, vector<tether_parameters> v3_)
 // {
 // 	bool ret_;
 
@@ -409,7 +409,7 @@ bool CatenaryCheckerManager::CheckStatusCollision(trajectory_msgs::MultiDOFJoint
 // 	return ret_;
 // }
 
-bool CatenaryCheckerManager::CheckStatusTetherCollision(vector<geometry_msgs::Point> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Point >v2_, vector<tether_parameters> v3_, vector<float> length_)
+bool CatenaryCheckerManager::checkStatusTetherCollision(vector<geometry_msgs::Point> v1_, vector<geometry_msgs::Quaternion> vq1_, vector<geometry_msgs::Point >v2_, vector<tether_parameters> v3_, vector<float> length_, bool use_cat_)
 {
 	bool ret_;
 
@@ -438,7 +438,7 @@ bool CatenaryCheckerManager::CheckStatusTetherCollision(vector<geometry_msgs::Po
 
 		points_tether_.clear();
 		GetTetherParameter GPP_;
-		if (use_catenary_as_tether)
+		if (use_cat_)
 			GPP_.getCatenaryPoints(p_reel_, v2_[i], v3_[i], points_tether_, length_[i]);
 		else
 			GPP_.getParabolaPoints(p_reel_, v2_[i], v3_[i], points_tether_);
@@ -469,7 +469,7 @@ bool CatenaryCheckerManager::CheckStatusTetherCollision(vector<geometry_msgs::Po
 	return ret_;
 }
 
-bool CatenaryCheckerManager::CheckFreeCollisionPoint(geometry_msgs::Point p_, string mode_, int pose_)
+bool CatenaryCheckerManager::checkFreeCollisionPoint(geometry_msgs::Point p_, string mode_, int pose_)
 {
 	double sefaty_distance_;
 	bool use_distance_function_;
@@ -484,14 +484,14 @@ bool CatenaryCheckerManager::CheckFreeCollisionPoint(geometry_msgs::Point p_, st
 		use_distance_function_ = true;
 	}	    
     
-	ROS_ERROR("CatenaryCheckerManager::CheckFreeCollisionPoint : p[%f %f %f] pose_[%i] mode=%s",p_.x,p_.y,p_.z, pose_, mode_.c_str());
+	// ROS_ERROR("CatenaryCheckerManager::checkFreeCollisionPoint : p[%f %f %f] pose_[%i] mode=%s",p_.x,p_.y,p_.z, pose_, mode_.c_str());
 	double dist_ = getPointDistanceObstaclesMap(use_distance_function_, p_, pose_ ,mode_) ;
 	
 	if( dist_ < sefaty_distance_){
-		ROS_ERROR("CatenaryCheckerManager::CheckFreeCollisionPoint : %s use_method[%s] Point in collision p[%.3f %.3f %.3f] d[%.3f/%.3f]",mode_.c_str(), use_distance_function_?"true":"false",p_.x,p_.y,p_.z, dist_, sefaty_distance_);
+		// ROS_ERROR("CatenaryCheckerManager::checkFreeCollisionPoint : %s use_method[%s] Point in collision p[%.3f %.3f %.3f] d[%.3f/%.3f]",mode_.c_str(), use_distance_function_?"true":"false",p_.x,p_.y,p_.z, dist_, sefaty_distance_);
 		return false;
 	}else{
-		// ROS_INFO("CatenaryCheckerManager::CheckFreeCollisionPoint : Point Not collision p[%.3f %.3f %.3%] d[%.3%/%.3f]",p_.x,p_.y,p_.z,dist_, sefaty_distance_);
+		// ROS_INFO("CatenaryCheckerManager::checkFreeCollisionPoint : Point Not collision p[%.3f %.3f %.3%] d[%.3%/%.3f]",p_.x,p_.y,p_.z,dist_, sefaty_distance_);
 		return true;
 	}
 }
@@ -518,4 +518,36 @@ double CatenaryCheckerManager::getYawFromQuaternion(double x_, double y_, double
 	M.getRPY(roll_, pitch_, yaw_);
 
 	return yaw_;
+}
+
+bool CatenaryCheckerManager::checkFreeCollisionTether(geometry_msgs::Point p1_, geometry_msgs::Point p2_, tether_parameters p_, float l_, int pos_)
+{
+	GetTetherParameter GPP_;
+	std::vector<geometry_msgs::Point> points_tether_;
+	std::vector<int> v_coll_; v_coll_.clear();
+	std::vector<double> v_dist_; v_dist_.clear();
+	double dist_, x_, y_, z_;
+	points_tether_.clear();
+	if (use_catenary_as_tether)
+		GPP_.getCatenaryPoints(p1_, p2_, p_, points_tether_, l_);
+	else
+		GPP_.getParabolaPoints(p1_, p2_, p_, points_tether_);
+	for(size_t i=0; i < points_tether_.size(); i++){
+		dist_ = getPointDistanceObstaclesMap(use_distance_function, points_tether_[i], i ,"TETHER") ;
+		x_ = points_tether_[i].x;
+		y_ = points_tether_[i].y;
+		z_ = points_tether_[i].z;
+		if( dist_ < distance_tether_obstacle){
+			v_coll_.push_back(i);
+		}
+		v_dist_.push_back(dist_);
+	}
+	if (v_coll_.size() > 0){
+		ROS_ERROR("CatenaryCheckerManager: [%i]TETHER collision in:",pos_);
+		for(int i=0 ; i < v_coll_.size() ; i++){
+			ROS_ERROR("						[%i] d[%.3f/%.3f]",v_coll_[i],v_dist_[i], distance_tether_obstacle);
+		}
+		return false;
+	}else
+		return true;
 }
