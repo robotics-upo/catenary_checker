@@ -17,9 +17,18 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   dbscan_gamma = nh->param<float>("dbscan_gamma", 0.1);
   dbscan_theta = nh->param<float>("dbscan_theta", 0.1);
   use_dbscan_lines = nh->param<bool>("use_dbscan_lines", false);
+  
+  debug = nh->param("debug", false);
 
-  // Discretizing the plane (one UGV point fixed)
-  n_planes = nh->param<int>("n_planes", -1);
+  precomputed_file = nh->param<std::string>("precomputed_file",
+                                            static_cast<std::string>(""));
+                                            
+  bool use_parabola = false;
+  nh->param("use_parabola", use_parabola, (bool)false);
+
+  if (precomputed_file != "" && use_parabola) {
+    precomputePlanes();
+  } 
 
   ROS_INFO("Catenary checker node. Global frame: %s. Base frame: %s", base_frame.c_str(), global_frame.c_str());
   ROS_INFO("Plane dist: %f. Publish pc, marker: %d, %d ", plane_dist, publish_pc, publish_marker);
@@ -27,7 +36,6 @@ catenaryChecker::catenaryChecker(ros::NodeHandlePtr nh)
   if (use_dbscan_lines) {
     ROS_INFO("Using DBScan Lines. Gamma: %f. Theta: %f", dbscan_gamma, dbscan_theta);
   }
-  ROS_INFO("Number of preprocessing planes (<0 means none): %d", n_planes);
 
   if (publish_pc) {
     pc_publisher = nh->advertise<sensor_msgs::PointCloud2>("plane_pc", 2, true);
@@ -44,10 +52,37 @@ void catenaryChecker::getPointCloud(const sensor_msgs::PointCloud2::ConstPtr& pc
   ROS_INFO(PRINTF_YELLOW "catenaryChecker::getPointCloud: Received Point Cloud heigth=%i width=%i",pc->height, pc->width);
 }
 
+bool catenaryChecker::checkCatenaryScenario(const pcl::PointXYZ &A, const pcl::PointXYZ &B, const Grid3d &grid, std::vector<geometry_msgs::Point> &pts_c_) {
+  bool ret_val = false;
+
+  Scenario s(grid, Point3D::fromPCL(A), Point3D::fromPCL(B), 0.05, 0.05);
+
+    
+  Point2D A_2d = s.plane.project2D(A);
+  Point2D B_2d = s.plane.project2D(B);
+
+  Parabola p;
+
+  ret_val = p.approximateParabola(s, A_2d, B_2d);
+
+  if (ret_val) {
+    length_cat = getParabolaPoints(p, Point3D::fromPCL(A), Point3D::fromPCL(B), pts_c_);
+  }
+
+  return ret_val;
+}
+
 //! Gets a point and checks if there exists
 bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, const geometry_msgs::Point &pf_, std::vector<geometry_msgs::Point> &pts_c_)
 {
   static int seq = 0;
+  bool ret_val = false;
+
+  pts_c_.clear();
+
+  if (debug) {
+    ROS_INFO(PRINTF_YELLOW "AnalyticalCheckCatenary: pi = %f %f %f. pf = %f %f %f", pi_.x, pi_.y, pi_.z, pf_.x, pf_.y, pf_.z);
+  }
 
   pcl::PointXYZ robot(static_cast<float>(pi_.x),
                       static_cast<float>(pi_.y),
@@ -55,196 +90,87 @@ bool catenaryChecker::analyticalCheckCatenary(const geometry_msgs::Point &pi_, c
   pcl::PointXYZ target(static_cast<float>(pf_.x),
                        static_cast<float>(pf_.y),
                        static_cast<float>(pf_.z));
-
-
-  if (n_planes > 0) {
-    return precomputedCheckCatenary(robot, target, pts_c_);
-  }
   geometry_msgs::Point pts_; // To save Catenary point
-
-  DBSCAN *dbscan = NULL;
-
-  pcl::PointCloud<pcl::PointXYZ> pcl_pc;
-  pcl::PCLPointCloud2 pcl_pc2;
-
-  pcl_conversions::toPCL(*pc,pcl_pc2);
-  pcl::fromPCLPointCloud2(pcl_pc2, pcl_pc); // TODO: Avoid conversions!!
-    
-  std::cout << "catenaryChecker::getPointCloud: Robot:[" << robot.x << "," << robot.y << "," << robot.z << "] , Target:[" << target.x << "," << target.y << "," << target.z << "]" << std::endl;
-  std::cout << "Preparando para calcular Plano 2D" << std::endl;
-
-  auto points_2d = project2D(pcl_pc, robot, target, plane_dist);
-  // ROS_INFO("Obtained 2D cloud projection. Number of points: %lu", points_2d.size());
-  if (publish_pc) {
-    std::cout << "Preparando para cancular Plano 3D" << std::endl;
-    auto points_3d = reproject3D(points_2d, robot, target);
-    pcl::toPCLPointCloud2(points_3d, pcl_pc2);
-         
-    sensor_msgs::PointCloud2 out_pc2;
-    pcl_conversions::moveFromPCL(pcl_pc2, out_pc2);
-    out_pc2.header.stamp = ros::Time::now();
-    out_pc2.header.seq = seq++;
-    out_pc2.header.frame_id = global_frame;
-
-    pc_publisher.publish(out_pc2);
-    std::cout << "Plano 3D calculado" << std::endl;
-  }
-  std::cout << "Preparando CLUSTERIZE" << std::endl;
-  if (use_dbscan_lines) {
-    dbscan = clusterize_lines(points_2d, dbscan_min_points, dbscan_epsilon, dbscan_gamma, dbscan_theta);
-  } else {
-    dbscan = clusterize(points_2d, dbscan_min_points, dbscan_epsilon);
-  }
-  std::cout << "Hecho el CLUSTERIZE" << std::endl;
-
-  // ROS_INFO("Clusterized with DBSCAN. N_clusters: %d. \tN_points: %lu",dbscan->getNClusters(), dbscan->getPoints().size());
-  if (publish_marker) {
-    marker_publisher.publish(pointsToMarker(dbscan->getPoints(), global_frame, 1000));
-  }
-
-  int num_pts_per_unit_length = 10;
-    
-  pts_c_.clear();
-    
-  std::cout << "Preparando para obtener Parabola" << std::endl;
   if ( (fabs(robot.x - target.x) < 0.01) && (fabs(robot.y == target.y) < 0.01 ) )
-    {
-      length_cat = fabs(robot.z - target.z) *1.01;
-      // std::cout << "catenaryChecker::getPointCloud -if- length_cat= " << length_cat << std::endl;
-      int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
-      for (size_t i = 0 ; i < num_pts_cat_ ; i ++){
-        pts_.x = robot.x; 
-        pts_.y = robot.y; 
-        pts_.z = robot.z + (length_cat/num_pts_cat_)*(i+1); 
-        pts_c_.push_back(pts_);
+  {
+    int num_pts_per_unit_length = 10;
+    length_cat = fabs(robot.z - target.z) *1.01;
+    // std::cout << "catenaryChecker::getPointCloud -if- length_cat= " << length_cat << std::endl;
+    int num_pts_cat_ = round( (double)num_pts_per_unit_length * length_cat);
+    for (size_t i = 0 ; i < num_pts_cat_ ; i ++){
+      pts_.x = robot.x; 
+      pts_.y = robot.y; 
+      pts_.z = robot.z + (length_cat/num_pts_cat_)*(i+1); 
+      pts_c_.push_back(pts_);
         // double dist_cat_obs = getPointDistanceFullMap(use_distance_function, pts_);
         // if (d_min_point_cat > dist_cat_obs){
         //   min_dist_obs_cat = dist_cat_obs;
         //   d_min_point_cat = dist_cat_obs;
         // }
-      }
-      min_dist_obs_cat = -1.0;
-      std::cout << "Parabola en 1 plano Calculada" << std::endl;
     }
-  else
-    {
-      std::cout << "Compute Obstacles usind DBSCAN" << std::endl;
-      //Tranlate to Obstacles 2D
-      std::vector<Obstacle2D> scenario = getObstacles(dbscan); 
-      // ROS_INFO("scenario: %lu \n",scenario.size());
-      
-      // Get the initial parable (line between A and B)
-      std::cout << "Compute getVerticalPlane" << std::endl;
-      auto plane = getVerticalPlane(robot,target); 
-      Point2D A(robot.y * plane.a - robot.x * plane.b, robot.z);
-      Point2D B(target.y * plane.a - target.x * plane.b, target.z);
-      std::cout << "catenaryChecker::getPointCloud: A:[" << A.x << "," << A.y << "] , B:[" << B.x << ","<< B.y <<"]" << std::endl;
-      Parable parable;
-      get_catenary = parable.approximateParable(scenario, A, B);
+    min_dist_obs_cat = -1.0;
+    // std::cout << "Parabola en 1 plano Calculada" << std::endl;
+    get_catenary = false;
+    return false;
+  }
 
-      if (!get_catenary)
-        return false;
+  // If there is a filename --> we use precomputation for planes
+  if (precomputed_file != "") {
+    ret_val = precomputedCheckCatenary(robot, target, pts_c_);
+  } else {
+    ret_val = checkCatenaryScenario(robot, target, *grid_3D, pts_c_);
+  }
+  
+  get_catenary = ret_val;
+  return ret_val;
+}
 
-      // ROS_INFO("Got parable: %s", parable.toString().c_str()); 
-      pcl::PointCloud<pcl::PointXYZ> pc_catenary;
-      getParablePoints(parable,robot,target, pc_catenary);
-      // std::cout << "catenaryChecker::getPointCloud: pc_catenary.size()=" << pc_catenary.size() << std::endl;
-      
-      length_cat = parable.getLength(A.x, B.x);
+bool catenaryChecker::precomputePlanes() {
+  struct timespec start_planes, finish_planes;
+  ROS_INFO("Precomputing planes:");
+  clock_gettime(CLOCK_REALTIME, &start_planes);
+  ps.reset(new PreprocessedScenario(precomputed_file));
 
-      for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
-        // if (i%quot == 0){
-        pts_.x = pc_catenary.points[pc_catenary.size()-(1+i)].x; 
-        pts_.y = pc_catenary.points[pc_catenary.size()-(1+i)].y; 
-        pts_.z = pc_catenary.points[pc_catenary.size()-(1+i)].z; 
-        pts_c_.push_back(pts_);
-      }
-      min_dist_obs_cat = -1.0;
-      std::cout << "Parabola Calculada" << std::endl;
-    }
+  if (ps->size() == 0) {
+    ROS_INFO("File %s not found. Precomputing.", precomputed_file.c_str());
+    ps->_min.x = grid_3D->min_X; 
+    ps->_min.y = grid_3D->min_Y;
+    ps->_min.x = grid_3D->max_X;
+    ps->_max.y = grid_3D->max_Y;   
+    ps->_max_z = grid_3D->max_Z;
+                                
+    ps->PC_Callback(pc);
+  } else {
+    ROS_INFO("Obtaining the precomputed scenario from file.");
+  }
 
-    //    /********************* To obligate pause method and check Planning result *********************/
-		    // std::string y_ ;
-		    // std::cout << " Press key to continue: " << std::endl;
-		    // std::cin >> y_ ;
-		//     /*************************************************************************************************/
+  ROS_INFO("Number of precomputed directions: %d", static_cast<int>(ps->size()));
+  clock_gettime(CLOCK_REALTIME, &finish_planes);
+  auto sec_planes = finish_planes.tv_sec - start_planes.tv_sec;
+  auto msec_planes = finish_planes.tv_nsec - start_planes.tv_nsec;
+  precomputing_time = (msec_planes + sec_planes * 1000000000.0)/1000000000.0;
+  std::cout << "Precomputed time: " << precomputing_time << std::endl << std::endl;
 
-    // std::cout << "pc_catenary.size()= " << pc_catenary.size() << " , pts_.size()=" << pts_c_.size() <<" , num_pts_cat_= " << num_pts_cat_ << " , quot= " << quot << std::endl;
-
-
-
-  delete dbscan;
-
-  return get_catenary;
+  return true;
 }
 
 bool catenaryChecker::precomputedCheckCatenary(const pcl::PointXYZ &pi_,
                                                const pcl::PointXYZ &pf_,
                                                std::vector<geometry_msgs::Point> &pts_c_)
 {
-  if (n_planes < 1) {
-    ROS_INFO("catenaryChecker precomputedCheckCatenary Error: n_planes not positive");
-    return false;
+  if (ps == NULL) {
+    precomputePlanes();
   }
 
-  if (discretized_planes.size() < n_planes) {
-    struct timespec start_planes, finish_planes;
-    clock_gettime(CLOCK_REALTIME, &start_planes);
-
-    ROS_INFO("Precomputing planes:");
-    pcl::PointCloud<pcl::PointXYZ> pcl_pc;
-    pcl::PCLPointCloud2 pcl_pc2;
-
-    pcl_conversions::toPCL(*pc,pcl_pc2);
-    pcl::fromPCLPointCloud2(pcl_pc2, pcl_pc); // TODO: Avoid conversions!!
+  length_cat = ps->checkCatenary(pi_, pf_, pts_c_, debug) *1.01;
+  length_cat_final = length_cat*1.01;
+  get_catenary = length_cat > -0.5f;
   
-    discretized_planes = preprocessObstacle2D(pi_, pcl_pc, n_planes, plane_dist,
-                                              dbscan_min_points, dbscan_epsilon);
-    ROS_INFO("Number of precomputed planes: %d", static_cast<int>(discretized_planes.size()));
-    clock_gettime(CLOCK_REALTIME, &finish_planes);
-    auto sec_planes = finish_planes.tv_sec - start_planes.tv_sec;
-    auto msec_planes = finish_planes.tv_nsec - start_planes.tv_nsec;
-    precomputing_time = (msec_planes + sec_planes * 1000000000.0)/1000000000.0;
-    std::cout << "Precomputed time: " << precomputing_time << std::endl << std::endl;
-  }
 
-  float angle = atanf((pf_.y - pi_.y)/(pf_.x - pi_.x));
-  float mult = 1.0f;
-  if (angle < 0) {
-    angle += M_PI;
-    mult = -1.0;
-  }
-  int i = round(angle / M_PI * n_planes);
-  if (i >= discretized_planes.size()) {
-    i = i % discretized_planes.size();
-  }
+  return get_catenary;
 
-  auto aux = pi_; // Aux point to get the vertical plane properly
-  aux.x += (pf_.x - pi_.x) * mult;
-  aux.y += (pf_.y - pi_.y) * mult;
-
-  auto plane = getVerticalPlane(pi_, aux); 
-  Point2D A(pi_.y * plane.a - pi_.x * plane.b, pi_.z);
-  Point2D B(pf_.y * plane.a - pf_.x * plane.b, pf_.z);
-  Parable parable;
-  get_catenary = parable.approximateParable(discretized_planes.at(i), A, B);
-
-  if (!get_catenary)
-    return false;
-
-  pcl::PointCloud<pcl::PointXYZ> pc_catenary;
-  length_cat = getParablePoints(parable, pi_, pf_, pc_catenary);
-
-  geometry_msgs::Point pts_; // To save Catenary point
-  pts_c_.clear();
-  for (size_t i = 0 ; i < pc_catenary.size() ; i ++){
-    pts_.x = pc_catenary.points[pc_catenary.size()-(1+i)].x; 
-    pts_.y = pc_catenary.points[pc_catenary.size()-(1+i)].y; 
-    pts_.z = pc_catenary.points[pc_catenary.size()-(1+i)].z; 
-    pts_c_.push_back(pts_);
-  }
-
-  return true;
+  // pcl::PointCloud<pcl::PointXYZ> pc_catenary;
+  
 }
 
 std_msgs::ColorRGBA catenaryChecker::getColor(int num) {
@@ -396,10 +322,11 @@ double catenaryChecker::getPointDistanceFullMap(bool use_dist_func_, geometry_ms
 	return dist;
 }
 
-void catenaryChecker::getDataForDistanceinformation(Grid3d *grid3D_, const sensor_msgs::PointCloud2::ConstPtr& msg, bool use_distance_function_)
+void catenaryChecker::getDataForDistanceinformation(Grid3d *grid3D_,
+                                                    const sensor_msgs::PointCloud2::ConstPtr& msg,
+                                                    bool use_distance_function_)
 {
 	grid_3D = grid3D_;
   nn_obs.setInput(*msg);
   use_distance_function = use_distance_function_;
 }
-

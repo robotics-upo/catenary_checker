@@ -3,26 +3,42 @@
 #include <random>
 #include <sstream>
 #include <ostream>
+#include <fstream>
+#include <iostream>
+
+using namespace std;
 
 Obstacle2D::Obstacle2D():std::vector<Point2D>() {}
 
 Obstacle2D::Obstacle2D(const Obstacle2D &points):std::vector<Point2D>(points) {}
 
 void Obstacle2D::calculateConvexHull() {
-  convex_hull = findConvexHull(*this);
+  if (size() > 3) {
+    convex_hull = findConvexHull(*this);
+  }
+  else {
+    convex_hull.clear();
+    for (auto &x:*this) {
+      convex_hull.push_back(x);
+    }
+  }
 }
 
-bool Obstacle2D::intersects(std::function<float (float) > &func) const {
-  bool exist_lower =false;
+bool Obstacle2D::intersects(std::function<float (float) > &func, double x_min, double x_max) const {
+  bool exist_lower = false;
   bool exist_up = false;
-  for (size_t p = 0; p < size();p++) {
+  bool intersects = false;
+  for (size_t p = 0; p < size() && !intersects;p++) {
+    if (at(p).x < x_min || at(p).x > x_max) {
+      continue; // We only take into account the obstacles between the desired Xs 
+    }
+
     float fy = func(at(p).x);
     exist_up |= fy < at(p).y;
     exist_lower |= fy > at(p).y;
-    if (exist_lower && exist_up)
-      return true;
+    intersects = exist_lower && exist_up;
   }
-  return false;
+  return intersects;
 }
 
 void Obstacle2D::add(const Obstacle2D &obstacle) {
@@ -100,3 +116,69 @@ QScatterSeries *Obstacle2D::toSeries(const std::string &name, float size,
   return ret;
 }
   
+// Exporter to YAML
+using namespace YAML;
+Emitter &operator << (Emitter &out, const Obstacle2D &o) {
+  out << YAML::BeginSeq;
+  for (const auto &p:o) {
+
+    out << p;
+  }
+  out << YAML::EndSeq;
+  return out;
+}
+
+// Get an obstacle from node
+void Obstacle2D::fromYAML(const YAML::Node &n) {
+  for (auto &x:n) {
+    Point2D p(x);
+
+    push_back(p);
+  }
+}
+
+void Obstacle2D::simplify(double min_dist) {
+
+  float min_x = 1e20;
+  float min_y = 1e20;
+  float max_x = -1e20;
+  float max_y = -1e20;
+  for (auto &x:*this) {
+    min_x = std::min(min_x, x.x);
+    max_x = std::max(max_x, x.x);
+    min_y = std::min(min_y, x.y);
+    max_y = std::max(max_y, x.y);
+  }
+
+  int rows = (max_y - min_y) / min_dist + 1; 
+  int cols = (max_x - min_x) / min_dist + 1;
+
+  std::vector<std::vector <bool> > occupied(false);
+
+  occupied.resize(rows);
+  for (auto &x:occupied) {
+    x.resize(cols);
+    for (int i = 0; i < cols; i++) {
+      x[i] = false;
+    }
+  }
+
+  std::vector<int> to_be_cleared;
+  to_be_cleared.reserve(size());
+  for (int curr = 0; curr < size(); curr++) {
+    int j = (at(curr).x - min_x) / min_dist;
+    int i = (at(curr).y - min_y) / min_dist;
+
+    if (!occupied[i][j])
+      occupied[i][j] = true;
+    else
+      to_be_cleared.push_back(curr);
+  }
+
+  for (int i = to_be_cleared.size() - 1; i >= 0; i--) {
+    auto x = begin();
+    x += to_be_cleared[i];
+    
+    this->erase(x);
+  }
+}

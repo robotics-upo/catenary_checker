@@ -17,7 +17,7 @@
 #include <vector>
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Vector3.h>
 
 #include <octomap_msgs/Octomap.h> 
 #include <octomap/OcTree.h>
@@ -48,16 +48,32 @@ class bisectionCatenary
 
         vector <geometry_msgs::Point> catenary_chain_points_3D;
 
+        /*
+        @brief: This is the constructor just to compute catenary using bisection method
+        */
         bisectionCatenary();
+        /*
+        @brief: This is the constructor to compute catenary in ROS using bisection method
+        */
         bisectionCatenary(ros::NodeHandlePtr nhP_);
+         /*
+        @brief: This is the constructor to compute catenary using bisection method and get data for analysis
+        */
+        bisectionCatenary(Grid3d* g_3D_ , double bound_obst_, octomap::OcTree* octotree_full_,
+                                    pcl::KdTreeFLANN <pcl::PointXYZ> trav_kdT_, pcl::PointCloud <pcl::PointXYZ>::Ptr trav_pc_);
+        /*
+        @brief: This is the constructor to compute catenary in ROS using bisection method and get data for analysis
+        */
+        bisectionCatenary(ros::NodeHandlePtr nhP_, Grid3d* g_3D_ , double bound_obst_, octomap::OcTree* octotree_full_,
+                                    pcl::KdTreeFLANN <pcl::PointXYZ> trav_kdT_, pcl::PointCloud <pcl::PointXYZ>::Ptr trav_pc_);
         // ~bisectionCatenary();
 
-        virtual bool configBisection(double _l, double _x1, double _y1, double _z1, double _x2, double _y2, double _z2 , bool get_distance_data_ = false);
+        virtual bool configBisection(double _l, double _x1, double _y1, double _z1, double _x2, double _y2, double _z2 );
         virtual double resolveBisection(double a1_, double b1_, int mode_);// 0 = to find phi() , 1 = to find X0 , 2 = to find Y0
         //Find points with sign changes in interval a-b, times that function pass through the origin 
         virtual bool lookingSignChanging (double a, double b, int mode_);
         virtual double functionBisection(double xr_aux, int mode_);
-        virtual void getPointCatenary3D(vector<geometry_msgs::Point> &_v_p, bool dist_interpolation_ = true);
+        virtual void getPointCatenary3D(vector<geometry_msgs::Point> &_v_p, bool get_distance_data_ = false);
         virtual void getPointCatenaryStraight(vector<geometry_msgs::Point> &_v_p);
         virtual void resetVariables();
         virtual void setFactorBisection(double _fa,double _fb);
@@ -69,12 +85,13 @@ class bisectionCatenary
         virtual void getMidPointCat(geometry_msgs::Point &p_, int &n_);
         virtual void getStatusCollisionCat(std::vector<double> &dist_obst_cat_, std::vector<int> &pos_cat_in_coll_, 
                                             std::vector<int> &cat_between_obs_, int &first_coll_, int &last_coll_);
-        virtual void readDataForCollisionAnalisys(Grid3d* g_3D_ , double bound_obst_, octomap::OcTree* octotree_full_,
-                                            pcl::KdTreeFLANN <pcl::PointXYZ> trav_kdT_, pcl::PointCloud <pcl::PointXYZ>::Ptr trav_pc_);
 
         virtual void clearMarkers(visualization_msgs::MarkerArray _marker, int _s, ros::Publisher c_m_pub_);
         virtual void markerPoints(visualization_msgs::MarkerArray _marker, std::vector<geometry_msgs::Point> _vector, ros::Publisher c_m_pub_);
 
+
+        virtual void readDataForCollisionAnalisys(Grid3d* g_3D_ , double bound_obst_, octomap::OcTree* octotree_full_,
+                                            pcl::KdTreeFLANN <pcl::PointXYZ> trav_kdT_, pcl::PointCloud <pcl::PointXYZ>::Ptr trav_pc_);
         
         //Length Catenary Chain 
         double L; 
@@ -95,15 +112,18 @@ class bisectionCatenary
         int first_coll, last_coll, new_coll;
         int num_point_per_unit_length;
 
-	    ros::Publisher points_between_cat_marker_pub_;
-    	visualization_msgs::MarkerArray p_bet_cat_marker;
+	      ros::Publisher points_between_cat_marker_pub_;
+      	visualization_msgs::MarkerArray p_bet_cat_marker;
         ros::NodeHandlePtr nhP;
-        bool use_markers, L_minor_than_D;
+        bool use_markers;
+
+        double XB,YB; //Distance between lashing points in Axes X and Y represented in 2D plane
+        double c_value, h_value, Xc, Yc, XC, YC, ZC;
+        double _direc_x , _direc_y, _direc_z, distance_3d ; 
 
     protected:
         double kConst;
 
-        double XB,YB; //Distance between lashing points in Axes X and Y represented in 2D plane
 
         double Ap, Bp; //Xtreme values Interval to evaluate Phi() Function 
         double Ax, Bx; //Xtreme values Interval to evaluate Catenary_A() Function
@@ -113,8 +133,7 @@ class bisectionCatenary
         double bs_p, bs_Y0, bs_X0;
         double n_interval; 
         int num_point_catenary;
-        double c_value, h_value, Xc, Yc, XC, YC, ZC;
-        double _direc_x , _direc_y, _direc_z, distance_3d ; 
+      
 
         int div_res;
         double resolution;
@@ -125,7 +144,7 @@ class bisectionCatenary
         
         // To manage information related with distance obst-cat, catenary feasibility, and grid3D
         Grid3d* grid_3D;
-	    NearNeighbor nn;
+  	    NearNeighbor nn;
         bool received_grid; 
         bool get_distance_data; // Is use to get data distance for catenary analysis
         double bound_obst;

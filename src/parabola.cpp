@@ -1,26 +1,26 @@
-#include "catenary_checker/parable.hpp"
+#include "catenary_checker/parabola.hpp"
 #include <limits>
 #include <iostream>
 #include <sstream>
 #include <cmath>
 
-Parable::Parable() { _a = _b = _c = 0.0f; }
+Parabola::Parabola() { _a = _b = _c = 0.0f; }
 
-Parable::Parable(float a, float b, float c) {
+Parabola::Parabola(float a, float b, float c) {
     _a = a;
     _b = b;
     _c = c;
 }
 
-Parable::Parable(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
-    getParable(p1, p2, p3);
+Parabola::Parabola(const Point2D &p1, const Point2D &p2, const Point2D &p3) {
+    getParabola(p1, p2, p3);
 }
 
-float Parable::apply(float x) const { 
+float Parabola::apply(float x) const { 
     return _a * x * x + _b * x + _c;
 }
 
-bool Parable::getParable(const Point2D &p1, const Point2D &p2, const Point2D &p3) 
+bool Parabola::getParabola(const Point2D &p1, const Point2D &p2, const Point2D &p3) 
 {
     if (p1.x == p2.x || p2.x == p3.x || p1.x == p3.x)
         return false;
@@ -40,57 +40,49 @@ bool Parable::getParable(const Point2D &p1, const Point2D &p2, const Point2D &p3
     return true;
 }
 
-bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D &A,
-				 Point2D &B, float min_y) 
+bool Parabola::approximateParabola(const Scenario &objects, const Point2D &A,
+                                 const Point2D &B, float min_y) {
+  // First get the straight line
+  _a = 0.0f;
+  _b = (A.y - B.y)/(A.x - B.x);
+  _c = A.y - _b * A.x;
+
+  // Now the algorithm can start
+  return recursiveApproximateParabola(objects, A, B, min_y);
+}
+
+
+bool Parabola::recursiveApproximateParabola(const Scenario &objects, const Point2D &A,
+                                            const Point2D &B, float min_y) 
 {
-  // std::cout << "approximateParable    _a: " << _a << " , _b: " << _b <<  " , _c: " << _c <<std::endl;
   Obstacle2D artificial_obs;
-  std::vector<Obstacle2D> nonIntersection;
-  // artificial_obs.push_back(A);
-  // artificial_obs.push_back(B);
+  Scenario nonIntersection;
+  Parabola back(*this);
 
-  Parable back(*this);
+  float min_x = std::min(A.x, B.x);
+  float max_x = std::max(A.x, B.x);
 
-  if (_a == 0.0 && _b == 0.0 && _c == 0.0) {
-    _b = (A.y - B.y)/(A.x - B.x);
-    _c = A.y - _b * A.x;
-    // std::cout << "Primera parabola. Parametros: " << toString() << "\n";
-  }
 
-  std::function<float(float)> f = std::bind(&Parable::apply, this, std::placeholders::_1);
-  int flag_ = 0;
+  std::function<float(float)> f = std::bind(&Parabola::apply, this, std::placeholders::_1);
   for (auto &x:objects) {
-    if (x.intersects(f)) {
-      // std::cout << "Adding obstacle: " << x.toString() << std::endl;
-      // std::cout << "obstacle added: x=" << x[flag_].x << " y=" << x[flag_].y <<std::endl;
+    if (x.intersects(f, min_x, max_x)) {
       artificial_obs.add(x);
     }
     else{
       nonIntersection.push_back(x);
     }
-    flag_++;
   }
 
-  // std::cout << "Parable::approximateParable -->  adding intersecting obstacles: number: " << artificial_obs.size() << std::endl;
-
   if (artificial_obs.size() < 1 ) {
-    // std::cout << "Parabola aproximada." << std::endl;
     return true;
   }
 
-  //  std::cout << "Before calculateConvexHull." << std::endl;
-
   artificial_obs.calculateConvexHull();
 
-  //  std::cout << "After calculateConvexHull." << std::endl;
-
-
-  float min_x = std::min(A.x, B.x);
-  float max_x = std::max(A.x, B.x);
 
   for (auto &x:artificial_obs.convex_hull) {
     if (x.y < A.y || x.x < min_x || x.x > max_x) {
-      // std::cout << "Parable::approximateParable ";  
+      // std::cout << "Parabola::approximateParabola ";  
       // std::cout << "Convex Hull failure: not restricted to the limits" << std::endl;
       // std::cout << "Conflicting point: " << x.toString() << std::endl;
       return false;
@@ -102,9 +94,8 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
   float best_c = 0.0;
 
   for (auto &x:artificial_obs.convex_hull) {
-    if (getParable(A, x, B)) {
+    if (getParabola(A, x, B)) {
       if (max_a < _a){
-      //  std::cout << "_a: " << _a << " , _b: " << _b <<  " , _c: " << _c <<std::endl;
         max_a = _a;
         best_b = _b;
         best_c = _c;
@@ -123,32 +114,38 @@ bool Parable::approximateParable(const std::vector<Obstacle2D> &objects, Point2D
   float lx = - _b/(2*_a);
   float ly = apply(lx);
   if (ly < min_y) {
-    // std::cout << "Error: Parable::approximateParable the parable passes below: "  << min_y << std::endl;
+    // std::cout << "Error: Parabola::approximateParabola the parable passes below: "  << min_y << std::endl;
     return false;
   }
 
-  // std::cout << "Parable::approximateParable. New params: " << toString() << std::endl;
+  // std::cout << "Parabola::approximateParabola. New params: " << toString() << std::endl;
   if (back == *this) {
-    // std::cout << "Error: Parable::approximateParable: Detected same parable --> fail";
+    // std::cout << "Error: Parabola::approximateParabola: Detected same parable --> fail";
     return false;
   }
 
-  // return approximateParable(objects, A, B, min_y);
-  return approximateParable(nonIntersection, A, B, min_y);
+ 
+  return recursiveApproximateParabola(nonIntersection, A, B, min_y);
 }
 
-std::string Parable::toString() const {
+std::string Parabola::toString() const {
     std::ostringstream oss;
 
-    oss << "Parable parameters: (" << _a << ", " << _b ;
+    oss << "Parabola parameters: (" << _a << ", " << _b ;
     oss << ", " << _c << ")\n";
 
 
     return oss.str();
 }
 
-std::vector<Point2D> Parable::getPoints(float &x1, float &x2, float delta_t) const {
+std::vector<Point2D> Parabola::getPoints(float x1, float x2, float delta_t) const {
   std::vector<Point2D> ret_val;
+
+  if (x2 < x1) {
+    float aux = x1;
+    x1 = x2;
+    x2 = aux;
+  }
   // std::cout << "x1 = " << x1 << " , x2 = " << x2 << std::endl;
   for (float x = x1; x <= x2; x+=delta_t) {
     Point2D p(x, apply(x));
@@ -159,11 +156,11 @@ std::vector<Point2D> Parable::getPoints(float &x1, float &x2, float delta_t) con
   return ret_val;
 }
  
-float Parable::getLength(float &x1, float &x2, float delta_t) const {
+float Parabola::getLengthApprox(float x1, float x2, float delta_t) const {
   // We have to integrate: integral(x1,x2) of: sqrt(1+df/dx^2)dx
   // sqrt(1+(2ax+b)^2) = sqrt(1+4a²x²+b²+4abx)dx
-  // This integral has no easy primitive --> can be approximated
-  float ret_val = 0.0f;
+  // This integral has no primitive --> should be approximated
+  float ret_val=0.0f;
 
   float a_2_4 = _a * _a * 4.0f;
   float b_2_plus_1 = 1.0f + _b * _b;
@@ -173,21 +170,34 @@ float Parable::getLength(float &x1, float &x2, float delta_t) const {
     float aux = x1;
     x1 = x2;
     x2 = aux;
+
   }
 
   for (float x = x1; x <= x2; x += delta_t) {
     ret_val += std::sqrt(b_2_plus_1 + a_2_4 * x * x + a_b_4 * x);
   }
+  ret_val *= delta_t;
 
-  return ret_val * delta_t;
+  return ret_val;
 }
 
-
+float Parabola::getLength(float x1, float x2) const {
+    if (fabs(x1-x2) < 1e-4)
+      return fabs(x1-x2);
+    if (fabs(_a) < 1e-4) {
+      return sqrt((x1-x2)*(x1-x2)*(1 + _b * _b));
+    } 
+    float val = 2.0*_a*x1+_b; // This is a common term for the L equation
+		float La = (log( _b + sqrt((val*val) + 1.0) + 2.0*_a*x1)/(4.0*_a) + ((val)*sqrt((val*val) + 1.0))/(4.0*_a));
+		val = 2.0*_a*x2+_b;
+		float Lb = (log( _b + sqrt((val*val) + 1.0) + 2.0*_a*x2)/(4.0*_a) + ((val)*sqrt((val*val) + 1.0))/(4.0*_a));
+    return fabs(Lb - La);
+}
 
 /// Using Qt Charts for representation
 using namespace QtCharts;
 
-QSplineSeries *Parable::toSeries(const std::string &name,
+QSplineSeries *Parabola::toSeries(const std::string &name,
 				 float x0, float x1, float spacing) const {
   QSplineSeries *ret = new QSplineSeries();
   ret->setName(QString::fromStdString(name));
@@ -198,9 +208,6 @@ QSplineSeries *Parable::toSeries(const std::string &name,
   }
   
   return ret;
-
-
-
 }
 
 

@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.0.2)
 project(catenary_checker)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++14 -fPIC -fopenmp -pg)
-add_link_options(-fopenmp)
+#add_compile_options(-fopenmp)
+add_compile_options(-std=c++17 -fPIC -O3 -march=native -mtune=native -mavx -mavx2 -mfma -fopenmp-simd)
+add_link_options(-fopenmp-simd)
 
 set(CMAKE_BUILD_TYPE Release)
 
@@ -24,9 +25,20 @@ find_package(Qt5 REQUIRED COMPONENTS
   )
 
 find_package(Qt5Charts REQUIRED)
+find_package(Ceres REQUIRED)
+
 
 find_package(PCL 1.8 REQUIRED)
 find_package(PCL REQUIRED)
+find_package(yaml-cpp REQUIRED)
+
+# OpenMP library
+find_package(OpenMP REQUIRED)
+if(OPENMP_FOUND)
+  message(STATUS "OPENMP FOUND")
+  set(OpenMP_FLAGS ${OpenMP_CXX_FLAGS})  # or if you use C: ${OpenMP_C_FLAGS}
+  set(OpenMP_LIBS gomp)
+endif()
 
 include_directories( include/
   ${catkin_INCLUDE_DIRS}
@@ -34,12 +46,18 @@ include_directories( include/
   ${PCL_INCLUDE_DIRS}
   ${Qt5Widgets_INCLUDE_DIRS}
   ${Qt5Charts_INCLUDE_DIRS}
+  ${yaml-cpp_INCLUDE_DIRS}
+  ${CERES_INCLUDE_DIRS}
 )
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
-
+ 
 set(EXTERNAL_INCLUDE_DIRS ${PCL_INCLUDE_DIRS} )
-set(EXTERNAL_LIBS ${PCL_LIBRARIES} )
+set(EXTERNAL_LIBS ${PCL_LIBRARIES} ${yaml-cpp_LIBRARIES})
+
+if (BUILD_SHARED_LIBS)
+  remove_definitions(-DCERES_BUILDING_SHARED_LIBRARY)
+endif()
 
 
 ###################################
@@ -70,35 +88,38 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
   ${Qt5Widgets_INCLUDE_DIRS}
   ${Qt5Charts_INCLUDE_DIRS}
-)
-
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
-
-set(EXTERNAL_INCLUDE_DIRS ${Eigen_INCLUDE_DIRS}${PCL_INCLUDE_DIRS} )
-set(EXTERNAL_LIBS ${PCL_LIBRARIES} )
-
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
   ${Qt5_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
    src/2d_projection.cpp 
+   src/catenary.cpp
    src/catenary_checker.cpp 
    src/obstacle_2d.cpp 
    src/convex_hull.cpp
-   src/parable.cpp
+   src/parabola.cpp
    src/catenary_checker_manager.cpp
    src/bisection_catenary_3D.cpp
    src/catenary_checker_node.cpp 
    src/catenary_checker_manager_node.cpp
+   src/preprocessed_scenario.cpp
+   src/scenario.cpp
+   src/solve_parabola_parameter.cpp
+   src/solve_catenary_parameter.cpp
+   src/solve_parabola_correction_parameter.cpp
+   src/solve_catenary_correction_parameter.cpp
+  #  src/check_collision_path_planner.cpp
 )
+target_compile_options(${PROJECT_NAME} PRIVATE ${OpenMP_FLAGS})
 target_link_libraries(${PROJECT_NAME}
    ${EXTERNAL_LIBS}
    ${catkin_LIBRARIES}
+   ${YAML_CPP_LIBRARIES}
+   Ceres::ceres
+   ${CERES_LIBRARIES}
+   ${OpenMP_LIBS}
 )
 
 ## Add cmake target dependencies of the library
@@ -112,7 +133,15 @@ target_link_libraries(${PROJECT_NAME}
 
 add_executable(${PROJECT_NAME}_node src/catenary_checker_node.cpp )
 add_executable(test_catenary_checker src/test_catenary_checker.cpp)
-add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
+add_executable(test_preprocessed_scenario src/test_preprocessed_scenario.cpp)
+add_executable(test_scenario src/test_scenario.cpp)
+add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp)
+
+# add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.cpp src/catenary_checker_manager.cpp)
+add_executable(test_ensuring_collision_free_catenary src/test_ensuring_collision_free_catenary.cpp)
+target_link_libraries(test_ensuring_collision_free_catenary ${catkin_LIBRARIES} ceres)
+add_executable(test_catenary_fit src/test_catenary_fit.cpp)
+target_link_libraries(test_catenary_fit ${PROJECT_NAME} dbscan_line ${catkin_LIBRARIES} ceres Qt5::Charts Qt5::Widgets)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -124,6 +153,8 @@ add_executable(catenary_checker_manager_node src/catenary_checker_manager_node.c
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(test_catenary_checker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME})
+add_dependencies(test_preprocessed_scenario ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME})
+add_dependencies(test_scenario ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME})
 add_dependencies(${PROJECT_NAME}_manager_node  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
@@ -133,6 +164,7 @@ target_link_libraries(${PROJECT_NAME}_node
     Qt5::Charts
     Qt5::Widgets
     dbscan_line
+    ${EXTERNAL_LIBRARIES}    
     )
 target_link_libraries(test_catenary_checker
    ${PROJECT_NAME}
@@ -140,13 +172,36 @@ target_link_libraries(test_catenary_checker
    dbscan_line
    Qt5::Charts
    Qt5::Widgets
+   ${EXTERNAL_LIBRARIES}   
+   Ceres::ceres
+   ${CERES_LIBRARIES} 
    )
+target_link_libraries(test_preprocessed_scenario
+   ${PROJECT_NAME}
+   ${catkin_LIBRARIES}
+   dbscan_line
+   Qt5::Charts
+   Qt5::Widgets
+   ${EXTERNAL_LIBRARIES}   
+   )
+
+   target_link_libraries(test_scenario
+   ${PROJECT_NAME}
+   ${catkin_LIBRARIES}
+   dbscan_line
+   Qt5::Charts
+   Qt5::Widgets
+   ${EXTERNAL_LIBRARIES}   
+   )
+
+
 target_link_libraries(catenary_checker_manager_node
    ${catkin_LIBRARIES}
    ${PROJECT_NAME}
    Qt5::Charts
    Qt5::Widgets
    dbscan_line
+   ${EXTERNAL_LIBRARIES}
     )
 
 add_executable(create_grid3d_node src/create_grid3d_node.cpp) 
@@ -155,7 +210,9 @@ ${PROJECT_NAME}
 ${catkin_LIBRARIES}
 dbscan_line
 Qt5::Charts
-Qt5::Widgets)
+Qt5::Widgets
+${EXTERNAL_LIBRARIES}
+)
 
 # add_executable(create_grid3d_node src/create_grid3d_node.cpp) 
 # target_link_libraries(create_grid3d_node ${PROJECT_NAME})

@@ -45,7 +45,7 @@ class NearNeighbor
 	    virtual Eigen::Vector3d nearestObstacleMarsupial(const pcl::KdTreeFLANN <pcl::PointXYZ> &kdT_, Eigen::Vector3d vert_, pcl::PointCloud <pcl::PointXYZ>::Ptr o_p_);
 		virtual Eigen::Vector3d nearestTraversabilityUGVMarsupial(const pcl::KdTreeFLANN <pcl::PointXYZ> kdT_, Eigen::Vector3d vert_, pcl::PointCloud <pcl::PointXYZ>::Ptr o_p_ , double radius_);
 		virtual bool nearestObstacleStateCeres(const pcl::KdTreeFLANN <pcl::PointXYZ> &kdT_, double x_, double y_, double z_, pcl::PointCloud <pcl::PointXYZ>::Ptr o_p_, double &ret_x_, double &ret_y_, double &ret_z_);
-		virtual bool radiusNearestObstacleVertex(const pcl::KdTreeFLANN <pcl::PointXYZ> &kdT_, Eigen::Vector3d vert_, pcl::PointCloud <pcl::PointXYZ>::Ptr o_p_ , float _radius);
+		virtual bool radiusNearestObstacleVertex(const pcl::KdTreeFLANN <pcl::PointXYZ> &kdT_, double x_, double y_, double z_, pcl::PointCloud <pcl::PointXYZ>::Ptr o_p_ , float _radius, double &ret_x_, double &ret_y_, double &ret_z_);
 		virtual double distanceObstacleVertex(const pcl::KdTreeFLANN <pcl::PointXYZ> &kdT_, Eigen::Vector3d vert_);
 
 		pcl::PointCloud<pcl::PointXYZ>::Ptr obs_points;
@@ -71,6 +71,7 @@ inline void NearNeighbor::setKDTree(const std::vector<Eigen::Vector3d> &obs_)
 	// Convert from Eigen::Vector3d to pcl::PointXYZ
 	// obs_points -> width = obs_.size() ;
 	// obs_points -> height = 1 ;
+	std::cout << "		size PC in KDTREE:" << obs_.size() << std::endl;
 	obs_points -> points.resize(obs_.size());
 	for (size_t i = 0 ; i < obs_points->size() ; i ++)
 	{
@@ -83,11 +84,12 @@ inline void NearNeighbor::setKDTree(const std::vector<Eigen::Vector3d> &obs_)
 
 inline void NearNeighbor::setKDTree(const sensor_msgs::PointCloud2 &pc2_)
 {
-	ROS_INFO(PRINTF_MAGENTA "KDTree : Executed SetKDTree PointCloud2");
+	// ROS_INFO(PRINTF_MAGENTA "KDTree : Executed SetKDTree PointCloud2");
 	obs_points.reset(new pcl::PointCloud <pcl::PointXYZ>);
 	pcl::fromROSMsg(pc2_,*obs_points);
+	std::cout << "		size PC in KDTREE:" << obs_points->size() << std::endl;
 
-	ROS_INFO(PRINTF_MAGENTA "KDTree : Size obs_points = [%lu]",obs_points->size());
+	// ROS_INFO(PRINTF_MAGENTA "KDTree : Size obs_points = [%lu]",obs_points->size());
 
 	kdtree.setInputCloud(obs_points);
 }
@@ -183,9 +185,9 @@ inline bool NearNeighbor::nearestObstacleStateCeres(const pcl::KdTreeFLANN <pcl:
 	return true;
 }
 
-inline bool NearNeighbor::radiusNearestObstacleVertex(const pcl::KdTreeFLANN <pcl::PointXYZ> &kdT_, Eigen::Vector3d vert_, pcl::PointCloud <pcl::PointXYZ>::Ptr o_p_ , float _radius)
+inline bool NearNeighbor::radiusNearestObstacleVertex(const pcl::KdTreeFLANN <pcl::PointXYZ> &kdT_, double x_, double y_, double z_, pcl::PointCloud <pcl::PointXYZ>::Ptr o_p_ , float _radius, double &ret_x_, double &ret_y_, double &ret_z_)
 {
-	pcl::PointXYZ searchPoints(vert_.x(),vert_.y(),vert_.z());
+	pcl::PointXYZ searchPoints(x_, y_ , z_);
 
 	// K nearest neighbor search
 	std::vector<int> pointIdxRadiusSearch;
@@ -193,13 +195,25 @@ inline bool NearNeighbor::radiusNearestObstacleVertex(const pcl::KdTreeFLANN <pc
 	
 	// Get closest in a radius point
 	if (kdT_.radiusSearch(searchPoints, _radius, pointIdxRadiusSearch, pointRadiusSquaredDistance) > 0){
-		// ret_.x() = o_p_->points[pointIdxRadiusSearch[0]].x;
-		// ret_.y() = o_p_->points[pointIdxRadiusSearch[0]].y;
-		// ret_.z() = o_p_->points[pointIdxRadiusSearch[0]].z;
-		return true;
+		double min_distance_ = _radius;
+		double d_, h_;
+		bool found_ = false;
+		for (size_t i = 0; i < pointIdxRadiusSearch.size(); ++i) {
+            h_ = o_p_->points[pointIdxRadiusSearch[i]].z; 
+            d_ = std::sqrt(pointRadiusSquaredDistance[i]);
+			if (min_distance_ > d_ && (z_+ 0.06) > h_){
+				min_distance_ = d_;
+				ret_x_ = o_p_->points[pointIdxRadiusSearch[i]].x; 
+				ret_y_ = o_p_->points[pointIdxRadiusSearch[i]].y; 
+				ret_z_ = h_;
+				found_ = true;
+			}
+		}
+		if(found_)
+			return true;
 	}
-	else
-		return false;	
+	ret_x_ = ret_y_ = ret_z_ = -1.0;
+	return false;	
 }
 
 inline double NearNeighbor::distanceObstacleVertex(const pcl::KdTreeFLANN <pcl::PointXYZ> &kdT_, Eigen::Vector3d vert_)
